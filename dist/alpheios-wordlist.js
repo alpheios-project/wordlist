@@ -12654,8 +12654,8 @@ class WordlistController {
   parseResultToWordList (result) {
     if (result && result.length > 0) {
       result.forEach(wordItemResult => {
-        let homonymRes = alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["Homonym"].readObject(wordItemResult.homonym)
-        this.updateWordList({ homonym: homonymRes, important: wordItemResult.important }, false)
+        let homonymRes = alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["Homonym"].readObject(wordItemResult.body.homonym)
+        this.updateWordList({ homonym: homonymRes, important: wordItemResult.body.important }, false)
       })
     }
   }
@@ -12740,7 +12740,7 @@ WordlistController.evt = {
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;return _c('svg',{attrs:{"viewBox":"0 0 447.6 757.4"}},[_c('path',{attrs:{"d":"M-128.4 305.8c74.8 53.3 146.8 110.5 215.7 171.3 0 0 348.4-399.4 557.1-477.1l27 53S277.2 418 150.5 757.4l-374.3-378.7 95.4-72.9z"}})])};var toString = function () {return "C:\\_Irina\\_clients\\_Alpheios Project\\git\\wordlist\\src\\icons\\check.svg"};module.exports = { render: render, toString: toString };
+var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;return _c('svg',{attrs:{"viewBox":"0 0 447.6 757.4"}},[_c('path',{attrs:{"d":"M-128.4 305.8c74.8 53.3 146.8 110.5 215.7 171.3 0 0 348.4-399.4 557.1-477.1l27 53S277.2 418 150.5 757.4l-374.3-378.7 95.4-72.9z"}})])};var toString = function () {return "C:\\_alpheios\\wordlist\\src\\icons\\check.svg"};module.exports = { render: render, toString: toString };
 
 /***/ }),
 
@@ -13132,10 +13132,17 @@ class WordItem {
     }
     resultItem.targetWord = this.targetWord
     return {
-      homonym: resultItem,
-      important: this.important,
-      languageCode: this.languageCode,
-      targetWord: this.targetWord
+      traget: {
+        targetWord: this.targetWord,
+        url: window.location.href
+
+      },
+      body: {
+        homonym: resultItem,
+        important: this.important,
+        languageCode: this.languageCode,
+        targetWord: this.targetWord
+      }
     }
   }
 

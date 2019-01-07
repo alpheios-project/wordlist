@@ -50,10 +50,17 @@ export default class WordItem {
     }
     resultItem.targetWord = this.targetWord
     return {
-      homonym: resultItem,
-      important: this.important,
-      languageCode: this.languageCode,
-      targetWord: this.targetWord
+      traget: {
+        targetWord: this.targetWord,
+        url: window.location.href
+
+      },
+      body: {
+        homonym: resultItem,
+        important: this.important,
+        languageCode: this.languageCode,
+        targetWord: this.targetWord
+      }
     }
   }
 

@@ -50,21 +50,38 @@ export default class WordItem {
     }
     resultItem.targetWord = this.targetWord
     return {
-      traget: {
+      targetWord: this.targetWord,
+      languageCode: this.languageCode,
+      target: {
         targetWord: this.targetWord,
-        url: window.location.href
-
+        source: window.location.href,
+        selector: {
+          type: 'TextQuoteSelector',
+          exact: this.targetWord,
+          prefix: '',
+          suffix: ''
+        }
       },
       body: {
+        dt: WordItem.currentDate,
         homonym: resultItem,
-        important: this.important,
-        languageCode: this.languageCode,
-        targetWord: this.targetWord
+        important: this.important
       }
     }
   }
 
   selectWordItem () {
     WordlistController.evt.WORDITEM_SELECTED.pub(this.homonym)
+  }
+
+  static get currentDate () {
+    let dt = new Date()
+    return dt.getFullYear() + '/'
+        + ((dt.getMonth()+1) < 10 ? '0' : '') + (dt.getMonth()+1)  + '/'
+        + ((dt.getDate() < 10) ? '0' : '') + dt.getDate() + ' @ '
+                + ((dt.getHours() < 10) ? '0' : '') + dt.getHours() + ":"  
+                + ((dt.getMinutes() < 10) ? '0' : '') + dt.getMinutes() + ":" 
+                + ((dt.getSeconds() < 10) ? '0' : '') + dt.getSeconds()
+
   }
 }

@@ -70,6 +70,7 @@ export default {
       return this.updated && this.reloadList ? this.wordlist.values : []
     },
     languageName () {
+      /*
       let languageNames = new Map([
         [Constants.LANG_LATIN, 'Latin'],
         [Constants.LANG_GREEK, 'Greek'],
@@ -80,6 +81,8 @@ export default {
       
       let languageID = this.wordlist.languageID
       return languageNames.has(languageID) ? languageNames.get(languageID) : ''
+      */
+      return this.wordlist.languageName
     }
   },
   methods: {

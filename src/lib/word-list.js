@@ -1,48 +1,37 @@
 import { LanguageModelFactory as LMF } from 'alpheios-data-models'
+import WordItem from '@/lib/word-item'
 
 export default class WordList {
-  constructor (userID, languageID, storageAdapter) {
+  constructor (userID, languageCode, storageAdapter) {
     this.userID = userID
-    this.languageID = languageID
+    this.languageCode = languageCode
     this.storageAdapter = storageAdapter
     this.items = {}
-    this.wordItemsToSave = []
-    this.wordItemsToDelete = []
-    this.createStorageID()
   }
 
-  createStorageID () {
-    let languageCode = LMF.getLanguageCodeFromId(this.languageID)
-    this.storageID =  this.userID + '-' + languageCode
+  get languageName () {
+    switch(this.languageCode) {
+      case 'lat':
+        return 'Latin'
+      case 'grc':
+        return 'Greek'
+      case 'ara':
+        return 'Arabic'
+      case 'per':
+        return 'Persian'
+      case 'gez':
+        return 'Ancient Ethiopic (Ge\'ez)'
+      default:
+        'Unknown'
+    }
+  }
+
+  get storageID () {
+    return this.userID + '-' + this.languageCode
   }
 
   get values () {
     return Object.values(this.items)
-  }
-
-  /**
-   * This method removes wordItem with the same targetWord if it exists
-   * checks for the languageId to be the same as defines in the current wordList
-   * adds wordItem to the current wordList
-   * and saves to storage (if saveToStorage flag = true)
-   * before saving - it duplicates upgradeQueue from wordlist 
-   * to pass it later to IndexedDB put callback and move queue further after success saving
-   */
-  push (wordItem, saveToStorage = false, upgradeQueue = {}) {
-    this.removeWordItemByWord(wordItem)
-
-    if (this.languageID === wordItem.languageID) {
-      this.items[wordItem.ID] = wordItem
-      if (saveToStorage) {
-        this.upgradeQueue = upgradeQueue
-        this.upgradeQueue.setCurrentWord(wordItem)
-
-        this.wordItemsToSave = [ wordItem ]
-        this.saveToStorage()
-      }
-      return true
-    }
-    return false
   }
   
   removeWordItemByWord (wordItem) {
@@ -83,54 +72,7 @@ export default class WordList {
     this.storageAdapter.delete(db, 'UserLists', this.wordItemsToDelete.slice(), successCallBackF)
     this.wordItemsToDelete = []
   }
-
-  /**
-   * This method is the same as in WordList and it passes putToStorageTransaction as a callback for successful opening database
-   */
-  saveToStorage () {
-    if (this.storageAdapter.available) {
-      this.storageAdapter.openDatabase(null, this.putToStorageTransaction.bind(this))
-    }
-  }
-
-  /**
-   * This method executes in successfull callback from saveToStorage method
-   * it gets db from event data
-   * and passes the foolowing arguments to set method of the storageAdapter
-   *        db - opened database from the event
-   *        UserLists - table name
-   *        jsonObject data - selected amount of wordItems (it could be one wordItem, it could be the whole list) converted to be as jsonObject
-   *        successCallBackF - it is used to move queue further, if there is a queue (it is not defined everytime)
-   */
-  putToStorageTransaction (event) {
-    const db = event.target.result
-    let successCallBackF = this.upgradeQueue ? this.upgradeQueue.clearCurrentItem.bind(this.upgradeQueue) : null
-    this.storageAdapter.set(db, 'UserLists', this.convertToStorageList(), successCallBackF)
-  }
-
-  /**
-   * This method converts some amount of wordItems to be as jsonObject
-   * as we couldn't pass some arguments to the IndexedDB callbacks (as they are events)
-   * I have created a variable in wordList that stores currently defined amount of wordItem - it is this.wordItemsToSave
-   * this.wordItemsToSave is defined now in push, and changing important flags methods
-   */
-  convertToStorageList () {
-    let result = []
-    for (let item of this.wordItemsToSave) {
-      result.push(this.convertToStorageItem(item))
-    }
-    this.wordItemsToSave = []
-    return result
-  }
-
-  convertToStorageItem (wordItem) {
-    return Object.assign({ 
-      ID: this.storageID + '-' + wordItem.targetWord, 
-      userID: this.userID, 
-      userIDLangCode: this.storageID      
-    }, wordItem.convertToStorage())
-  }
-  
+ 
   contains (wordItem) {
     return this.values.map(item => item.targetWord).includes(wordItem.targetWord)
   }
@@ -168,4 +110,97 @@ export default class WordList {
     this.saveToStorage()
   }
 
+  // *****************************
+  get storageMap () {
+    return {
+      common: {
+        objectStoreName: 'WordListsCommon',
+        convertMethodName: 'convertCommonToStorage'
+      },
+      textQuoteSelector: {
+        objectStoreName: 'WordListsContext',
+        convertMethodName: 'convertTQSelectorToStorage'
+      },
+      shortHomonym: {
+        objectStoreName: 'WordListsHomonym',
+        convertMethodName: 'convertShortHomonymToStorage'
+      },
+      fullHomonym: {
+        objectStoreName: 'WordListsFullHomonym',
+        convertMethodName: 'convertFullHomonymToStorage'
+      }
+    }
+  }
+
+  async pushWordItem (data, type) {
+    // console.info('***************pushWordItem data', data)
+    let wordItem = new WordItem(data)
+    // console.info('***************pushWordItem wordItem', wordItem)
+    //check if worditem exists in the list
+    if (!this.contains(wordItem)) {
+      await this.pushWordItemPart(wordItem, 'common')
+    }
+
+    await this.pushWordItemPart(wordItem, type)
+    // console.info('****************pushWordItem final', type)
+  }
+
+  async pushWordItemPart (wordItem, type) {
+    this.items[wordItem.storageID] = wordItem
+    if (this.storageMap[type]) {
+      let dataItem = wordItem[this.storageMap[type].convertMethodName]()
+
+      await this.storageAdapter.set({
+        objectStoreName: this.storageMap[type].objectStoreName,
+        dataItem
+      })  
+    }
+  }
+
+  async uploadFromDB () {
+    let res = await this.storageAdapter.get({
+      objectStoreName: this.storageMap.common.objectStoreName,
+      condition: {indexName: 'listID', value: this.storageID, type: 'only' }
+    })
+    if (res.length === 0) {
+      return false
+    } else {
+      // console.info('*****************uploadFromDB get res common', res)
+      for (let resWordItem of res) {
+        let resKey = resWordItem.ID
+        let wordItem = new WordItem(resWordItem)
+
+        let resFullHomonym = await this.storageAdapter.get({
+          objectStoreName: this.storageMap.fullHomonym.objectStoreName,
+          condition: {indexName: 'ID', value: resKey, type: 'only' }
+        })
+        
+        // console.info('*****************uploadFromDB get res homonym', res)
+
+        if (resFullHomonym.length > 0) {
+          wordItem.uploadHomonym(resFullHomonym[0])
+        } else {
+          let resShortHomonym = await this.storageAdapter.get({
+            objectStoreName: this.storageMap.shortHomonym.objectStoreName,
+            condition: {indexName: 'ID', value: resKey, type: 'only' }
+          })
+          if (resShortHomonym.length > 0)
+          wordItem.uploadHomonym(resShortHomonym[0])
+        }
+
+        let resTextQuoteSelector = await this.storageAdapter.get({
+          objectStoreName: this.storageMap.textQuoteSelector.objectStoreName,
+          condition: {indexName: 'ID', value: resKey, type: 'only' }
+        })
+
+        if (resTextQuoteSelector.length > 0) {
+          console.info('**********************resTextQuoteSelector', resTextQuoteSelector)
+        }
+
+        this.items[wordItem.storageID] = wordItem
+      }
+      // console.info('*****************uploadFromDB get res final', this.items)
+      return true
+    }
+  }
 }

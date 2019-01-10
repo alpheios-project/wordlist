@@ -1,4 +1,5 @@
 import StorageAdapter from '@/storage/storage-adapter.js'
+import IndexedDBStructure from '@/storage/indexed-db-structure.js'
 
 /**
  * An implementation of a StorageAdapter interface for a local storage.
@@ -9,8 +10,7 @@ export default class IndexedDBAdapter extends StorageAdapter {
     super(domain)
 
     this.available = this.initIndexedDBNamespaces()
-    this.currentVersion = 1
-    this.dbName = 'AlpheiosUserWordLists'
+    this.dbData = new IndexedDBStructure()
   }
 
   /**
@@ -40,13 +40,88 @@ export default class IndexedDBAdapter extends StorageAdapter {
     return request
   }
 
+  async set (data) {
+    // console.info('***************indexedDB set', data)
+    let promiseOpenDB = await new Promise((resolve, reject) => {
+      let request = this.indexedDB.open(this.dbData.dbName, this.dbData.dbVersion)
+      request.onupgradeneeded = (event) => {
+        const db = event.target.result
+        this.dbData.createObjectStores(db)
+        // console.info('*****************indexedDB set in onupgradeneeded', db)
+      }
+      request.onsuccess = async (event) => {
+        const db = event.target.result
+        await this.putItem(db, data)
+        // console.info('*****************indexedDB set in onsuccess', db)
+        resolve()
+      }
+      request.onerror = (event) => {
+        // console.info('*************indexedDB set in onerror', event.target)
+        reject()
+      }
+    })
+    console.info('*****************final indexedDB set', data.dataItem)
+    return promiseOpenDB
+  }
+
+  async putItem (db, data) {
+    // console.info('********************putItem', data.objectStoreName, data)
+    let promisePut = await new Promise((resolve, reject) => {
+      const transaction = db.transaction([data.objectStoreName], 'readwrite')
+      transaction.onerror = (event) => {
+        reject()
+      }
+      const objectStore = transaction.objectStore(data.objectStoreName)
+      const requestPut = objectStore.put(data.dataItem)
+      requestPut.onsuccess = (event) => {
+        // console.info('**********************requestPut success', data.dataItem)
+        resolve()
+      }
+      requestPut.onerror = (event) => {
+        // console.info('**********************requestPut error', event.target)
+        reject()
+      }
+    })
+    // console.info('*****************final indexedDB putItem', data.dataItem)
+    return promisePut
+  }
+
+  async get (data) {
+    let promiseOpenDB = await new Promise((resolve, reject) => {
+      let request = this.indexedDB.open(this.dbData.dbName, this.dbData.dbVersion)
+      request.onsuccess = async (event) => {
+        const db = event.target.result
+        const transaction = db.transaction([data.objectStoreName])
+        const objectStore = transaction.objectStore(data.objectStoreName)
+
+        const index = objectStore.index(data.condition.indexName)
+        const keyRange = this.IDBKeyRange[data.condition.type](data.condition.value)
+
+        const requestOpenCursor = index.getAll(keyRange, 0)
+        requestOpenCursor.onsuccess = (event) => {
+          resolve(event.target.result)
+        }
+
+        requestOpenCursor.onerror = (event) => {
+          console.info('****************cursor with condition - some error', event.target)
+          reject()
+        }        
+      }
+      request.onerror = (event) => {
+        // console.info('*************indexedDB set in onerror', event.target)
+        reject()
+      }
+    })
+    // console.info('*****************final indexedDB get', data.condition)
+    return promiseOpenDB
+  }
   /**
    * This method create a request for put data to the selected ObjectStore
    * and executes onComplete callback on success
    * It creates transaction with readwrite access (onComplete callback would be executes on transaction finalize)
    * And then it goes through data Array and executes put request (put allows adding data and rewriting existing data by keyValue)
    */
-  set (db, objectStoreName, data, onCompleteF) {
+  set_backup (db, objectStoreName, data, onCompleteF) {
     const transaction = db.transaction([objectStoreName], 'readwrite')
     transaction.oncomplete = (event) => {
       // console.info('**************set data successfull')
@@ -75,7 +150,7 @@ export default class IndexedDBAdapter extends StorageAdapter {
    * (depending on passed condition argument)
    * callback function is passed to final get request
    */
-  get (db, objectStoreName, condition, callbackF) {
+  get_backup (db, objectStoreName, condition, callbackF) {
     const transaction = db.transaction([objectStoreName])
     const objectStore = transaction.objectStore(objectStoreName)
 
@@ -91,7 +166,7 @@ export default class IndexedDBAdapter extends StorageAdapter {
    * This method checks if condition is correct
    * I have limited here for 'only' compare method because I am using only it, but it could be upgraded later
    */
-  hasProperCondition (condition) {
+  hasProperCondition_backup (condition) {
     const allowedTypes = [ 'only' ]
     return condition.indexName && condition.value && condition.type && allowedTypes.includes(condition.type)
   }
@@ -100,7 +175,7 @@ export default class IndexedDBAdapter extends StorageAdapter {
    * This method gets all data from the table without any filtering
    * I don't use this method in the code, but it could be useful later
    */
-  getWithoutConditions (objectStore, callbackF) {
+  getWithoutConditions_backup (objectStore, callbackF) {
     const requestOpenCursor = objectStore.openCursor(null)
     requestOpenCursor.onsuccess = (event) => {
       callbackF(event.target.result)
@@ -118,7 +193,7 @@ export default class IndexedDBAdapter extends StorageAdapter {
    * so it gets all wordItems for latin wordList for the current user
    * and success callback it passes retrieved data using callback function, for example WordlistController.parseResultToWordList
    */
-  getWithCondition (objectStore, condition, callbackF) {
+  getWithCondition_backup (objectStore, condition, callbackF) {
     const index = objectStore.index(condition.indexName)
     const keyRange = this.IDBKeyRange[condition.type](condition.value)
 

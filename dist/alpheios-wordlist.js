@@ -859,7 +859,7 @@ __webpack_require__.r(__webpack_exports__);
   },
   methods: {
     changeImportant () {
-      this.$emit('changeImportant', this.worditem.ID, this.worditem.important)
+      this.$emit('changeImportant', this.worditem.storageID, this.worditem.important)
       this.important = this.worditem.important
     },
     eventChangeImportant () {
@@ -869,7 +869,7 @@ __webpack_require__.r(__webpack_exports__);
       this.worditem.selectWordItem()
     },
     deleteItem () {
-      this.$emit('deleteItem', this.worditem.ID)
+      this.$emit('deleteItem', this.worditem.storageID)
     }
   }
 });
@@ -968,43 +968,31 @@ __webpack_require__.r(__webpack_exports__);
       return this.updated && this.reloadList ? this.wordlist.values : []
     },
     languageName () {
-      /*
-      let languageNames = new Map([
-        [Constants.LANG_LATIN, 'Latin'],
-        [Constants.LANG_GREEK, 'Greek'],
-        [Constants.LANG_ARABIC, 'Arabic'],
-        [Constants.LANG_PERSIAN, 'Persian'],
-        [Constants.LANG_GEEZ, 'Ancient Ethiopic (Ge\'ez)']
-      ])
-      
-      let languageID = this.wordlist.languageID
-      return languageNames.has(languageID) ? languageNames.get(languageID) : ''
-      */
       return this.wordlist.languageName
     }
   },
   methods: {
-    makeAllImportant () {
-      this.wordlist.makeAllImportant()
+    async makeAllImportant () {
+      await this.wordlist.makeAllImportant()
       this.$emit('eventChangeImportant')
     },
-    removeAllImportant () {
-      this.wordlist.removeAllImportant()
+    async removeAllImportant () {
+      await this.wordlist.removeAllImportant()
       this.$emit('eventChangeImportant')
     },
-    changeImportant (ID, important) {
+    async changeImportant (storageID, important) {
       if (important) {
-        this.wordlist.removeImportantByID(ID)
+        await this.wordlist.removeImportantByID(storageID)
       } else {
-        this.wordlist.makeImportantByID(ID)
+        await this.wordlist.makeImportantByID(storageID)
       }
     },
-    deleteItem (ID) {
-      this.wordlist.removeWordItemByID(ID)
+    async deleteItem (storageID) {
+      await this.wordlist.removeWordItemByID(storageID)
       this.reloadList = this.reloadList + 1
     },
-    deleteAll () {
-      this.wordlist.removeAllWordItems()
+    async deleteAll () {
+      await this.wordlist.removeAllWordItems()
       this.reloadList = this.reloadList + 1
     }
   }
@@ -1314,7 +1302,7 @@ var render = function() {
       _vm._l(_vm.wordItems, function(wordItem) {
         return _c(
           "div",
-          { key: wordItem.ID },
+          { key: wordItem.storageID },
           [
             _c("word-item-panel", {
               attrs: { worditem: wordItem },
@@ -12695,8 +12683,6 @@ class WordlistController {
    */
   async initLists () {
     if (this.storageAdapter.available) {
-      // this.storageAdapter.openDatabase(this.initDBStructure.bind(this), this.uploadListsFromDB.bind(this))
-      // this.storageAdapter.openDatabase(this.initDBStructure.bind(this), this.deleteWordItemFromDB.bind(this))
       await this.uploadListsFromDB()
     }
   }
@@ -12720,24 +12706,17 @@ class WordlistController {
       WordlistController.evt.WORDLIST_UPDATED.pub(this.wordLists)     
     })
   }
-/*
-  deleteWordItemFromDB (event) {
-    const db = event.target.result
-    this.storageAdapter.delete(db, 'UserLists', ['userIDTest-lat-cepit'])
-  }
-*/
+
   /**
    * This method creates an empty wordlist and attaches to controller
    */
   createWordList (languageCode) {
     let wordList = new _lib_word_list__WEBPACK_IMPORTED_MODULE_2__["default"](this.userID, languageCode, this.storageAdapter)
     this.wordLists[languageCode] = wordList
-    // console.info('******************wordList created', languageCode, this.wordLists)  
   }
 
   removeWordList (languageCode) {
     delete this.wordLists[languageCode]
-    // console.info('******************delete wordlist', languageCode)
   }
 
   wordListExist (languageCode) {
@@ -12772,7 +12751,7 @@ class WordlistController {
    */
   async onHomonymReady (data) {
     console.info('********************onHomonymReady1', data)
-    await this.addToWordList({ homonym: data.homonym, type: 'homonym' })
+    await this.addToWordList({ homonym: data.homonym, type: 'shortHomonym' })
   }
 
   /**
@@ -13184,7 +13163,6 @@ __webpack_require__.r(__webpack_exports__);
 
 class WordItem {
   constructor (data) {
-    // console.info('********************WordItem', data)
     this.targetWord = data.targetWord
     this.languageCode = data.languageCode
     this.important = data.important || false
@@ -13193,17 +13171,6 @@ class WordItem {
 
     this.textQuoteSelector = data.textQuoteSelector ? data.textQuoteSelector : {}
     this.homonym = data.homonym ? data.homonym : {}
-
-    /*
-    this.targetWord = data.homonym.targetWord
-    this.languageID = data.homonym.languageID
-    this.languageCode = LMF.getLanguageCodeFromId(data.homonym.languageID)
-    this.homonym = data.homonym
-    this.important = data.important || false
-    this.currentSession = data.currentSession || false
-    this.textQuoteSelector = data.textSelector ? data.textSelector.textQuoteSelector : {}
-    this.ID = uuidv4()
-    */
   }
 
   get storageID () {
@@ -13230,15 +13197,8 @@ class WordItem {
     }
     return ''
   }
-/*
-  static uploadFromJSON (jsonObj) {
-    let homonym = Homonym.readObject(jsonObj.homonym)
-    return new WordItem(homonym)
-  }
-*/
   
   uploadHomonym (jsonObj) {
-    // console.info('******************uploadHomonym', jsonObj)
     let homonym = alpheios_data_models__WEBPACK_IMPORTED_MODULE_1__["Homonym"].readObject(jsonObj.homonym)
     this.homonym = homonym
   }
@@ -13271,8 +13231,6 @@ class WordItem {
   }
 
   convertTQSelectorToStorage () {
-    // console.info('**********************convertTQSelectorToStorage1', this)
-    // console.info('**********************convertTQSelectorToStorage2', this.textQuoteSelector)
     return {
       ID: this.storageID,
       listID: this.listID,
@@ -13327,10 +13285,7 @@ class WordItem {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return WordList; });
-/* harmony import */ var alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alpheios-data-models */ "alpheios-data-models");
-/* harmony import */ var alpheios_data_models__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _lib_word_item__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/lib/word-item */ "./lib/word-item.js");
-
+/* harmony import */ var _lib_word_item__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/lib/word-item */ "./lib/word-item.js");
 
 
 class WordList {
@@ -13365,84 +13320,56 @@ class WordList {
   get values () {
     return Object.values(this.items)
   }
-  
-  removeWordItemByWord (wordItem) {
-    if (this.contains(wordItem)) { 
-      let deleteID = this.getIDByTargetWord(wordItem)
-      this.wordItemsToDelete = [ this.storageID + '-' + this.items[deleteID].targetWord ]
-      delete this.items[deleteID]
-      this.removeFromStorage()
-    }
-  }
 
-  removeWordItemByID (ID) {
+  async removeWordItemByID (ID) {
     if (this.items[ID]) { 
-      this.wordItemsToDelete = [ this.storageID + '-' + this.items[ID].targetWord ]
+      await this.removeFromStorage({indexName: 'ID', value: this.items[ID].storageID, type: 'only' })
       delete this.items[ID]
-      this.removeFromStorage()
     }
   }
 
-  removeAllWordItems () {
-    this.wordItemsToDelete = this.values.map(item => this.storageID + '-' + item.targetWord)
-    let IDsforDelete = this.values.map(item => item.ID)
-    IDsforDelete.forEach(ID => {
-      delete this.items[ID]
-    })
-    this.removeFromStorage()
+  async removeAllWordItems () {
+    await this.removeFromStorage({indexName: 'listID', value: this.storageID, type: 'only' })
+    this.items = {}
   }
 
-  removeFromStorage () {
-    if (this.storageAdapter.available) {
-      this.storageAdapter.openDatabase(null, this.deleteStorageTransaction.bind(this))
+  async removeFromStorage (condition) {
+    for (let objectStoreData of Object.values(this.storageMap)) {
+      await this.storageAdapter.delete({
+        objectStoreName: objectStoreData.objectStoreName,
+        condition
+      })
     }
   }
 
-  deleteStorageTransaction (event) {
-    const db = event.target.result
-    let successCallBackF = this.upgradeQueue ? this.upgradeQueue.clearCurrentItem.bind(this.upgradeQueue) : null
-    this.storageAdapter.delete(db, 'UserLists', this.wordItemsToDelete.slice(), successCallBackF)
-    this.wordItemsToDelete = []
-  }
- 
   contains (wordItem) {
     return this.values.map(item => item.targetWord).includes(wordItem.targetWord)
   }
 
-  getIDByTargetWord (wordItem) {
-    let checkRes = this.values.filter(item => item.targetWord === wordItem.targetWord)
-    return checkRes ? checkRes[0].ID : null
-  }
-
-  makeImportantByID (wordItemID) {
+  async makeImportantByID (wordItemID) {
     this.items[wordItemID].makeImportant()
-    this.wordItemsToSave = [ this.items[wordItemID] ]
-    this.saveToStorage()
+    await this.pushWordItemPart([this.items[wordItemID]], 'common')
   }
 
-  removeImportantByID (wordItemID) {
+  async removeImportantByID (wordItemID) {
     this.items[wordItemID].removeImportant()
-    this.wordItemsToSave = [ this.items[wordItemID] ]
-    this.saveToStorage()
+    await this.pushWordItemPart([this.items[wordItemID]], 'common')
   }
 
-  makeAllImportant () {
+  async makeAllImportant () {
     this.values.forEach(wordItem => {
       wordItem.makeImportant()
     })
-    this.wordItemsToSave = this.values
-    this.saveToStorage()
+    await this.pushWordItemPart(this.values, 'common')
   }
 
-  removeAllImportant () {
+  async removeAllImportant () {
     this.values.forEach(wordItem => {
       wordItem.removeImportant()
     })
-    this.wordItemsToSave = this.values
-    this.saveToStorage()
+    await this.pushWordItemPart(this.values, 'common')
   }
 
-  // *****************************
   get storageMap () {
     return {
       common: {
@@ -13465,28 +13392,30 @@ class WordList {
   }
 
   async pushWordItem (data, type) {
-    // console.info('***************pushWordItem data', data)
-    let wordItem = new _lib_word_item__WEBPACK_IMPORTED_MODULE_1__["default"](data)
-    // console.info('***************pushWordItem wordItem', wordItem)
+    let wordItem = new _lib_word_item__WEBPACK_IMPORTED_MODULE_0__["default"](data)
     //check if worditem exists in the list
     if (!this.contains(wordItem)) {
-      await this.pushWordItemPart(wordItem, 'common')
+      await this.pushWordItemPart([wordItem], 'common')
     }
 
-    await this.pushWordItemPart(wordItem, type)
-    // console.info('****************pushWordItem final', type)
+    await this.pushWordItemPart([wordItem], type)
   }
 
-  async pushWordItemPart (wordItem, type) {
-    this.items[wordItem.storageID] = wordItem
-    if (this.storageMap[type]) {
-      let dataItem = wordItem[this.storageMap[type].convertMethodName]()
+  async pushWordItemPart (wordItems, type) {
+      if (this.storageMap[type]) {
+        let dataItems = []
+        for (let wordItem of wordItems) {
+          this.items[wordItem.storageID] = wordItem
+          let dataItem = wordItem[this.storageMap[type].convertMethodName]()
+          dataItems.push(dataItem)
+        }
 
-      await this.storageAdapter.set({
-        objectStoreName: this.storageMap[type].objectStoreName,
-        dataItem
-      })  
-    }
+        await this.storageAdapter.set({
+          objectStoreName: this.storageMap[type].objectStoreName,
+          dataItems: dataItems
+        })
+        
+      }
   }
 
   async uploadFromDB () {
@@ -13497,18 +13426,15 @@ class WordList {
     if (res.length === 0) {
       return false
     } else {
-      // console.info('*****************uploadFromDB get res common', res)
       for (let resWordItem of res) {
         let resKey = resWordItem.ID
-        let wordItem = new _lib_word_item__WEBPACK_IMPORTED_MODULE_1__["default"](resWordItem)
+        let wordItem = new _lib_word_item__WEBPACK_IMPORTED_MODULE_0__["default"](resWordItem)
 
         let resFullHomonym = await this.storageAdapter.get({
           objectStoreName: this.storageMap.fullHomonym.objectStoreName,
           condition: {indexName: 'ID', value: resKey, type: 'only' }
         })
         
-        // console.info('*****************uploadFromDB get res homonym', res)
-
         if (resFullHomonym.length > 0) {
           wordItem.uploadHomonym(resFullHomonym[0])
         } else {
@@ -13531,7 +13457,6 @@ class WordList {
 
         this.items[wordItem.storageID] = wordItem
       }
-      // console.info('*****************uploadFromDB get res final', this.items)
       return true
     }
   }
@@ -13644,55 +13569,48 @@ class IndexedDBAdapter extends _storage_storage_adapter_js__WEBPACK_IMPORTED_MOD
   }
 
   async set (data) {
-    // console.info('***************indexedDB set', data)
     let promiseOpenDB = await new Promise((resolve, reject) => {
       let request = this.indexedDB.open(this.dbData.dbName, this.dbData.dbVersion)
       request.onupgradeneeded = (event) => {
         const db = event.target.result
         this.dbData.createObjectStores(db)
-        // console.info('*****************indexedDB set in onupgradeneeded', db)
       }
       request.onsuccess = async (event) => {
         const db = event.target.result
         await this.putItem(db, data)
-        // console.info('*****************indexedDB set in onsuccess', db)
         resolve()
       }
       request.onerror = (event) => {
-        // console.info('*************indexedDB set in onerror', event.target)
         reject()
       }
     })
-    console.info('*****************final indexedDB set', data.dataItem)
     return promiseOpenDB
   }
 
   async putItem (db, data) {
-    // console.info('********************putItem', data.objectStoreName, data)
     let promisePut = await new Promise((resolve, reject) => {
       const transaction = db.transaction([data.objectStoreName], 'readwrite')
       transaction.onerror = (event) => {
         reject()
       }
       const objectStore = transaction.objectStore(data.objectStoreName)
-      const requestPut = objectStore.put(data.dataItem)
-      requestPut.onsuccess = (event) => {
-        // console.info('**********************requestPut success', data.dataItem)
-        resolve()
-      }
-      requestPut.onerror = (event) => {
-        // console.info('**********************requestPut error', event.target)
-        reject()
+      for (let dataItem of data.dataItems) {
+        const requestPut = objectStore.put(dataItem)
+        requestPut.onsuccess = (event) => {
+          resolve()
+        }
+        requestPut.onerror = (event) => {
+          reject()
+        }
       }
     })
-    // console.info('*****************final indexedDB putItem', data.dataItem)
     return promisePut
   }
 
   async get (data) {
     let promiseOpenDB = await new Promise((resolve, reject) => {
       let request = this.indexedDB.open(this.dbData.dbName, this.dbData.dbVersion)
-      request.onsuccess = async (event) => {
+      request.onsuccess = (event) => {
         const db = event.target.result
         const transaction = db.transaction([data.objectStoreName])
         const objectStore = transaction.objectStore(data.objectStoreName)
@@ -13706,138 +13624,49 @@ class IndexedDBAdapter extends _storage_storage_adapter_js__WEBPACK_IMPORTED_MOD
         }
 
         requestOpenCursor.onerror = (event) => {
-          console.info('****************cursor with condition - some error', event.target)
           reject()
         }        
       }
       request.onerror = (event) => {
-        // console.info('*************indexedDB set in onerror', event.target)
         reject()
       }
     })
-    // console.info('*****************final indexedDB get', data.condition)
     return promiseOpenDB
   }
-  /**
-   * This method create a request for put data to the selected ObjectStore
-   * and executes onComplete callback on success
-   * It creates transaction with readwrite access (onComplete callback would be executes on transaction finalize)
-   * And then it goes through data Array and executes put request (put allows adding data and rewriting existing data by keyValue)
-   */
-  set_backup (db, objectStoreName, data, onCompleteF) {
-    const transaction = db.transaction([objectStoreName], 'readwrite')
-    transaction.oncomplete = (event) => {
-      // console.info('**************set data successfull')
-      if (onCompleteF) {
-        onCompleteF()
+
+  async delete (data) {
+    let promiseOpenDB = await new Promise((resolve, reject) => {
+      let request = this.indexedDB.open(this.dbData.dbName, this.dbData.dbVersion)
+
+      request.onsuccess = (event) => {
+        const db = event.target.result
+        const transaction = db.transaction([data.objectStoreName], 'readwrite')
+        const objectStore = transaction.objectStore(data.objectStoreName)
+
+        const index = objectStore.index(data.condition.indexName)
+        const keyRange = this.IDBKeyRange[data.condition.type](data.condition.value)
+
+        let requestOpenCursor = index.openCursor(keyRange)
+        requestOpenCursor.onsuccess = (event) => {
+          const cursor = event.target.result
+          if (cursor) {
+            const requestDelete = cursor.delete()
+            requestDelete.onerror = (event) => {
+              reject()
+            }
+            cursor.continue()
+          } else {
+            resolve()
+          }
+        }
       }
-    }
-    transaction.onerror = (event) => {
-        console.info('**************testData onerror')
-    }
-    const objectStore = transaction.objectStore(objectStoreName);
-    data.forEach(dataItem => {
-      const requestPut = objectStore.put(dataItem)
-      requestPut.onsuccess = (event) => {
-        // console.info('****************wordlist added successful', event.target.result)
-      }
-      requestPut.onerror = (event) => {
-        console.info('****************wordlist error with adding data', event.target)
-      }
-    })
-  }
 
-  /**
-   * This method creates a request for getting data from table
-   * it creates transaction and executes one of the methods - getWithCondition or getWithoutConditions
-   * (depending on passed condition argument)
-   * callback function is passed to final get request
-   */
-  get_backup (db, objectStoreName, condition, callbackF) {
-    const transaction = db.transaction([objectStoreName])
-    const objectStore = transaction.objectStore(objectStoreName)
-
-    if (this.hasProperCondition(condition)) {
-      this.getWithCondition(objectStore, condition, callbackF)
-    } else {
-      console.info('There is not enough information for creating index condition')
-      this.getWithoutConditions(objectStore, callbackF)
-    }
-  }
-
-    /**
-   * This method checks if condition is correct
-   * I have limited here for 'only' compare method because I am using only it, but it could be upgraded later
-   */
-  hasProperCondition_backup (condition) {
-    const allowedTypes = [ 'only' ]
-    return condition.indexName && condition.value && condition.type && allowedTypes.includes(condition.type)
-  }
-
-  /**
-   * This method gets all data from the table without any filtering
-   * I don't use this method in the code, but it could be useful later
-   */
-  getWithoutConditions_backup (objectStore, callbackF) {
-    const requestOpenCursor = objectStore.openCursor(null)
-    requestOpenCursor.onsuccess = (event) => {
-      callbackF(event.target.result)
-    }
-    requestOpenCursor.onerror = (event) => {
-      console.info('****************cursor without condition - some error', event.target)
-    }
-  }
-
-  /**
-   * This method gets data with filtering condition
-   * I use IDBKeyRange for filtering, so it looks like this for example
-   *     this.IDBKeyRange.only('userIDTest-lat')
-   * where IDBKeyRange is defined with userIDLangCode index
-   * so it gets all wordItems for latin wordList for the current user
-   * and success callback it passes retrieved data using callback function, for example WordlistController.parseResultToWordList
-   */
-  getWithCondition_backup (objectStore, condition, callbackF) {
-    const index = objectStore.index(condition.indexName)
-    const keyRange = this.IDBKeyRange[condition.type](condition.value)
-
-    const requestOpenCursor = index.getAll(keyRange, 0)
-    requestOpenCursor.onsuccess = (event) => {
-      callbackF(event.target.result)
-    }
-
-    requestOpenCursor.onerror = (event) => {
-      console.info('****************cursor with condition - some error', event.target)
-    }
-  }
-
-  /**
-   * This method create a request for delete data from the selected ObjectStore
-   * and executes onComplete callback on success
-   * It creates transaction with readwrire access (onComplete callback would be executes on transaction finalize)
-   * And then it goes through data Array and executes put request (put allows adding data and rewriting existing data by keyValue)
-   */
-  delete (db, objectStoreName, data, onCompleteF) {
-    console.info('*****************delete method', data)
-    const transaction = db.transaction([objectStoreName], 'readwrite')
-    transaction.oncomplete = (event) => {
-      console.info('**************delete data successfull')
-      if (onCompleteF) {
-        onCompleteF()
-      }
-    }
-    transaction.onerror = (event) => {
-        console.info('**************testData onerror')
-    }
-    const objectStore = transaction.objectStore(objectStoreName);
-    data.forEach(dataItem => {
-      const requestPut = objectStore.delete(dataItem)
-      requestPut.onsuccess = (event) => {
-        console.info('****************worditem was deleted', event.target.result)
-      }
-      requestPut.onerror = (event) => {
-        console.info('****************wordlist error with deleting data', event.target)
+      request.onerror = (event) => {
+        reject()
       }
     })
+
+    return promiseOpenDB
   }
 }
 

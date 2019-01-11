@@ -27,8 +27,6 @@ export default class WordlistController {
    */
   async initLists () {
     if (this.storageAdapter.available) {
-      // this.storageAdapter.openDatabase(this.initDBStructure.bind(this), this.uploadListsFromDB.bind(this))
-      // this.storageAdapter.openDatabase(this.initDBStructure.bind(this), this.deleteWordItemFromDB.bind(this))
       await this.uploadListsFromDB()
     }
   }
@@ -52,24 +50,17 @@ export default class WordlistController {
       WordlistController.evt.WORDLIST_UPDATED.pub(this.wordLists)     
     })
   }
-/*
-  deleteWordItemFromDB (event) {
-    const db = event.target.result
-    this.storageAdapter.delete(db, 'UserLists', ['userIDTest-lat-cepit'])
-  }
-*/
+
   /**
    * This method creates an empty wordlist and attaches to controller
    */
   createWordList (languageCode) {
     let wordList = new WordList(this.userID, languageCode, this.storageAdapter)
     this.wordLists[languageCode] = wordList
-    // console.info('******************wordList created', languageCode, this.wordLists)  
   }
 
   removeWordList (languageCode) {
     delete this.wordLists[languageCode]
-    // console.info('******************delete wordlist', languageCode)
   }
 
   wordListExist (languageCode) {
@@ -104,7 +95,7 @@ export default class WordlistController {
    */
   async onHomonymReady (data) {
     console.info('********************onHomonymReady1', data)
-    await this.addToWordList({ homonym: data.homonym, type: 'homonym' })
+    await this.addToWordList({ homonym: data.homonym, type: 'shortHomonym' })
   }
 
   /**

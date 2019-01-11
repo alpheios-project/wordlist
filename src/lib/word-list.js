@@ -1,4 +1,3 @@
-import { LanguageModelFactory as LMF } from 'alpheios-data-models'
 import WordItem from '@/lib/word-item'
 
 export default class WordList {
@@ -33,84 +32,56 @@ export default class WordList {
   get values () {
     return Object.values(this.items)
   }
-  
-  removeWordItemByWord (wordItem) {
-    if (this.contains(wordItem)) { 
-      let deleteID = this.getIDByTargetWord(wordItem)
-      this.wordItemsToDelete = [ this.storageID + '-' + this.items[deleteID].targetWord ]
-      delete this.items[deleteID]
-      this.removeFromStorage()
-    }
-  }
 
-  removeWordItemByID (ID) {
+  async removeWordItemByID (ID) {
     if (this.items[ID]) { 
-      this.wordItemsToDelete = [ this.storageID + '-' + this.items[ID].targetWord ]
+      await this.removeFromStorage({indexName: 'ID', value: this.items[ID].storageID, type: 'only' })
       delete this.items[ID]
-      this.removeFromStorage()
     }
   }
 
-  removeAllWordItems () {
-    this.wordItemsToDelete = this.values.map(item => this.storageID + '-' + item.targetWord)
-    let IDsforDelete = this.values.map(item => item.ID)
-    IDsforDelete.forEach(ID => {
-      delete this.items[ID]
-    })
-    this.removeFromStorage()
+  async removeAllWordItems () {
+    await this.removeFromStorage({indexName: 'listID', value: this.storageID, type: 'only' })
+    this.items = {}
   }
 
-  removeFromStorage () {
-    if (this.storageAdapter.available) {
-      this.storageAdapter.openDatabase(null, this.deleteStorageTransaction.bind(this))
+  async removeFromStorage (condition) {
+    for (let objectStoreData of Object.values(this.storageMap)) {
+      await this.storageAdapter.delete({
+        objectStoreName: objectStoreData.objectStoreName,
+        condition
+      })
     }
   }
 
-  deleteStorageTransaction (event) {
-    const db = event.target.result
-    let successCallBackF = this.upgradeQueue ? this.upgradeQueue.clearCurrentItem.bind(this.upgradeQueue) : null
-    this.storageAdapter.delete(db, 'UserLists', this.wordItemsToDelete.slice(), successCallBackF)
-    this.wordItemsToDelete = []
-  }
- 
   contains (wordItem) {
     return this.values.map(item => item.targetWord).includes(wordItem.targetWord)
   }
 
-  getIDByTargetWord (wordItem) {
-    let checkRes = this.values.filter(item => item.targetWord === wordItem.targetWord)
-    return checkRes ? checkRes[0].ID : null
-  }
-
-  makeImportantByID (wordItemID) {
+  async makeImportantByID (wordItemID) {
     this.items[wordItemID].makeImportant()
-    this.wordItemsToSave = [ this.items[wordItemID] ]
-    this.saveToStorage()
+    await this.pushWordItemPart([this.items[wordItemID]], 'common')
   }
 
-  removeImportantByID (wordItemID) {
+  async removeImportantByID (wordItemID) {
     this.items[wordItemID].removeImportant()
-    this.wordItemsToSave = [ this.items[wordItemID] ]
-    this.saveToStorage()
+    await this.pushWordItemPart([this.items[wordItemID]], 'common')
   }
 
-  makeAllImportant () {
+  async makeAllImportant () {
     this.values.forEach(wordItem => {
       wordItem.makeImportant()
     })
-    this.wordItemsToSave = this.values
-    this.saveToStorage()
+    await this.pushWordItemPart(this.values, 'common')
   }
 
-  removeAllImportant () {
+  async removeAllImportant () {
     this.values.forEach(wordItem => {
       wordItem.removeImportant()
     })
-    this.wordItemsToSave = this.values
-    this.saveToStorage()
+    await this.pushWordItemPart(this.values, 'common')
   }
 
-  // *****************************
   get storageMap () {
     return {
       common: {
@@ -133,28 +104,30 @@ export default class WordList {
   }
 
   async pushWordItem (data, type) {
-    // console.info('***************pushWordItem data', data)
     let wordItem = new WordItem(data)
-    // console.info('***************pushWordItem wordItem', wordItem)
     //check if worditem exists in the list
     if (!this.contains(wordItem)) {
-      await this.pushWordItemPart(wordItem, 'common')
+      await this.pushWordItemPart([wordItem], 'common')
     }
 
-    await this.pushWordItemPart(wordItem, type)
-    // console.info('****************pushWordItem final', type)
+    await this.pushWordItemPart([wordItem], type)
   }
 
-  async pushWordItemPart (wordItem, type) {
-    this.items[wordItem.storageID] = wordItem
-    if (this.storageMap[type]) {
-      let dataItem = wordItem[this.storageMap[type].convertMethodName]()
+  async pushWordItemPart (wordItems, type) {
+      if (this.storageMap[type]) {
+        let dataItems = []
+        for (let wordItem of wordItems) {
+          this.items[wordItem.storageID] = wordItem
+          let dataItem = wordItem[this.storageMap[type].convertMethodName]()
+          dataItems.push(dataItem)
+        }
 
-      await this.storageAdapter.set({
-        objectStoreName: this.storageMap[type].objectStoreName,
-        dataItem
-      })  
-    }
+        await this.storageAdapter.set({
+          objectStoreName: this.storageMap[type].objectStoreName,
+          dataItems: dataItems
+        })
+        
+      }
   }
 
   async uploadFromDB () {
@@ -165,7 +138,6 @@ export default class WordList {
     if (res.length === 0) {
       return false
     } else {
-      // console.info('*****************uploadFromDB get res common', res)
       for (let resWordItem of res) {
         let resKey = resWordItem.ID
         let wordItem = new WordItem(resWordItem)
@@ -175,8 +147,6 @@ export default class WordList {
           condition: {indexName: 'ID', value: resKey, type: 'only' }
         })
         
-        // console.info('*****************uploadFromDB get res homonym', res)
-
         if (resFullHomonym.length > 0) {
           wordItem.uploadHomonym(resFullHomonym[0])
         } else {
@@ -199,7 +169,6 @@ export default class WordList {
 
         this.items[wordItem.storageID] = wordItem
       }
-      // console.info('*****************uploadFromDB get res final', this.items)
       return true
     }
   }

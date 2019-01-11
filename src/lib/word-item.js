@@ -4,7 +4,6 @@ import WordlistController from '../controllers/wordlist-controller';
 
 export default class WordItem {
   constructor (data) {
-    // console.info('********************WordItem', data)
     this.targetWord = data.targetWord
     this.languageCode = data.languageCode
     this.important = data.important || false
@@ -13,17 +12,6 @@ export default class WordItem {
 
     this.textQuoteSelector = data.textQuoteSelector ? data.textQuoteSelector : {}
     this.homonym = data.homonym ? data.homonym : {}
-
-    /*
-    this.targetWord = data.homonym.targetWord
-    this.languageID = data.homonym.languageID
-    this.languageCode = LMF.getLanguageCodeFromId(data.homonym.languageID)
-    this.homonym = data.homonym
-    this.important = data.important || false
-    this.currentSession = data.currentSession || false
-    this.textQuoteSelector = data.textSelector ? data.textSelector.textQuoteSelector : {}
-    this.ID = uuidv4()
-    */
   }
 
   get storageID () {
@@ -50,15 +38,8 @@ export default class WordItem {
     }
     return ''
   }
-/*
-  static uploadFromJSON (jsonObj) {
-    let homonym = Homonym.readObject(jsonObj.homonym)
-    return new WordItem(homonym)
-  }
-*/
   
   uploadHomonym (jsonObj) {
-    // console.info('******************uploadHomonym', jsonObj)
     let homonym = Homonym.readObject(jsonObj.homonym)
     this.homonym = homonym
   }
@@ -91,8 +72,6 @@ export default class WordItem {
   }
 
   convertTQSelectorToStorage () {
-    // console.info('**********************convertTQSelectorToStorage1', this)
-    // console.info('**********************convertTQSelectorToStorage2', this.textQuoteSelector)
     return {
       ID: this.storageID,
       listID: this.listID,

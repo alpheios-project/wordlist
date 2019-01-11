@@ -1,9 +1,6 @@
 import { PsEvent, LanguageModelFactory as LMF, Constants, Lemma, Inflection, DefinitionSet, Lexeme, Homonym } from 'alpheios-data-models'
-import Vue from 'vue/dist/vue' // Vue in a runtime + compiler configuration
 import WordList from '@/lib/word-list'
-import WordItem from '@/lib/word-item'
 import IndexedDBAdapter from '@/storage/indexed-db-adapter'
-import UpgradeQueue from '@/controllers/upgrade-queue'
 
 export default class WordlistController {
   constructor (userID) {
@@ -11,7 +8,6 @@ export default class WordlistController {
     this.wordLists = {}
 
     this.storageAdapter = new IndexedDBAdapter()
-    this.upgradeQueue = new UpgradeQueue()
   }
 
   get availableLangs () {

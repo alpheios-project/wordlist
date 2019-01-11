@@ -66,12 +66,16 @@ export default class IndexedDBAdapter extends StorageAdapter {
         reject()
       }
       const objectStore = transaction.objectStore(data.objectStoreName)
+      let objectsDone = data.dataItems.length
       for (let dataItem of data.dataItems) {
         const requestPut = objectStore.put(dataItem)
-        requestPut.onsuccess = (event) => {
-          resolve()
+        requestPut.onsuccess = () => {
+          objectsDone = objectsDone - 1
+          if (objectsDone === 0) {
+            resolve()
+          }
         }
-        requestPut.onerror = (event) => {
+        requestPut.onerror = () => {
           reject()
         }
       }

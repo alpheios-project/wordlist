@@ -12581,61 +12581,6 @@ module.exports = g;
 
 /***/ }),
 
-/***/ "./controllers/upgrade-queue.js":
-/*!**************************************!*\
-  !*** ./controllers/upgrade-queue.js ***!
-  \**************************************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return UpgradeQueue; });
-class UpgradeQueue {
-  constructor () {
-    this.count = 0
-    this.targetWords = []
-
-    this.currentWord = null
-    this.methods = []
-  }
-
-  includeHomonym (homonym) {
-    return this.targetWords.includes(homonym.targetWord)
-  }
-
-  addToQueue (homonym) {
-    this.count = this.count + 1
-    this.targetWords.push(homonym.targetWord)
-  }
-
-  addToMetods (method, args) {
-    this.methods.push({ 
-      method: method,
-      args: args 
-    })
-  }
-
-  setCurrentWord (wordItem) {
-    this.currentWord = wordItem.targetWord
-  }
-
-  clearCurrentItem () {
-    this.count = this.count - 1
-    // console.info('*********************clearCurrentItem before', this.currentWord, this.targetWords)
-    this.targetWords = this.targetWords.filter(item => item != this.currentWord)
-    this.currentWord = null
-    // console.info('*********************clearCurrentItem after', this.currentWord, this.targetWords)
-
-    if (this.methods.length > 0) {
-      this.methods[0].method(...this.methods[0].args)
-      this.methods.splice(0, 1)
-    }
-  }
-}
-
-/***/ }),
-
 /***/ "./controllers/wordlist-controller.js":
 /*!********************************************!*\
   !*** ./controllers/wordlist-controller.js ***!
@@ -12648,15 +12593,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return WordlistController; });
 /* harmony import */ var alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alpheios-data-models */ "alpheios-data-models");
 /* harmony import */ var alpheios_data_models__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var vue_dist_vue__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! vue/dist/vue */ "../node_modules/vue/dist/vue.js");
-/* harmony import */ var vue_dist_vue__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(vue_dist_vue__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _lib_word_list__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/lib/word-list */ "./lib/word-list.js");
-/* harmony import */ var _lib_word_item__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @/lib/word-item */ "./lib/word-item.js");
-/* harmony import */ var _storage_indexed_db_adapter__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @/storage/indexed-db-adapter */ "./storage/indexed-db-adapter.js");
-/* harmony import */ var _controllers_upgrade_queue__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @/controllers/upgrade-queue */ "./controllers/upgrade-queue.js");
-
- // Vue in a runtime + compiler configuration
-
+/* harmony import */ var _lib_word_list__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/lib/word-list */ "./lib/word-list.js");
+/* harmony import */ var _storage_indexed_db_adapter__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/storage/indexed-db-adapter */ "./storage/indexed-db-adapter.js");
 
 
 
@@ -12666,8 +12604,7 @@ class WordlistController {
     this.userID = userID
     this.wordLists = {}
 
-    this.storageAdapter = new _storage_indexed_db_adapter__WEBPACK_IMPORTED_MODULE_4__["default"]()
-    this.upgradeQueue = new _controllers_upgrade_queue__WEBPACK_IMPORTED_MODULE_5__["default"]()
+    this.storageAdapter = new _storage_indexed_db_adapter__WEBPACK_IMPORTED_MODULE_2__["default"]()
   }
 
   get availableLangs () {
@@ -12711,7 +12648,7 @@ class WordlistController {
    * This method creates an empty wordlist and attaches to controller
    */
   createWordList (languageCode) {
-    let wordList = new _lib_word_list__WEBPACK_IMPORTED_MODULE_2__["default"](this.userID, languageCode, this.storageAdapter)
+    let wordList = new _lib_word_list__WEBPACK_IMPORTED_MODULE_1__["default"](this.userID, languageCode, this.storageAdapter)
     this.wordLists[languageCode] = wordList
   }
 
@@ -13594,12 +13531,16 @@ class IndexedDBAdapter extends _storage_storage_adapter_js__WEBPACK_IMPORTED_MOD
         reject()
       }
       const objectStore = transaction.objectStore(data.objectStoreName)
+      let objectsDone = data.dataItems.length
       for (let dataItem of data.dataItems) {
         const requestPut = objectStore.put(dataItem)
-        requestPut.onsuccess = (event) => {
-          resolve()
+        requestPut.onsuccess = () => {
+          objectsDone = objectsDone - 1
+          if (objectsDone === 0) {
+            resolve()
+          }
         }
-        requestPut.onerror = (event) => {
+        requestPut.onerror = () => {
           reject()
         }
       }

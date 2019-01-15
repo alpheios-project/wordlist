@@ -4,29 +4,26 @@ import WordList from '@/lib/word-list'
 export default class WordlistController {
   /**
    * @param {String[]} availableLangs language codes
-   * @param {UserDataManager} dataManager the user data manager
    */
   constructor (availableLangs,dataManager) {
     this.wordLists = {}
-    this.dataManager = dataManager
     this.availableLangs = availableLangs
   }
 
   /**
    * Asynchronously initialize the word lists managed by this controller
+   * @param {UserDataManager} dataManager a user data manager to retrieve initial wordlist data from
+   *  // TODO may need a way to process a queue of pending words here e.g. if the wordlist controller isn't
+    * // activated until after number of lookups have already occurred
    * Emits a WORDLIST_UPDATED event when the wordlists are available
    */
-  async initLists () {
+  async initLists (dataManager) {
     this.availableLangs.forEach(async (languageCode) => {
-      let wordItems = await this.dataManager.query(WordItem.constructor, {languageCode: languageCode})
+      let wordItems = await dataManager.query(WordItem.constructor, {languageCode: languageCode})
       this.wordLists[languageCode] = new WordList(languageCode,wordItems)
     }
     WordlistController.evt.WORDLIST_UPDATED.pub(this.wordLists)
-
-    // TODO may need a way to process a queue of pending words here e.g. if the wordlist controller isn't
-    // activated until after number of lookups have already occurred
   }
-
 
   /**
    * Get the wordlist for a specific language code

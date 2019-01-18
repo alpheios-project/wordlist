@@ -5,7 +5,7 @@ export default class WordlistController {
   /**
    * @param {String[]} availableLangs language codes
    */
-  constructor (availableLangs,dataManager) {
+  constructor (availableLangs) {
     this.wordLists = {}
     this.availableLangs = availableLangs
   }

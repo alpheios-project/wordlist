@@ -4,7 +4,8 @@ export default class WordItem {
     this.targetWord = data.targetWord
     this.languageCode = data.languageCode
     this.important = data.important || false
-    this.currentSession = data.currentSession || false
+    // default to created in the context of a session
+    this.currentSession = data.currentSession || true
     this.context = data.context || []
     this.homonym = data.homonym ? data.homonym : {}
   }

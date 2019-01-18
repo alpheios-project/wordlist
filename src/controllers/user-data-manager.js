@@ -6,8 +6,9 @@ export default class UserDataManager {
 
   constructor (userID) {
     this.userID = userID
-    WordlistController.evt.WORDITEM_UPDATED.sub(UserDataController.update.bind(UserDataController))
-    WordlistController.evt.WORDITEM_DELETED.sub(UserDataController.delete.bind(UserDataController))
+    WordlistController.evt.WORDITEM_UPDATED.sub(UserDataController.update.bind(this))
+    WordlistController.evt.WORDITEM_DELETED.sub(UserDataController.delete.bind(this))
+    WordlistController.evt.WORDLIST_DELETED.sub(UserDataController.deleteMany.bind(this))
   }
 
   _localStorageAdapter(dataType) {
@@ -23,49 +24,64 @@ export default class UserDataManager {
   /**
    * Update data in the user data stores
    * @param {Object} data object adhering to
-   *                      { model: the data model object to be updated}
-   *                        needsUpdate: a list of properties requiring update
-   *                                     (if not supplied the full update is updated)
+   *                      { dataObj: the data model object to be updated}
+   *                        params: datatype specific parameters
    *                      }
    * @return {Boolean} true if update succeeded false if not
    */
   async update(data) {
-    let ls = this._localStorageAdapter(data.model.constructor.name)
-    let rs = this._remoteStorageAdapter(data.model.constructor.name)
-    let updatedLocal = await ls.update(data.model,data.needsUpdate)
-    let updatedRemote = await rs.update(data.model,data.needsUpdate)
+    let ls = this._localStorageAdapter(data.dataObj.constructor.name)
+    let rs = this._remoteStorageAdapter(data.dataObj.constructor.name)
+    let updatedLocal = await ls.update(data.dataObj,data.params)
+    let updatedRemote = await rs.update(data.dataObj,data.params)
     // TODO error handling upon update failure
     return updatedLocal && updatedRemote
   }
 
   /**
-   * Delete data from the user data stores
+   * Delete a single data model object from the user data stores
    * @param {Object} data object adhering to
-   *                      { model: the data model object to be updated} }
+   *                      { dataObj: the data model object to be updated} }
    * @return {Boolean} true if delete succeeded false if not
    */
   async delete(data) {
-    let ls = this._localStorageAdapter(data.model.constructor.name)
-    let rs = this._remoteStorageAdapter(data.model.constructor.name)
-    let deletedLocal = await ls.deleteOne(data.model)
-    let deletedRemote = await rs.deleteOne(data.model)
+    let ls = this._localStorageAdapter(data.dataObj.constructor.name)
+    let rs = this._remoteStorageAdapter(data.dataObj.constructor.name)
+    let deletedLocal = await ls.deleteOne(data.dataObj)
+    let deletedRemote = await rs.deleteOne(data.dataObj)
     // TODO error handling upon delete failure
     return deletedLocal && deletedRemote
   }
 
   /**
+   * Delete a set objects from the data store
+   * @param {Object} data object adhering to
+   *                      { dataType: the name of the datatype to delete,
+   *                        params: parameters to identify items to be deleted
+   *                      }
+   */
+  async deleteMany(data) {
+    let remoteAdapter =  this._remoteStorageAdapter(data.dataType)
+    let localAdapter = this._localStorageAdapter(data.dataType)
+    localAdapter.deleteMany(data.params)
+    remoteAdapter.deleteMany(data.params)
+  }
+
+  /**
    * Query the user data stores
-   * @param {String} dataType the name of the datatype to query
-   * @param {Object} params query parameters (datatype specific)
+   * @param {Object} data object adhering to
+   *                      { dataType: the name of the datatype to query
+   *                        params: query parameters to
+   *                      }
    * @return {Object[]} an array of data items
    */
-  async query(dataType,params) {
+  async query(data) {
     // query queries both the remote and local stores and merges
     // the results
-    let remoteAdapter =  this._remoteStorageAdapter(dataType)
-    let localAdapter = this._localStorageAdapter(dataType)
-    let remoteDataItems = await remoteAdapter.query(params)
-    let localDataItems = await localAdapter.query(params)
+    let remoteAdapter =  this._remoteStorageAdapter(data.dataType)
+    let localAdapter = this._localStorageAdapter(data.dataType)
+    let remoteDataItems = await remoteAdapter.query(data.params)
+    let localDataItems = await localAdapter.query(data.params)
 
     // if we have any remoteData items then we are going to
     // reset the local store from the remoteData, adding back in any

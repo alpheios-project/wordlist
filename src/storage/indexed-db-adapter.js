@@ -19,17 +19,17 @@ export default class IndexedDBAdapter {
    * @return {Boolean} true if create succeeded false if not
    */
   async create(data) {
-    let storageMap = this.dbDriver.storageMap
+    let segments = this.dbDriver.segments
     // iterate through the declared segmentation of the object
     // and store accordingly
     // TODO we need transaction handling here
-    Object.keys(storageMap).forEach(property) {
-      let updated = await this.update(data, property)
+    segments.forEach(segment => {
+      let updated = await this.update(data, {segment: segment})
       if (! updated) {
         break
         // TODO rollback?
       }
-    }
+    })
     return updated > 0
   }
 
@@ -41,8 +41,11 @@ export default class IndexedDBAdapter {
    *
    */
   async deleteMany(params) {
-    let deleteCondition = this.dbDriver.deleteListCondition(params)
-    return await this._deleteItem(deleteCondition)
+    for (let segment of this.dbDriver.segments) {
+      let q = dbDriver.segmentDeleteManyQuery(segment,params)
+      await this._deleteFromStore(q)
+    }
+    // TODO error handling
   }
 
   /**
@@ -52,37 +55,31 @@ export default class IndexedDBAdapter {
    *
    */
   async deleteOne(data) {
-    let deleteCondition = this.dbDriver.deleteOneCondition(data)
-    return await this._deleteItem(deleteCondition)
+    for (let segment of this.dbDriver.segments) {
+      let q = dbDriver.segmentDeleteQuery(segment,data)
+      await this._deleteFromStore(q)
+    }
+    // TODO error handling
   }
 
   /**
    * Update a data item, creating it if it doesn't exist
    * @param {Object} data the data model object to update
-   * @param {String} segment if only a particular segment needs to be updated,
-   *                         it can be specified here
+   * @param {Object} params update params
+   *                  { segment: name of segment needing update }
    * @return {Boolean} true if update succeeded false if not
    */
-  async update (data, segment) {
-    let storageMap = this.dbDriver.storageMap
-    let segments = [segment]
+  async update (data, params) {
+    let segments = [params.segment]
     let result
+    // if we weren't asked to update a specific segment, update them all
     if (segments.length === 0)  {
-      segments = Object.values(this.dbDriver.storageMap)
+      segments = this.dbDriver.segments
     }
     for (let s of segements) {
-      let dataItems = []
-      let resDataItem = dbDriver[storageMap[property].convertMethodName](data)
-      if (!Array.isArray(resDataItem)) {
-        dataItems.push(resDataItem)
-      } else {
-        dataItems = dataItems.concat(resDataItem)
-      }
+      let q = this.dbDriver.updateSegmentQuery(s,data)
       try {
-        return await this._set({
-          objectStoreName: storageMap[property].objectStoreName,
-          dataItems: dataItems
-        })
+        return await this._set(q)
       } catch(error e) {
         // TODO need transaction rollback handling here if mulitple segments?
         return false
@@ -98,23 +95,17 @@ export default class IndexedDBAdapter {
    */
   async query(params) {
     let listQuery = this.dbDriver.listQuery(params)
-    let storageMap = this.dbDriver.storageMap
     let res = await this._getFromStore(listQuery)
     let items = []
     if (res.length > 0) {
       for (let item of res) {
-        let modelObj = this.dbDriver.create(item)
-        Object.keys(storageMap).forEach(property) {
-          if (storageMap[property].uploadMethodName) {
-            let res = await this._getFromStore({
-              objectStoreName: storageMap[property].objectStoreName,
-              condition: {indexName: 'listID', value: id, type: 'only' }
-            })
-            if (res.length > 0) {
-              for (let item of res) {
-                dbDriver[storageMap[property].uploadMethodName](modelObj,item)
-              }
-            }
+        let modelObj = this.dbDriver.load(item)
+        let segments = this.dbDriver.segments
+        segments.foreach(segment) {
+          let query = this.dbDriver.segmentQuery(segment,modelObj)
+          let res = await this._getFromStore(query)
+          if (res.length > 0) {
+            this.dbDriver.loadSegment(segment,modelObj,res[0])
           }
         }
         items.push(modelObj)
@@ -158,8 +149,8 @@ export default class IndexedDBAdapter {
    */
   _createObjectStores (db, upgradeTransaction) {
     let objectStores = this.dbDriver.objectStores
-    Object.keys(objectStores).forEach(objectStoreName => {
-      const objectStoreStructure = this.dbDriver.objectStores[objectStoreName]
+    objectStores.forEach(objectStoreName => {
+      const objectStoreStructure = this.dbDriver[objectStoreName]
 
       let objectStore
       if (!db.objectStoreNames.contains(objectStoreName)) {
@@ -263,20 +254,6 @@ export default class IndexedDBAdapter {
       }
     })
     return promiseOpenDB
-  }
-
-  /**
-   * Internal method to delete an item from the database
-   * @param {Object} condition query parameters to identify the item to be deleted
-   * @return {Promise} resolves to the number of deleted items
-   */
-  async _deleteItem (condition) {
-    for (let objectStoreData of Object.values(this.dbDriver.storageMap)) {
-      await this._deleteFromStore({
-        objectStoreName: objectStoreData.objectStoreName,
-        condition: condition
-      })
-    }
   }
 
   /**

@@ -3,11 +3,17 @@ import WordList from '@/lib/word-list'
 
 export default class WordlistController {
   /**
+   * @constructor
    * @param {String[]} availableLangs language codes
+   * @param {PSEvent[]} events events that the controller can subscribe to
    */
-  constructor (availableLangs,dataManager) {
+  constructor (availableLangs,events) {
     this.wordLists = {}
     this.availableLangs = availableLangs
+    events.TEXT_QUOTE_SELECTOR_RECEIVED.sub(this.onTextQuoteSelectorRecieved.bind(this))
+    events.LEXICAL_QUERY_COMPLETE.sub(this.onHomonymReady.bind(this))
+    events.DEFS_READY.sub(uiController.wordlistC.onDefinitionsReady.bind(uiController.wordlistC))
+    events.LEMMA_TRANSL_READY.sub(uiController.wordlistC.onLemmaTranslationsReady.bind(uiController.wordlistC))
   }
 
   /**
@@ -19,8 +25,10 @@ export default class WordlistController {
    */
   async initLists (dataManager) {
     this.availableLangs.forEach(async (languageCode) => {
-      let wordItems = await dataManager.query(WordItem.constructor, {languageCode: languageCode})
-      this.wordLists[languageCode] = new WordList(languageCode,wordItems)
+      let wordItems = await dataManager.query({dataType: WordItem.constructor.name, params: {languageCode: languageCode}})
+      if (wordItems.length > 0) {
+        this.wordLists[languageCode] = new WordList(languageCode,wordItems)
+      }
     }
     WordlistController.evt.WORDLIST_UPDATED.pub(this.wordLists)
   }
@@ -44,16 +52,12 @@ export default class WordlistController {
   /**
    * Remove a wordlist for a specific language code and all if its items
    * @param {String} languageCode the language for the list
-   * Emits a WORDLIST_UPDATED event
-   * Emits a WORDITEM_DELETED event for every item in the list that was deleted
+   * Emits a WORDLIST_DELETED event
    */
   removeWordList (languageCode) {
     let toDelete = this.wordLists[languageCode]
     delete this.wordLists[languageCode]
-    WordlistController.evt.WORDLIST_UPDATED.pub(this.wordLists)
-    toDelete.values.forEach(wordItem => {
-      WordlistController.evt.WORDITEM_DELETED.pub({model: wordItem})
-    })
+    WordlistController.evt.WORDLIST_DELETED.pub({dataType: WordItem.constructor.name, params{ languageCode: languageCode}})
   }
 
   /**
@@ -67,7 +71,7 @@ export default class WordlistController {
     if (wordList) {
       let deleted = wordList.deleteWordItem(targetWord)
       if (deleted) {
-        WordlistController.evt.WORDITEM_DELETED.pub({model: deleted})
+        WordlistController.evt.WORDITEM_DELETED.pub({dataObj: wordItem})
       }
     }
     // TODO error handling if item not found
@@ -103,7 +107,7 @@ export default class WordlistController {
    * Responds to a HOMONYM_READY event by creating or updating a wordlist item for a retrieved Homonym
    * @param {Object} data - expected to adhere to
    *                        { homonym: Homonym }
-   * Emits a WORDITEM_UPDATED event
+   * Emits WORDITEM_UPDATED and WORDLIST_UPDATED events
    */
    onHomonymReady (data) {
     console.info('********************onHomonymReady1', data)
@@ -111,7 +115,9 @@ export default class WordlistController {
     // create the item in the word list if it doesn't exist
     let wordItem = this.getWordListItem(data.homonym.language, targetWord:data.homonym.targetWord,true)
     wordItem.homonym = data.homonym
-    WordlistController.evt.WORDITEM_UPDATED.pub({model: wordItem, needsUpdate: 'homonym'})
+    WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, {segment: 'homonym'}})
+    // emit a wordlist updated event too in case the wordlist was updated
+    WordlistController.evt.WORDLIST_UPDATED.pub(this.getWordList(wordItem.languageCode))
   }
 
   /**
@@ -125,7 +131,7 @@ export default class WordlistController {
     let wordItem = this.getWordListItem(data.homonym.language, targetWord:data.homonym.targetWord)
     if (wordItem) {
       wordItem.homonym = data.homonym
-      WordlistController.evt.WORDITEM_UPDATED.pub({model: wordItem, needsUpdate: 'homonym'})
+      WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, {segment: 'homonym'}})
     } else {
       // TODO error handling
       console.error("Something went wrong: request to add definitions to non-existent item")
@@ -144,7 +150,7 @@ export default class WordlistController {
     let wordItem = this.getWordListItem(data.homonym.language, targetWord:data.homonym.targetWord)
     if (wordItem) {
       wordItem.homonym = data.homonym
-      WordlistController.evt.WORDITEM_UPDATED.pub({model: wordItem, needsUpdate: 'homonym'})
+      WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, {segment: 'homonym'}})
     } else {
       console.error("Something went wrong: request to add translations to non-existent item")
     }
@@ -154,7 +160,7 @@ export default class WordlistController {
   * Responds to a TextQuoteSelectorReceived  event by creating or updating a wordlist item for a retrieved Homonym
   * @param {Object} data - expected to adhere to
   *                        { textquoteselector: TextQuoteSelector }
-  * Emits a WORDITEM_UPDATED event
+  * Emits a WORDITEM_UPDATED and WORDLIST_UPDATED events
   */
   onTextQuoteSelectorRecieved (data) {
     console.info('********************onTextQuoteSelectorRecieved', data.textQuoteSelector)
@@ -162,7 +168,10 @@ export default class WordlistController {
     // create the item in the word list if it doesn't exist
     let wordItem = this.getWordListItem(data.textQuoteSelector.languageCode, data.textQuoteSelector.normalizedText,true)
     wordItem.addContext(textQuoteSelector)
-    WordlistController.evt.WORDITEM_UPDATED.pub({model: wordItem, needsUpdate: 'context'})
+    WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, {segment: 'context'}})
+    // emit a wordlist updated event too in case the wordlist was updated
+    WordlistController.evt.WORDLIST_UPDATED.pub(this.getWordList(wordItem.languageCode))
+
   }
 
   /**
@@ -176,7 +185,7 @@ export default class WordlistController {
     let wordItem = this.getWordListItem(languageCode, targetWord,false)
     if (wordItem) {
       wordItem.important = important
-      WordlistController.evt.WORDITEM_UPDATED.pub({model: wordItem, needsUpdate: 'important'})
+      WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, {segment: 'important'}})
     } else {
       console.error("Something went wrong: request to set important flag on non-existent item")
     }
@@ -192,7 +201,7 @@ export default class WordlistController {
     let wordList = this.getWordList(languageCode, false)
     this.wordList.values.forEach(wordItem => {
       wordItem.important = important
-      WordlistController.evt.WORDITEM_UPDATED.pub({model: wordItem, needsUpdate: 'important'})
+      WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, {segment: 'important'}})
     })
   }
 
@@ -204,7 +213,7 @@ export default class WordlistController {
   */
   selectWordItem (languageCode, targetWord) {
     let wordItem = this.getWordListItem(languageCode, targetWord,false)
-    this.evt.WORDITEM_SELECTED.pub(wordItem.homonym)
+    this.evt.WORDITEM_SELECTED.pub(wordItem)
   }
 }
 
@@ -216,15 +225,48 @@ WordlistController.evt = {
    * }
    */
   WORDLIST_UPDATED: new PsEvent('Wordlist updated', WordlistController),
+
+  /**
+   * Published when a WordList was created
+   * Data: {
+   *  {wordLists} an Array with WordLists object
+   * }
+   */
   WORDLIST_CREATED: new PsEvent('Wordlist created', WordlistController),
+
+
+  /**
+   * Published when a WordList was deleted
+   * Data: {
+   *  dataType: constructor name for the contained word list items
+   *  params: parameters to identify the items to be deleted
+   * }
+   */
+  WORDLIST_DELETED: new PsEvent('Wordlist deleted', WordlistController),
+
   /**
    * Published when a WordItem was selected.
    * Data: {
-   *  {Homonym} a Homonym that should be uploaded to popup/panel
+   *  dataObj: the selected WordItem
    * }
    */
   WORDITEM_SELECTED: new PsEvent('WordItem selected', WordlistController),
 
+  /**
+   * Published when a WordItem was updated
+   * Data: {
+   *   dataObj: the selected WordItem
+   *   params: additional update parameters
+   * }
+   */
   WORDITEM_UPDATED: new PsEvent('WordItem updated', WordlistController)
+
+  /**
+   * Published when a WordItem was deleted
+   * Data: {
+   *   dataObj: the deleted WordItem
+   * }
+   */
+  WORDITEM_DELETED: new PsEvent('WordItem deleted', WordlistController)
 
 }

@@ -7,8 +7,7 @@ export default class IndexedDBAdapter {
    * @param {String} domain the storage domain
    * @param {Object} dbDriver a driver for a specific data type
    */
-  constructor (domain = 'alpheios-storage-domain', dbDriver) {
-    super(domain)
+  constructor (dbDriver) {
     this.available = this._initIndexedDBNamespaces()
     this.dbDriver = dbDriver
   }
@@ -23,13 +22,13 @@ export default class IndexedDBAdapter {
     // iterate through the declared segmentation of the object
     // and store accordingly
     // TODO we need transaction handling here
-    segments.forEach(segment => {
+    for (let segment of segments) {
       let updated = await this.update(data, {segment: segment})
       if (! updated) {
         break
         // TODO rollback?
       }
-    })
+    }
     return updated > 0
   }
 
@@ -80,7 +79,7 @@ export default class IndexedDBAdapter {
       let q = this.dbDriver.updateSegmentQuery(s,data)
       try {
         return await this._set(q)
-      } catch(error e) {
+      } catch(error) {
         // TODO need transaction rollback handling here if mulitple segments?
         return false
       }
@@ -101,7 +100,7 @@ export default class IndexedDBAdapter {
       for (let item of res) {
         let modelObj = this.dbDriver.load(item)
         let segments = this.dbDriver.segments
-        segments.foreach(segment) {
+        for (let segment of segments) {
           let query = this.dbDriver.segmentQuery(segment,modelObj)
           let res = await this._getFromStore(query)
           if (res.length > 0) {

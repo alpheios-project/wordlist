@@ -13,7 +13,7 @@ export default class UserDataManager {
 
   _localStorageAdapter(dataType) {
     let dbDriver = new LOCAL_DRIVER_CLASSES[dataType](this.userID)
-    return new IndexedDBAdapter(UserDataController.DOMAIN,dbAdapter)
+    return new IndexedDBAdapter()
   }
 
   _remoteStorageAdapter(dataType) {
@@ -93,7 +93,7 @@ export default class UserDataManager {
     let updateInRemote = []
     localDataItems.forEach(item => {
       let inRemote = false
-      for (let i=0; i<remoteDataItems.length, i++ ) {
+      for (let i=0; i<remoteDataItems.length; i++ ) {
         if (remoteDataItems[i].isSameItem(item)) {
           inRemote = true
           // if the item exists in the remote db, check to see if they differ
@@ -124,7 +124,6 @@ export default class UserDataManager {
 }
 
 // Constants (could be done better, dynamically, etc.)
-UserDataController.DOMAIN = 'alpheios-storage-domain'
 UserDataController.LOCAL_DRIVER_CLASSES = {
   WordItem: WordItemIndexedDbDriver
 }

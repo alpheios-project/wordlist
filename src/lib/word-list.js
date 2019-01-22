@@ -31,7 +31,7 @@ export default class WordList {
     let key = this._makeItemKey(this.languageCode,targetWord)
     let toDelete = this.items[key]
     if (toDelete) {
-      delete toDelete
+      delete this.items[key]
     }
     return toDelete
   }

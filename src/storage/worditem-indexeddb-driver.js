@@ -1,3 +1,4 @@
+import WordItem from '@/lib/word-item'
 export default class WordItemIndexedDbDriver {
 
   /**
@@ -13,17 +14,17 @@ export default class WordItemIndexedDbDriver {
       },
       context: {
         objectStoreName: 'WordListsContext',
-        serialize: this._serializeContext
+        serialize: this._serializeContext,
         load: this._loadContext
       },
       shortHomonym: {
         objectStoreName: 'WordListsHomonym',
-        serialize: this._serializeHomonym
+        serialize: this._serializeHomonym,
         load: this._loadHomonym
       },
       fullHomonym: {
         objectStoreName: 'WordListsFullHomonym',
-        serialize: this._serializeHomonymWithFullDefs
+        serialize: this._serializeHomonymWithFullDefs,
         load: this._loadHomonym
       }
     }
@@ -180,19 +181,14 @@ export default class WordItemIndexedDbDriver {
    * private method to load the Homonym property of a WordItem
    */
   _loadHomonym (worditem,jsonObj) {
-    worditem.homonym = Homonym.readObject(jsonObj.homonym)
+    worditem.homonym = WordItem.readHomonym(jsonObj)
   }
 
   /**
    * private method to load the Context property of a WordItem
    */
   _loadContext (worditem, jsonObjs) {
-    let tqs = []
-    for (let jsonObj of jsonObjs) {
-      let tq = TextQuoteSelector.readObject(jsonObj)
-      tqs.push(tq)
-    }
-    worditem.addContext(tqs)
+    worditem.context = WordItem.readContext(jsonObj)
   }
 
   /**
@@ -205,7 +201,7 @@ export default class WordItemIndexedDbDriver {
       languageCode: worditem.languageCode,
       targetWord: worditem.targetWord,
       important: worditem.important,
-      createdDT: WordItem.currentDate
+      createdDT: WordItemIndexedDbDriver.currentDate
     }
   }
 
@@ -219,7 +215,7 @@ export default class WordItemIndexedDbDriver {
     for (let tq of worditem.textQuoteSelectors) {
       index++
       let resultItem = {
-        ID: wordItemId + '-' + index
+        ID: wordItemId + '-' + index,
         listID: worditem.listID,
         userID: worditem.userID,
         languageCode: worditem.languageCode,
@@ -236,7 +232,7 @@ export default class WordItemIndexedDbDriver {
             languageCode: tq.languageCode
           }
         },
-        createdDT: WordItem.currentDate
+        createdDT: WordItemIndexedDbDriver.currentDate
       }
       result.push(resultItem)
     }
@@ -288,6 +284,17 @@ export default class WordItemIndexedDbDriver {
         { indexName: 'targetWord', keyPath: 'targetWord', unique: false}
       ]
     }
+  }
+
+  static get currentDate () {
+    let dt = new Date()
+    return dt.getFullYear() + '/'
+        + ((dt.getMonth()+1) < 10 ? '0' : '') + (dt.getMonth()+1)  + '/'
+        + ((dt.getDate() < 10) ? '0' : '') + dt.getDate() + ' @ '
+                + ((dt.getHours() < 10) ? '0' : '') + dt.getHours() + ":"
+                + ((dt.getMinutes() < 10) ? '0' : '') + dt.getMinutes() + ":"
+                + ((dt.getSeconds() < 10) ? '0' : '') + dt.getSeconds()
+
   }
 
 }

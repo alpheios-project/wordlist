@@ -608,126 +608,6 @@ exports.clearImmediate = (typeof self !== "undefined" && self.clearImmediate) ||
 
 /***/ }),
 
-/***/ "../node_modules/uuid/lib/bytesToUuid.js":
-/*!***********************************************!*\
-  !*** ../node_modules/uuid/lib/bytesToUuid.js ***!
-  \***********************************************/
-/*! no static exports found */
-/***/ (function(module, exports) {
-
-/**
- * Convert array of 16 byte values to UUID string format of the form:
- * XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
- */
-var byteToHex = [];
-for (var i = 0; i < 256; ++i) {
-  byteToHex[i] = (i + 0x100).toString(16).substr(1);
-}
-
-function bytesToUuid(buf, offset) {
-  var i = offset || 0;
-  var bth = byteToHex;
-  // join used to fix memory issue caused by concatenation: https://bugs.chromium.org/p/v8/issues/detail?id=3175#c4
-  return ([bth[buf[i++]], bth[buf[i++]], 
-	bth[buf[i++]], bth[buf[i++]], '-',
-	bth[buf[i++]], bth[buf[i++]], '-',
-	bth[buf[i++]], bth[buf[i++]], '-',
-	bth[buf[i++]], bth[buf[i++]], '-',
-	bth[buf[i++]], bth[buf[i++]],
-	bth[buf[i++]], bth[buf[i++]],
-	bth[buf[i++]], bth[buf[i++]]]).join('');
-}
-
-module.exports = bytesToUuid;
-
-
-/***/ }),
-
-/***/ "../node_modules/uuid/lib/rng-browser.js":
-/*!***********************************************!*\
-  !*** ../node_modules/uuid/lib/rng-browser.js ***!
-  \***********************************************/
-/*! no static exports found */
-/***/ (function(module, exports) {
-
-// Unique ID creation requires a high quality random # generator.  In the
-// browser this is a little complicated due to unknown quality of Math.random()
-// and inconsistent support for the `crypto` API.  We do the best we can via
-// feature-detection
-
-// getRandomValues needs to be invoked in a context where "this" is a Crypto
-// implementation. Also, find the complete implementation of crypto on IE11.
-var getRandomValues = (typeof(crypto) != 'undefined' && crypto.getRandomValues && crypto.getRandomValues.bind(crypto)) ||
-                      (typeof(msCrypto) != 'undefined' && typeof window.msCrypto.getRandomValues == 'function' && msCrypto.getRandomValues.bind(msCrypto));
-
-if (getRandomValues) {
-  // WHATWG crypto RNG - http://wiki.whatwg.org/wiki/Crypto
-  var rnds8 = new Uint8Array(16); // eslint-disable-line no-undef
-
-  module.exports = function whatwgRNG() {
-    getRandomValues(rnds8);
-    return rnds8;
-  };
-} else {
-  // Math.random()-based (RNG)
-  //
-  // If all else fails, use Math.random().  It's fast, but is of unspecified
-  // quality.
-  var rnds = new Array(16);
-
-  module.exports = function mathRNG() {
-    for (var i = 0, r; i < 16; i++) {
-      if ((i & 0x03) === 0) r = Math.random() * 0x100000000;
-      rnds[i] = r >>> ((i & 0x03) << 3) & 0xff;
-    }
-
-    return rnds;
-  };
-}
-
-
-/***/ }),
-
-/***/ "../node_modules/uuid/v4.js":
-/*!**********************************!*\
-  !*** ../node_modules/uuid/v4.js ***!
-  \**********************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-var rng = __webpack_require__(/*! ./lib/rng */ "../node_modules/uuid/lib/rng-browser.js");
-var bytesToUuid = __webpack_require__(/*! ./lib/bytesToUuid */ "../node_modules/uuid/lib/bytesToUuid.js");
-
-function v4(options, buf, offset) {
-  var i = buf && offset || 0;
-
-  if (typeof(options) == 'string') {
-    buf = options === 'binary' ? new Array(16) : null;
-    options = null;
-  }
-  options = options || {};
-
-  var rnds = options.random || (options.rng || rng)();
-
-  // Per 4.4, set bits for version and `clock_seq_hi_and_reserved`
-  rnds[6] = (rnds[6] & 0x0f) | 0x40;
-  rnds[8] = (rnds[8] & 0x3f) | 0x80;
-
-  // Copy bytes to buffer, if provided
-  if (buf) {
-    for (var ii = 0; ii < 16; ++ii) {
-      buf[i + ii] = rnds[ii];
-    }
-  }
-
-  return buf || bytesToUuid(rnds);
-}
-
-module.exports = v4;
-
-
-/***/ }),
-
 /***/ "../node_modules/vue-loader/lib/index.js?!../node_modules/source-map-loader/index.js!./vue-components/common-components/tooltip-wrap.vue?vue&type=script&lang=js&":
 /*!*************************************************************************************************************************************************************************!*\
   !*** ../node_modules/vue-loader/lib??vue-loader-options!../node_modules/source-map-loader!./vue-components/common-components/tooltip-wrap.vue?vue&type=script&lang=js& ***!
@@ -12772,125 +12652,222 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alpheios-data-models */ "alpheios-data-models");
 /* harmony import */ var alpheios_data_models__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var _lib_word_list__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/lib/word-list */ "./lib/word-list.js");
-/* harmony import */ var _storage_indexed_db_adapter__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/storage/indexed-db-adapter */ "./storage/indexed-db-adapter.js");
-
 
 
 
 class WordlistController {
-  constructor (userID) {
-    this.userID = userID
+  /**
+   * @constructor
+   * @param {String[]} availableLangs language codes
+   * @param {PSEvent[]} events events that the controller can subscribe to
+   */
+  constructor (availableLangs,events) {
     this.wordLists = {}
-
-    this.storageAdapter = new _storage_indexed_db_adapter__WEBPACK_IMPORTED_MODULE_2__["default"]()
-  }
-
-  get availableLangs () {
-    return ['lat', 'grc', 'ara', 'per', 'gez']
+    this.availableLangs = availableLangs
+    events.TEXT_QUOTE_SELECTOR_RECEIVED.sub(this.onTextQuoteSelectorRecieved.bind(this))
+    events.LEXICAL_QUERY_COMPLETE.sub(this.onHomonymReady.bind(this))
+    events.DEFS_READY.sub(uiController.wordlistC.onDefinitionsReady.bind(uiController.wordlistC))
+    events.LEMMA_TRANSL_READY.sub(uiController.wordlistC.onLemmaTranslationsReady.bind(uiController.wordlistC))
   }
 
   /**
-   * This method executes in UIControler init method (at the end)
-   * It checks if storageAdapter is avalable (in our case it checks if IndexededDB works in the current browser)
-   * And if it is available, it executes openDatabase and 
-   * passes initDBStructure method for the case, when database doesn't exist (onupgradeneeded event)
-   * and uploadListsFromDB for the case when database already exists
+   * Asynchronously initialize the word lists managed by this controller
+   * @param {UserDataManager} dataManager a user data manager to retrieve initial wordlist data from
+   *  // TODO may need a way to process a queue of pending words here e.g. if the wordlist controller isn't
+    * // activated until after number of lookups have already occurred
+   * Emits a WORDLIST_UPDATED event when the wordlists are available
    */
-  async initLists () {
-    if (this.storageAdapter.available) {
-      await this.uploadListsFromDB()
-    }
-  }
-
-
-   /**
-   * This method loads data from the table in onsuccess event
-   * event is an argument, and event.target.result - is a database varaiable
-   * We are checking all available lists name (using userIDLangCode property, that defines wordlist)
-   * with the help of keyRange property condition - {indexName: 'userIDLangCode', value: listID, type: 'only' }
-   * and if it retrieves data successfully, it executes parseResultToWordList
-   */
-
-  async uploadListsFromDB () {
-    console.info('*********************uploadListsFromDB start')
+  async initLists (dataManager) {
     this.availableLangs.forEach(async (languageCode) => {
-      this.createWordList(languageCode)
-      let result = await this.wordLists[languageCode].uploadFromDB()
-      if (!result) {
-        this.removeWordList(languageCode)
+      let wordItems = await dataManager.query({dataType: WordItem.constructor.name, params: {languageCode: languageCode}})
+      if (wordItems.length > 0) {
+        this.wordLists[languageCode] = new _lib_word_list__WEBPACK_IMPORTED_MODULE_1__["default"](languageCode,wordItems)
       }
-      WordlistController.evt.WORDLIST_UPDATED.pub(this.wordLists)     
     })
-  }
-
-  /**
-   * This method creates an empty wordlist and attaches to controller
-   */
-  createWordList (languageCode) {
-    let wordList = new _lib_word_list__WEBPACK_IMPORTED_MODULE_1__["default"](this.userID, languageCode, this.storageAdapter)
-    this.wordLists[languageCode] = wordList
-  }
-
-  removeWordList (languageCode) {
-    delete this.wordLists[languageCode]
-  }
-
-  wordListExist (languageCode) {
-    return Object.keys(this.wordLists).includes(languageCode)
-  }
-
-  async addToWordList (data) {
-    // check if such wordItem exists in the WordList
-
-    let languageCode = data.textQuoteSelector ? data.textQuoteSelector.languageCode : data.homonym.language
-    let targetWord = data.textQuoteSelector ? data.textQuoteSelector.normalizedText : data.homonym.targetWord
-
-    if (!this.wordListExist(languageCode)) {
-      this.createWordList(languageCode)
-    }
-
-    let wordList = this.wordLists[languageCode]
-    await wordList.pushWordItem({
-      languageCode, targetWord,
-      homonym: data.homonym,
-      textQuoteSelector: data.textQuoteSelector,
-      userID: this.userID,
-      currentSession: true,
-      important: false
-    }, data.type)
-
     WordlistController.evt.WORDLIST_UPDATED.pub(this.wordLists)
   }
 
   /**
-   * This method executes updateWordList with default saveToStorage flag = true
+   * Get the wordlist for a specific language code
+   * @param {String} languageCode the language for the list
+   * @param {Boolean} create set to true to create the list of it doesn't exist
+   * Emits a WORDLIST_CREATED event if a new list is created
+   * @return {WordList} the wordlist
    */
-  async onHomonymReady (data) {
+  getWordList (languageCode, create=true) {
+    if (create && ! this.wordListExist(languageCode)) {
+      let wordList = new _lib_word_list__WEBPACK_IMPORTED_MODULE_1__["default"]([])
+      this.wordLists[languageCode] = wordList
+      WordlistController.evt.WORDLIST_CREATED.pub(wordList)
+    }
+    return this.wordLists[languageCode]
+  }
+
+  /**
+   * Remove a wordlist for a specific language code and all if its items
+   * @param {String} languageCode the language for the list
+   * Emits a WORDLIST_DELETED event
+   */
+  removeWordList (languageCode) {
+    let toDelete = this.wordLists[languageCode]
+    delete this.wordLists[languageCode]
+    WordlistController.evt.WORDLIST_DELETED.pub({dataType: WordItem.constructor.name, params: {languageCode: languageCode}})
+  }
+
+  /**
+   * Remove a WordItem from a WordList
+   * @param {String} languageCode the language of the item to be removed
+   * @param {String} targetWord the word to be removed
+   * Emits a WORDITEM_DELETED event for for the item that was deleted
+   */
+  removeWordListItem (languageCode, targetWord) {
+    let wordList = this.getWordList(languageCode, false)
+    if (wordList) {
+      let deleted = wordList.deleteWordItem(targetWord)
+      if (deleted) {
+        WordlistController.evt.WORDITEM_DELETED.pub({dataObj: wordItem})
+      }
+    }
+    // TODO error handling if item not found
+  }
+
+  /**
+   * Check to see if we have a wordlist for a specific language code
+   * @param {String} languageCode the language code
+   * @return {Boolean} true if the wordlist exists otherwise false
+   */
+  wordListExist (languageCode) {
+    return Object.keys(this.wordLists).includes(languageCode)
+  }
+
+  /**
+   * get an item from a word list
+   * @param {String} languageCode the language code of the item
+   * @param {String} targetWord the word of the item
+   * @param {Boolean} create true to create the item if it doesn't exist
+   * @return {WordItem} the retrieved or created WordItem
+   */
+  getWordListItem (languageCode, targetWord, create=false) {
+    let wordList = this.getWordList(languageCode, create)
+    let worditem
+    if (wordList) {
+      worditem = wordList.getWordItem(targetWord,create)
+    }
+    // TODO error handling for no item?
+    return worditem
+  }
+
+  /**
+   * Responds to a HOMONYM_READY event by creating or updating a wordlist item for a retrieved Homonym
+   * @param {Object} data - expected to adhere to
+   *                        { homonym: Homonym }
+   * Emits WORDITEM_UPDATED and WORDLIST_UPDATED events
+   */
+   onHomonymReady (data) {
     console.info('********************onHomonymReady1', data)
-    await this.addToWordList({ homonym: data.homonym, type: 'shortHomonym' })
+    // when receiving this event, it's possible this is the first time we are seeing the word so
+    // create the item in the word list if it doesn't exist
+    let wordItem = this.getWordListItem(data.homonym.language,data.homonym.targetWord,true)
+    wordItem.homonym = data.homonym
+    WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'homonym'}})
+    // emit a wordlist updated event too in case the wordlist was updated
+    WordlistController.evt.WORDLIST_UPDATED.pub(this.getWordList(wordItem.languageCode))
   }
 
   /**
-   * This method executes updateWordList with default saveToStorage flag = true 
-   * (because definitions could come much later we need to resave homonym with definitions data to database)
+  * Responds to a DEFINITIONS_READY event by updating a wordlist item for retrieved Definitions
+  * @param {Object} data - expected to adhere to
+  *                        { homonym: Homonym }
+  * Emits a WORDITEM_UPDATED event
   */
-  async onDefinitionsReady (data) {
+  onDefinitionsReady (data) {
     console.info('********************onDefinitionsReady', data)
-    await this.addToWordList({ homonym: data.homonym, type: 'fullHomonym' })
+    let wordItem = this.getWordListItem(data.homonym.language,data.homonym.targetWord)
+    if (wordItem) {
+      wordItem.homonym = data.homonym
+      WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'homonym'}})
+    } else {
+      // TODO error handling
+      console.error("Something went wrong: request to add definitions to non-existent item")
+    }
   }
 
   /**
-   * This method executes updateWordList with default saveToStorage flag = true 
-   * (because lemma translations could come much later we need to resave homonym with translations data to database)
+  * Responds to a LEMMA_TRANSLATIONS_READY event by updating a wordlist item for retrieved translations
+  * (because lemma translations could come much later we need to resave homonym with translations data to database)
+  * @param {Object} data - expected to adhere to
+  *                        { homonym: Homonym }
+  * Emits a WORDITEM_UPDATED event
   */
-  async onLemmaTranslationsReady (homonym) {
-    console.info('********************onLemmaTranslationsReady', homonym)
-    await this.addToWordList({ homonym, type: 'fullHomonym' })
+  onLemmaTranslationsReady (data) {
+    console.info('********************onLemmaTranslationsReady', data.homonym)
+    let wordItem = this.getWordListItem(data.homonym.language, data.homonym.targetWord)
+    if (wordItem) {
+      wordItem.homonym = data.homonym
+      WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'homonym'}})
+    } else {
+      console.error("Something went wrong: request to add translations to non-existent item")
+    }
   }
 
-  async onTextQuoteSelectorRecieved (textQuoteSelector) {
-    console.info('********************onTextQuoteSelectorRecieved', textQuoteSelector)
-    await this.addToWordList({ textQuoteSelector, type: 'textQuoteSelector' })
+  /**
+  * Responds to a TextQuoteSelectorReceived  event by creating or updating a wordlist item for a retrieved Homonym
+  * @param {Object} data - expected to adhere to
+  *                        { textquoteselector: TextQuoteSelector }
+  * Emits a WORDITEM_UPDATED and WORDLIST_UPDATED events
+  */
+  onTextQuoteSelectorRecieved (data) {
+    console.info('********************onTextQuoteSelectorRecieved', data.textQuoteSelector)
+    // when receiving this event, it's possible this is the first time we are seeing the word so
+    // create the item in the word list if it doesn't exist
+    let wordItem = this.getWordListItem(data.textQuoteSelector.languageCode, data.textQuoteSelector.normalizedText,true)
+    wordItem.addContext(textQuoteSelector)
+    WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'context'}})
+    // emit a wordlist updated event too in case the wordlist was updated
+    WordlistController.evt.WORDLIST_UPDATED.pub(this.getWordList(wordItem.languageCode))
+
+  }
+
+  /**
+  * Update a wordlist item's important flag
+  * @param {String} languageCode  the language of the item
+  * @param {String} targetWord the word of the item
+  * @param {Boolean} important true or false
+  * Emits a WORDITEM_UPDATED event
+  */
+  updateWordItemImportant (languageCode, targetWord, important) {
+    let wordItem = this.getWordListItem(languageCode, targetWord,false)
+    if (wordItem) {
+      wordItem.important = important
+      WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'important'}})
+    } else {
+      console.error("Something went wrong: request to set important flag on non-existent item")
+    }
+  }
+
+  /**
+  * Update the important flag of all the items in a WordList
+  * @param {String} languageCode  the language of the list
+  * @param {Boolean} important true or false
+  * Emits a WORDITEM_UPDATED event for each updated item
+  */
+  updateAllImportant (languageCode, important) {
+    let wordList = this.getWordList(languageCode, false)
+    this.wordList.values.forEach(wordItem => {
+      wordItem.important = important
+      WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'important'}})
+    })
+  }
+
+  /**
+  * Select an item in a word list
+  * @param {String} languageCode  the language of the item
+  * @param {String} targetWord the word of the item
+  * Emits a WORDITEM_SELECTED event for the selected item
+  */
+  selectWordItem (languageCode, targetWord) {
+    let wordItem = this.getWordListItem(languageCode, targetWord,false)
+    this.evt.WORDITEM_SELECTED.pub(wordItem)
   }
 }
 
@@ -12902,14 +12879,50 @@ WordlistController.evt = {
    * }
    */
   WORDLIST_UPDATED: new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["PsEvent"]('Wordlist updated', WordlistController),
+
+  /**
+   * Published when a WordList was created
+   * Data: {
+   *  {wordLists} an Array with WordLists object
+   * }
+   */
+  WORDLIST_CREATED: new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["PsEvent"]('Wordlist created', WordlistController),
+
+
+  /**
+   * Published when a WordList was deleted
+   * Data: {
+   *  dataType: constructor name for the contained word list items
+   *  params: parameters to identify the items to be deleted
+   * }
+   */
+  WORDLIST_DELETED: new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["PsEvent"]('Wordlist deleted', WordlistController),
+
   /**
    * Published when a WordItem was selected.
    * Data: {
-   *  {Homonym} a Homonym that should be uploaded to popup/panel
+   *  dataObj: the selected WordItem
    * }
    */
   WORDITEM_SELECTED: new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["PsEvent"]('WordItem selected', WordlistController),
-  
+
+  /**
+   * Published when a WordItem was updated
+   * Data: {
+   *   dataObj: the selected WordItem
+   *   params: additional update parameters
+   * }
+   */
+  WORDITEM_UPDATED: new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["PsEvent"]('WordItem updated', WordlistController),
+
+  /**
+   * Published when a WordItem was deleted
+   * Data: {
+   *   dataObj: the deleted WordItem
+   * }
+   */
+  WORDITEM_DELETED: new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["PsEvent"]('WordItem deleted', WordlistController)
+
 }
 
 
@@ -12922,7 +12935,7 @@ WordlistController.evt = {
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;return _c('svg',{attrs:{"viewBox":"0 0 447.6 757.4"}},[_c('path',{attrs:{"d":"M-128.4 305.8c74.8 53.3 146.8 110.5 215.7 171.3 0 0 348.4-399.4 557.1-477.1l27 53S277.2 418 150.5 757.4l-374.3-378.7 95.4-72.9z"}})])};var toString = function () {return "C:\\_alpheios\\wordlist\\src\\icons\\check.svg"};module.exports = { render: render, toString: toString };
+var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;return _c('svg',{attrs:{"viewBox":"0 0 447.6 757.4"}},[_c('path',{attrs:{"d":"M-128.4 305.8c74.8 53.3 146.8 110.5 215.7 171.3 0 0 348.4-399.4 557.1-477.1l27 53S277.2 418 150.5 757.4l-374.3-378.7 95.4-72.9z"}})])};var toString = function () {return "/home/balmas/workspace/wordlist/src/icons/check.svg"};module.exports = { render: render, toString: toString };
 
 /***/ }),
 
@@ -12933,7 +12946,7 @@ var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._sel
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;return _c('svg',{attrs:{"viewBox":"0 0 900.5 900.5"}},[_c('path',{attrs:{"d":"M176.42 880.5c0 11.046 8.954 20 20 20h507.67c11.046 0 20-8.954 20-20V232.49H176.42V880.5zm386.33-537.73h75V778.8h-75V342.77zm-150 0h75V778.8h-75V342.77zm-150 0h75V778.8h-75V342.77zM618.82 91.911V20c0-11.046-8.954-20-20-20H301.67c-11.046 0-20 8.954-20 20v96.911h-139.8c-11.046 0-20 8.954-20 20v50.576c0 11.045 8.954 20 20 20h616.75c11.046 0 20-8.955 20-20v-50.576c0-11.046-8.954-20-20-20h-139.8V91.912zm-75 20.889H356.67V75.001h187.15v37.801z"}})])};var toString = function () {return "C:\\_alpheios\\wordlist\\src\\icons\\delete.svg"};module.exports = { render: render, toString: toString };
+var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;return _c('svg',{attrs:{"viewBox":"0 0 900.5 900.5"}},[_c('path',{attrs:{"d":"M176.42 880.5c0 11.046 8.954 20 20 20h507.67c11.046 0 20-8.954 20-20V232.49H176.42V880.5zm386.33-537.73h75V778.8h-75V342.77zm-150 0h75V778.8h-75V342.77zm-150 0h75V778.8h-75V342.77zM618.82 91.911V20c0-11.046-8.954-20-20-20H301.67c-11.046 0-20 8.954-20 20v96.911h-139.8c-11.046 0-20 8.954-20 20v50.576c0 11.045 8.954 20 20 20h616.75c11.046 0 20-8.955 20-20v-50.576c0-11.046-8.954-20-20-20h-139.8V91.912zm-75 20.889H356.67V75.001h187.15v37.801z"}})])};var toString = function () {return "/home/balmas/workspace/wordlist/src/icons/delete.svg"};module.exports = { render: render, toString: toString };
 
 /***/ }),
 
@@ -12944,7 +12957,7 @@ var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._sel
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;return _c('svg',{attrs:{"viewBox":"0 0 442 442"}},[_c('path',{attrs:{"d":"M171 336H70c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.523 0 10-4.477 10-10s-4.477-10-10-10zM322 336H221c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.522 0 10-4.477 10-10s-4.478-10-10-10zM322 86H70c-5.523 0-10 4.477-10 10s4.477 10 10 10h252c5.522 0 10-4.477 10-10s-4.478-10-10-10zM322 136H221c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.522 0 10-4.477 10-10s-4.478-10-10-10zM322 186H221c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.522 0 10-4.477 10-10s-4.478-10-10-10zM322 236H221c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.522 0 10-4.477 10-10s-4.478-10-10-10zM322 286H221c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.522 0 10-4.477 10-10s-4.478-10-10-10zM171 286H70c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.523 0 10-4.477 10-10s-4.477-10-10-10zM171 136H70c-5.523 0-10 4.477-10 10v101c0 5.523 4.477 10 10 10h101c5.523 0 10-4.477 10-10V146c0-5.523-4.477-10-10-10zm-10 101H80v-81h81v81z"}}),_c('path',{attrs:{"d":"M422 76h-30V46c0-11.028-8.972-20-20-20H20C8.972 26 0 34.972 0 46v320c0 27.57 22.43 50 50 50h342c27.57 0 50-22.43 50-50V96c0-11.028-8.972-20-20-20zm0 290c0 16.542-13.458 30-30 30H50c-16.542 0-30-13.458-30-30V46h352v305c0 13.785 11.215 25 25 25 5.522 0 10-4.477 10-10s-4.478-10-10-10c-2.757 0-5-2.243-5-5V96h30v270z"}})])};var toString = function () {return "C:\\_alpheios\\wordlist\\src\\icons\\text-quote.svg"};module.exports = { render: render, toString: toString };
+var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;return _c('svg',{attrs:{"viewBox":"0 0 442 442"}},[_c('path',{attrs:{"d":"M171 336H70c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.523 0 10-4.477 10-10s-4.477-10-10-10zM322 336H221c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.522 0 10-4.477 10-10s-4.478-10-10-10zM322 86H70c-5.523 0-10 4.477-10 10s4.477 10 10 10h252c5.522 0 10-4.477 10-10s-4.478-10-10-10zM322 136H221c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.522 0 10-4.477 10-10s-4.478-10-10-10zM322 186H221c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.522 0 10-4.477 10-10s-4.478-10-10-10zM322 236H221c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.522 0 10-4.477 10-10s-4.478-10-10-10zM322 286H221c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.522 0 10-4.477 10-10s-4.478-10-10-10zM171 286H70c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.523 0 10-4.477 10-10s-4.477-10-10-10zM171 136H70c-5.523 0-10 4.477-10 10v101c0 5.523 4.477 10 10 10h101c5.523 0 10-4.477 10-10V146c0-5.523-4.477-10-10-10zm-10 101H80v-81h81v81z"}}),_c('path',{attrs:{"d":"M422 76h-30V46c0-11.028-8.972-20-20-20H20C8.972 26 0 34.972 0 46v320c0 27.57 22.43 50 50 50h342c27.57 0 50-22.43 50-50V96c0-11.028-8.972-20-20-20zm0 290c0 16.542-13.458 30-30 30H50c-16.542 0-30-13.458-30-30V46h352v305c0 13.785 11.215 25 25 25 5.522 0 10-4.477 10-10s-4.478-10-10-10c-2.757 0-5-2.243-5-5V96h30v270z"}})])};var toString = function () {return "/home/balmas/workspace/wordlist/src/icons/text-quote.svg"};module.exports = { render: render, toString: toString };
 
 /***/ }),
 
@@ -13279,169 +13292,117 @@ class Message {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return WordItem; });
-/* harmony import */ var uuid_v4__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! uuid/v4 */ "../node_modules/uuid/v4.js");
-/* harmony import */ var uuid_v4__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(uuid_v4__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var alpheios_data_models__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! alpheios-data-models */ "alpheios-data-models");
-/* harmony import */ var alpheios_data_models__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(alpheios_data_models__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _controllers_wordlist_controller__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/controllers/wordlist-controller */ "./controllers/wordlist-controller.js");
-
-
-
-
 class WordItem {
-  constructor (data) {
+  /**
+   * @constructor
+   * @param {Object} constructorArgs
+   *   {String} targetWord
+   *   {String} languageCode
+   *   {Boolean} important
+   *   {Boolean} currentSession
+   *   {TextQuoteSelector[]} context
+   *   {Homonym} homonym
+   *
+   */
+  constructor (data = { targetWord: null, languageCode: null, important: false, currentSession: true, context: [], homonym: {} }) {
+    // TODO handling of version
+    this.version = 1
     this.targetWord = data.targetWord
     this.languageCode = data.languageCode
-    this.userID = data.userID
-
-    this.textQuoteSelectors = data.textQuoteSelector ? [ data.textQuoteSelector ] : []
-    this.homonym = data.homonym ? data.homonym : {}
-    this.important = data.important || false
-    this.currentSession = data.currentSession || false
+    if (!this.targetWord || !this.languageCode) {
+      throw new Error("Unable to constructe a worditem without at least a targetWord and a languageCode")
+    }
+    this.important = data.important
+    this.currentSession = data.currentSession
+    this.context = data.context
+    this.homonym = data.homonym
   }
 
-  get storageID () {
-    return this.userID + '-' + this.languageCode + '-' + this.targetWord
+  /**
+   * Construct a WordItem from JSON
+   */
+  static readObject(jsonObject) {
+    let homonym = {}
+    let context = []
+    if (jsonObject.homonym) {
+        homonym = WordItem.readHomonym(jsonObject)
+    }
+    if (jsonObject.context) {
+        context = WordItem.readContext(jsonObject)
+    }
+    let worditem = new WordItem({
+      targetWord: jsonObject.targetWord,
+      languageCode: jsonObject.languageCode,
+      important: jsonObject.important,
+      currentSession: jsonObject.currentSession,
+      context: context,
+      homonym: homonym
+    })
   }
 
-  get listID () {
-    return this.userID + '-' + this.languageCode
+  /**
+   * Construct the homonym portion of a WordItem from JSON
+   */
+  static readHomonym(jsonObject) {
+    return Homonym.readObject(jsonObj.homonym)
   }
 
-  makeImportant () {
-    this.important = true
+  /**
+   * Construct the context portion of a WordItem from JSON
+   */
+  static readContext(jsonObject) {
+    let tqs = []
+    for (let jsonObj of jsonObject) {
+      let tq = TextQuoteSelector.readObject(jsonObj)
+      tqs.push(tq)
+    }
+    return tqs
   }
 
-  removeImportant () {
-    this.important = false
+  /**
+   * add one or more context selectors
+   * @param {TextQuoteSelector[]} selectors
+   */
+  addContext(selectors) {
+    for (s of selectors) {
+      let found = this.context.filter(tqs => tqs.isEqual(s))
+      if (found.length == 0) {
+        this.context.push(selector)
+      }
+    }
   }
 
+  /**
+   * getter for the lemmas in this WordItem
+   */
   get lemmasList () {
     if (this.homonym && this.homonym.lexemes) {
-      return this.homonym.lexemes.map(lexeme => lexeme.lemma.word).filter( (value, index, self) => { 
+      return this.homonym.lexemes.map(lexeme => lexeme.lemma.word).filter( (value, index, self) => {
         return self.indexOf(value) === index
       }).join(', ')
     }
     return ''
   }
-  
-  uploadHomonym (jsonObj) {
-    let homonym = alpheios_data_models__WEBPACK_IMPORTED_MODULE_1__["Homonym"].readObject(jsonObj.homonym)
-    this.homonym = homonym
-  }
 
-  uploadTextQuoteSelectors (jsonObjs) {
-    for (let jsonObj of jsonObjs) {
-      let tq = alpheios_data_models__WEBPACK_IMPORTED_MODULE_1__["TextQuoteSelector"].readObject(jsonObj)
-      this.textQuoteSelectors.push(tq)
-    }
-  }
 
-  selectWordItem () {
-    _controllers_wordlist_controller__WEBPACK_IMPORTED_MODULE_2__["default"].evt.WORDITEM_SELECTED.pub(this.homonym)
-  }
-
-  static get currentDate () {
-    let dt = new Date()
-    return dt.getFullYear() + '/'
-        + ((dt.getMonth()+1) < 10 ? '0' : '') + (dt.getMonth()+1)  + '/'
-        + ((dt.getDate() < 10) ? '0' : '') + dt.getDate() + ' @ '
-                + ((dt.getHours() < 10) ? '0' : '') + dt.getHours() + ":"  
-                + ((dt.getMinutes() < 10) ? '0' : '') + dt.getMinutes() + ":" 
-                + ((dt.getSeconds() < 10) ? '0' : '') + dt.getSeconds()
-
-  }
-
-  convertCommonToStorage () {
-    return {
-      ID: this.storageID,
-      listID: this.listID,
-      userID: this.userID,
-      languageCode: this.languageCode,
-      targetWord: this.targetWord,
-      important: this.important,
-      createdDT: WordItem.currentDate
-    }
-  }
-
-  convertTQSelectorToStorage () {
-    let result = []
-    let index = 0
-    for (let tq of this.textQuoteSelectors) {
-      index++
-      let resultItem = {
-        ID: this.storageID + '-' + index,
-        listID: this.listID,
-        userID: this.userID,
-        languageCode: this.languageCode,
-        targetWord: this.targetWord,
-        wordItemID: this.storageID,
-        
-        target: {
-          source: tq.source,
-          selector: {
-            type: 'TextQuoteSelector',
-            exact: tq.text,
-            prefix: tq.prefix,
-            suffix: tq.suffix,
-            contextHTML: tq.contextHTML,
-            languageCode: tq.languageCode
-          }
-        },
-        createdDT: WordItem.currentDate
-      }
-      result.push(resultItem)
-    }
-    return result
-  }
-
-  convertHomonymToStorage (addMeaning = false) {
-    let resultHomonym = this.homonym.convertToJSONObject(addMeaning)
-    return {
-      ID: this.storageID,
-      listID: this.listID,
-      userID: this.userID,
-      languageCode: this.languageCode,
-      targetWord: this.targetWord,
-
-      homonym: resultHomonym
-    }
-  }
-  convertShortHomonymToStorage () {
-    return this.convertHomonymToStorage(false)
-  }
-
-  convertFullHomonymToStorage () {
-    return this.convertHomonymToStorage(true)
-  }
-
-  emptyProp (propName) {
-    return !this[propName] || (typeof this[propName] === 'object' && Object.keys(this[propName]).length === 0)
-  }
-
-  hasThisTextQuoteSelector (tq) {
-    return this.textQuoteSelectors.filter(tqCurrent => tqCurrent.prefix === tq.prefix && tqCurrent.suffix === tq.suffix && tqCurrent.source === tq.source).length > 0
-  }
-
-  mergeTextQuoteSelectors (prevWordItem) {
-    for (let tq of prevWordItem.textQuoteSelectors) {
-      if (!this.hasThisTextQuoteSelector(tq)) {
-        this.textQuoteSelectors.push(tq)
-      }
-    }
-  }
-
+  // TODO NOT SURE HOW THE MERGE FUNCTIONALITY IS USED
   merge (prevWordItem) {
     let checkProps = ['homonym', 'important', 'currentSession']
     for(let prop of checkProps) {
-      if (this.emptyProp(prop) && !prevWordItem.emptyProp(prop)) {
+      if (this._emptyProp(prop) && !prevWordItem._emptyProp(prop)) {
         this[prop] = prevWordItem[prop]
       }
     }
+  }
 
-    this.mergeTextQuoteSelectors(prevWordItem)
+  /**
+   * private method to detect an empty property
+   */
+  _emptyProp (propName) {
+    return !this[propName] || (typeof this[propName] === 'object' && Object.keys(this[propName]).length === 0)
   }
 }
+
 
 /***/ }),
 
@@ -13459,189 +13420,74 @@ __webpack_require__.r(__webpack_exports__);
 
 
 class WordList {
-  constructor (userID, languageCode, storageAdapter) {
-    this.userID = userID
+  /**
+  * @constructor
+  * @param {String} languageCode the language code of the list
+  * @param {WordItem[]} worditems an optional array of WordItems with which to initialize the list
+  */
+  constructor (languageCode,worditems) {
     this.languageCode = languageCode
-    this.storageAdapter = storageAdapter
     this.items = {}
+    worditems.forEach(item => {
+      let key = this._makeItemKey(this.languageCode,item.targetWord)
+      this.items[key]  = item
+    })
   }
 
-  get languageName () {
-    switch(this.languageCode) {
-      case 'lat':
-        return 'Latin'
-      case 'grc':
-        return 'Greek'
-      case 'ara':
-        return 'Arabic'
-      case 'per':
-        return 'Persian'
-      case 'gez':
-        return 'Ancient Ethiopic (Ge\'ez)'
-      default:
-        'Unknown'
-    }
-  }
-
-  get storageID () {
-    return this.userID + '-' + this.languageCode
-  }
-
+  /**
+   * get the items of the list
+   */
   get values () {
     return Object.values(this.items)
   }
 
-  async removeWordItemByID (ID) {
-    if (this.items[ID]) { 
-      await this.removeFromStorage({indexName: 'ID', value: this.items[ID].storageID, type: 'only' })
-      delete this.items[ID]
+  /**
+  * delete an individual word item from the list
+  * @param {String} targetWord the word to delete
+  * @return {WordItem} the deleted item
+  */
+  deleteWordItem (targetWord) {
+    let key = this._makeItemKey(this.languageCode,targetWord)
+    let toDelete = this.items[key]
+    if (toDelete) {
+      delete this.items[key]
     }
+    return toDelete
   }
 
-  async removeAllWordItems () {
-    await this.removeFromStorage({indexName: 'listID', value: this.storageID, type: 'only' })
+  /**
+  * delete all items from a list
+  */
+  removeAllWordItems () {
     this.items = {}
   }
 
-  async removeFromStorage (condition) {
-    for (let objectStoreData of Object.values(this.storageMap)) {
-      await this.storageAdapter.delete({
-        objectStoreName: objectStoreData.objectStoreName,
-        condition
-      })
+
+  /**
+   * get an item from a list
+   * @param targetWord the word to get
+   * @param {Boolean} create true to create the item if it doesn't exist
+   * @return {WordItem} the retrieved item
+   */
+  getWordItem(targetWord, create=true) {
+    let key = this._makeItemKey(this.languageCode,targetWord)
+    if (!this.items[key]) {
+      let wordItem = new _lib_word_item__WEBPACK_IMPORTED_MODULE_0__["default"]({targetWord: targetWord, languageCode: this.languageCode})
+      this.items[key]  = wordItem
     }
+    return this.items[key]
   }
 
-  contains (wordItem) {
-    return this.values.map(item => item.targetWord).includes(wordItem.targetWord)
-  }
-
-  async makeImportantByID (wordItemID) {
-    this.items[wordItemID].makeImportant()
-    await this.pushWordItemPart([this.items[wordItemID]], 'common')
-  }
-
-  async removeImportantByID (wordItemID) {
-    this.items[wordItemID].removeImportant()
-    await this.pushWordItemPart([this.items[wordItemID]], 'common')
-  }
-
-  async makeAllImportant () {
-    this.values.forEach(wordItem => {
-      wordItem.makeImportant()
-    })
-    await this.pushWordItemPart(this.values, 'common')
-  }
-
-  async removeAllImportant () {
-    this.values.forEach(wordItem => {
-      wordItem.removeImportant()
-    })
-    await this.pushWordItemPart(this.values, 'common')
-  }
-
-  get storageMap () {
-    return {
-      common: {
-        objectStoreName: 'WordListsCommon',
-        convertMethodName: 'convertCommonToStorage'
-      },
-      textQuoteSelector: {
-        objectStoreName: 'WordListsContext',
-        convertMethodName: 'convertTQSelectorToStorage'
-      },
-      shortHomonym: {
-        objectStoreName: 'WordListsHomonym',
-        convertMethodName: 'convertShortHomonymToStorage'
-      },
-      fullHomonym: {
-        objectStoreName: 'WordListsFullHomonym',
-        convertMethodName: 'convertFullHomonymToStorage'
-      }
-    }
-  }
-
-  async pushWordItem (data, type) {
-    let wordItem = new _lib_word_item__WEBPACK_IMPORTED_MODULE_0__["default"](data)
-    //check if worditem exists in the list
-    if (!this.contains(wordItem)) {
-      await this.pushWordItemPart([wordItem], 'common')
-    } else {
-      wordItem.merge(this.items[wordItem.storageID])
-    }
-    
-    await this.pushWordItemPart([wordItem], type)
-    // console.info('*******************pushWordItem', data, this)
-  }
-
-  async pushWordItemPart (wordItems, type) {
-    if (this.storageMap[type]) {
-      let dataItems = []
-      for (let wordItem of wordItems) {
-        this.items[wordItem.storageID] = wordItem
-        let resDataItem = wordItem[this.storageMap[type].convertMethodName]()
-
-        // console.info('**************pushWordItemPart resDataItem', resDataItem, Array.isArray(resDataItem))
-        if (!Array.isArray(resDataItem)) {
-          dataItems.push(resDataItem)
-        } else {
-          dataItems = dataItems.concat(resDataItem)
-        }
-      }
-
-      await this.storageAdapter.set({
-        objectStoreName: this.storageMap[type].objectStoreName,
-        dataItems: dataItems
-      })
-      
-    }
-  }
-
-  async uploadFromDB () {
-    let res = await this.storageAdapter.get({
-      objectStoreName: this.storageMap.common.objectStoreName,
-      condition: {indexName: 'listID', value: this.storageID, type: 'only' }
-    })
-
-    if (res.length === 0) {
-      return false
-    } else {
-      for (let resWordItem of res) {
-        let resKey = resWordItem.ID
-        let wordItem = new _lib_word_item__WEBPACK_IMPORTED_MODULE_0__["default"](resWordItem)
-
-        let resFullHomonym = await this.storageAdapter.get({
-          objectStoreName: this.storageMap.fullHomonym.objectStoreName,
-          condition: {indexName: 'ID', value: resKey, type: 'only' }
-        })
-        
-        if (resFullHomonym.length > 0) {
-          wordItem.uploadHomonym(resFullHomonym[0])
-        } else {
-          let resShortHomonym = await this.storageAdapter.get({
-            objectStoreName: this.storageMap.shortHomonym.objectStoreName,
-            condition: {indexName: 'ID', value: resKey, type: 'only' }
-          })
-          if (resShortHomonym.length > 0)
-          wordItem.uploadHomonym(resShortHomonym[0])
-        }
-
-        let resTextQuoteSelectors = await this.storageAdapter.get({
-          objectStoreName: this.storageMap.textQuoteSelector.objectStoreName,
-          condition: {indexName: 'wordItemID', value: resKey, type: 'only' }
-        })
-
-        if (resTextQuoteSelectors.length > 0) {
-          wordItem.uploadTextQuoteSelectors(resTextQuoteSelectors)
-        }
-
-        console.info('**********************wordItem final', wordItem)
-        this.items[wordItem.storageID] = wordItem
-      }
-      return true
-    }
+   /**
+    * make a key for a word item
+    * @param {String} languageCode
+    * @param {String} targetWord
+    */
+  _makeItemKey(languageCode,targetWord) {
+    return `${languageCode}:${targetWord}`
   }
 }
+
 
 /***/ }),
 
@@ -13691,328 +13537,6 @@ var _en_gb_messages_json__WEBPACK_IMPORTED_MODULE_1___namespace = /*#__PURE__*/_
     en_GB: _en_gb_messages_json__WEBPACK_IMPORTED_MODULE_1__
   }
 });
-
-
-/***/ }),
-
-/***/ "./storage/indexed-db-adapter.js":
-/*!***************************************!*\
-  !*** ./storage/indexed-db-adapter.js ***!
-  \***************************************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return IndexedDBAdapter; });
-/* harmony import */ var _storage_storage_adapter_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/storage/storage-adapter.js */ "./storage/storage-adapter.js");
-/* harmony import */ var _storage_indexed_db_structure_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/storage/indexed-db-structure.js */ "./storage/indexed-db-structure.js");
-
-
-
-/**
- * An implementation of a StorageAdapter interface for a local storage.
- */
-class IndexedDBAdapter extends _storage_storage_adapter_js__WEBPACK_IMPORTED_MODULE_0__["default"] {
-  
-  constructor (domain = 'alpheios-storage-domain') {
-    super(domain)
-
-    this.available = this.initIndexedDBNamespaces()
-    this.dbData = new _storage_indexed_db_structure_js__WEBPACK_IMPORTED_MODULE_1__["default"]()
-  }
-
-  /**
-   * This method checks if IndexedDB is used in the current browser
-   */
-  initIndexedDBNamespaces () {
-    this.indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
-    this.IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.msIDBTransaction || {READ_WRITE: "readwrite"}; // This line should only be needed if it is needed to support the object's constants for older browsers
-    this.IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange || window.msIDBKeyRange;
-    if (!this.indexedDB) {
-      console.info("Your browser doesn't support a stable version of IndexedDB. Such and such feature will not be available.");
-      return false
-    }
-    return true
-  }
-
-  /**
-   * This method create a request for opening database and passes callbacks for two events
-   */
-  openDatabase (upgradeCallback, successCallback) {
-    let request = this.indexedDB.open(this.dbName, this.currentVersion)
-    console.info('***************inside openDatabase')
-    request.onerror = (event) => {
-      console.info('*************Some problems with opening LabirintOrders', event.target)
-    }
-    request.onsuccess = successCallback
-    request.onupgradeneeded = upgradeCallback
-    return request
-  }
-
-  openDatabaseRequest () {
-    let request = this.indexedDB.open(this.dbData.dbName, this.dbData.dbVersion)
-    request.onupgradeneeded = (event) => {
-      const db = event.target.result
-      const upgradeTransaction = event.target.transaction
-      this.dbData.createObjectStores(db, upgradeTransaction)
-    }
-    return request
-  }
-
-  async set (data) {
-    let promiseOpenDB = await new Promise((resolve, reject) => {
-      let request = this.openDatabaseRequest()
-      request.onsuccess = async (event) => {
-        const db = event.target.result
-        await this.putItem(db, data)
-        resolve()
-      }
-      request.onerror = (event) => {
-        reject()
-      }
-    })
-    return promiseOpenDB
-  }
-
-  async putItem (db, data) {
-    let promisePut = await new Promise((resolve, reject) => {
-      const transaction = db.transaction([data.objectStoreName], 'readwrite')
-      transaction.onerror = (event) => {
-        reject()
-      }
-      const objectStore = transaction.objectStore(data.objectStoreName)
-      let objectsDone = data.dataItems.length
-      // console.info('************************data.dataItems', data.dataItems)
-      for (let dataItem of data.dataItems) {
-        // console.info('************************dataItem', dataItem)
-        const requestPut = objectStore.put(dataItem)
-        requestPut.onsuccess = () => {
-          objectsDone = objectsDone - 1
-          if (objectsDone === 0) {
-            resolve()
-          }
-        }
-        requestPut.onerror = () => {
-          reject()
-        }
-      }
-    })
-    return promisePut
-  }
-
-  async get (data) {
-    let promiseOpenDB = await new Promise((resolve, reject) => {
-      let request = this.openDatabaseRequest()
-      request.onsuccess = (event) => {
-        const db = event.target.result
-        const transaction = db.transaction([data.objectStoreName])
-        const objectStore = transaction.objectStore(data.objectStoreName)
-
-        const index = objectStore.index(data.condition.indexName)
-        const keyRange = this.IDBKeyRange[data.condition.type](data.condition.value)
-
-        const requestOpenCursor = index.getAll(keyRange, 0)
-        requestOpenCursor.onsuccess = (event) => {
-          resolve(event.target.result)
-        }
-
-        requestOpenCursor.onerror = (event) => {
-          reject()
-        }        
-      }
-      request.onerror = (event) => {
-        reject()
-      }
-    })
-    return promiseOpenDB
-  }
-
-  async delete (data) {
-    let promiseOpenDB = await new Promise((resolve, reject) => {
-      let request = this.openDatabaseRequest()
-      request.onsuccess = (event) => {
-        const db = event.target.result
-        const transaction = db.transaction([data.objectStoreName], 'readwrite')
-        const objectStore = transaction.objectStore(data.objectStoreName)
-
-        const index = objectStore.index(data.condition.indexName)
-        const keyRange = this.IDBKeyRange[data.condition.type](data.condition.value)
-
-        let requestOpenCursor = index.openCursor(keyRange)
-        requestOpenCursor.onsuccess = (event) => {
-          const cursor = event.target.result
-          if (cursor) {
-            const requestDelete = cursor.delete()
-            requestDelete.onerror = (event) => {
-              reject()
-            }
-            cursor.continue()
-          } else {
-            resolve()
-          }
-        }
-      }
-
-      request.onerror = (event) => {
-        reject()
-      }
-    })
-
-    return promiseOpenDB
-  }
-}
-
-/***/ }),
-
-/***/ "./storage/indexed-db-structure.js":
-/*!*****************************************!*\
-  !*** ./storage/indexed-db-structure.js ***!
-  \*****************************************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return IndexedDBStructure; });
-class IndexedDBStructure {
-  get dbName () {
-    return 'AlpheiosWordLists'
-  }
-
-  get dbVersion () {
-    return 2
-  }
-
-  get objectStores () {
-    return {
-      WordListsCommon: this.wordListsCommon,
-      WordListsContext: this.wordListsContext,
-      WordListsHomonym: this.wordListsHomonym,
-      WordListsFullHomonym: this.wordListsFullHomonym
-    }
-  }
-
-  get objectStoreTemplate () {
-    return {
-      keyPath: 'ID',
-      indexes: [
-        { indexName: 'ID', keyPath: 'ID', unique: true},
-        { indexName: 'listID', keyPath: 'listID', unique: false},
-        { indexName: 'userID', keyPath: 'userID', unique: false},
-        { indexName: 'languageCode', keyPath: 'languageCode', unique: false},
-        { indexName: 'targetWord', keyPath: 'targetWord', unique: false}
-      ]
-    }
-  }
-
-  get wordListsCommon () {
-    return this.objectStoreTemplate
-  }
-
-  get wordListsContext () {
-    let structure = this.objectStoreTemplate
-    structure.indexes.push(
-      { indexName: 'wordItemID', keyPath: 'wordItemID', unique: false}
-    )
-    return structure
-  }
-
-  get wordListsHomonym () {
-    return this.objectStoreTemplate
-  }
-
-  get wordListsFullHomonym () {
-    return this.objectStoreTemplate
-  }
-
-  createObjectStores (db, upgradeTransaction) {
-    Object.keys(this.objectStores).forEach(objectStoreName => {
-      const objectStoreStructure = this.objectStores[objectStoreName]
-
-      let objectStore
-      if (!db.objectStoreNames.contains(objectStoreName)) {
-        objectStore = db.createObjectStore(objectStoreName, { keyPath: objectStoreStructure.keyPath })
-      } else {
-        objectStore = upgradeTransaction.objectStore(objectStoreName)
-      }
-      objectStoreStructure.indexes.forEach(index => {
-        if (!objectStore.indexNames.contains(index.indexName)) {
-          objectStore.createIndex(index.indexName, index.keyPath, { unique: index.unique })    
-        }
-      })
-    })
-  }
-}
-
-
-/***/ }),
-
-/***/ "./storage/storage-adapter.js":
-/*!************************************!*\
-  !*** ./storage/storage-adapter.js ***!
-  \************************************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return StorageAdapter; });
-/**
- * An abstract storage adapter class for an Options object. Implements two methods: set() and get().
- * A `domain` argument of a constructor designates a storage area where options key-value pairs
- * are stored. This allows to avoid possible collisions with other options objects.
- *
- * Local storage can contain multiple key-value pairs. get() with an empty parameter
- * should return all keys related to the particular object (e.g. set of options). A set of those keys
- * is defined by the `domain` concept. A key named `domain-name-key` is saved to the
- * local storage along with its key-value pairs. This special key
- * will contain an array of keys that belong to the storage domain. If no key values are provided,
- * get() function will use a list of those stored keys to retrieve all values that belong to a domain.
- */
-class StorageAdapter {
-  constructor (domain = 'alpheios-storage-domain') {
-    this.domain = domain
-  }
-
-  /**
-   * Stores one or several key-value pairs to local storage.
-   * @param {object} keysObject - An object containing one or more key/value pairs to be stored in storage.
-   * If a particular item already exists, its value will be updated.
-   * @return {Promise} - A promise that is resolved with with a void value if all key/value pairs are stored
-   * successfully. If at least on save operation fails, returns a rejected promise with an error information.
-   */
-  set (keysObject) {
-    console.info('*****************set value to storage')
-    // return new Promise((resolve, reject) => reject(new Error(`Set method should be implemented in a subclass`)))
-  }
-
-  /**
-   * Retrieves one or several values from local storage.
-   * @param {string | Array | object | null | undefined } keys - A key (string)
-   * or keys (an array of strings or an object) to identify the item(s) to be retrieved from storage.
-   * If you pass an empty string, object or array here, an empty object will be retrieved. If you pass null,
-   * or an undefined value, the entire storage contents will be retrieved.
-   * @return {Promise} A Promise that will be fulfilled with a results object containing key-value pairs
-   * found in the storage area. If this operation failed, the promise will be rejected with an error message.
-   */
-  get (keys) {
-    console.info('*****************get value from storage')
-    // return new Promise((resolve, reject) => reject(new Error(`Set method should be implemented in a subclass`)))
-  }
-
-  /**
-   * A wrapper around a local storage `removeItem()` function.
-   * It allows to remove one key-value pair from local storage.
-   * @param {String} key - key of the item to be removed.
-   * If a particular item exists, it will be removed.
-   * @return {Promise} - A promise that is resolved with with true if a key was removed
-   * successfully. If at least on save operation fails, returns a rejected promise with an error information.
-   */
-  remove (key) {
-    return new Promise((resolve, reject) => reject(new Error(`Remove method should be implemented in a subclass`)))
-  }
-}
 
 
 /***/ }),

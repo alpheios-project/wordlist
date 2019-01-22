@@ -11,7 +11,7 @@ export default class WordlistController {
   constructor (availableLangs,events) {
     this.wordLists = {}
     this.availableLangs = availableLangs
-    events.TEXT_QUOTE_SELECTOR_RECEIVED.sub(this.onTextQuoteSelectorRecieved.bind(this))
+    events.TEXT_QUOTE_SELECTOR_RECEIVED.sub(this.onTextQuoteSelectorReceived.bind(this))
     events.LEXICAL_QUERY_COMPLETE.sub(this.onHomonymReady.bind(this))
     events.DEFS_READY.sub(this.onDefinitionsReady.bind(this))
     events.LEMMA_TRANSL_READY.sub(this.onLemmaTranslationsReady.bind(this))
@@ -155,12 +155,12 @@ export default class WordlistController {
   *                        { textquoteselector: TextQuoteSelector }
   * Emits a WORDITEM_UPDATED and WORDLIST_UPDATED events
   */
-  onTextQuoteSelectorRecieved (data) {
-    console.info('********************onTextQuoteSelectorRecieved', data.textQuoteSelector)
+  onTextQuoteSelectorReceived (data) {
+    console.info('********************onTextQuoteSelectorReceived', data.textQuoteSelector)
     // when receiving this event, it's possible this is the first time we are seeing the word so
     // create the item in the word list if it doesn't exist
     let wordItem = this.getWordListItem(data.textQuoteSelector.languageCode, data.textQuoteSelector.normalizedText,true)
-    wordItem.addContext(textQuoteSelector)
+    wordItem.addContext([data.textQuoteSelector])
     WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'context'}})
     // emit a wordlist updated event too in case the wordlist was updated
     WordlistController.evt.WORDLIST_UPDATED.pub(this.getWordList(wordItem.languageCode))
@@ -192,7 +192,7 @@ export default class WordlistController {
   */
   updateAllImportant (languageCode, important) {
     let wordList = this.getWordList(languageCode, false)
-    this.wordList.values.forEach(wordItem => {
+    wordList.values.forEach(wordItem => {
       wordItem.important = important
       WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'important'}})
     })

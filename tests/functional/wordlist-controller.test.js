@@ -13,6 +13,7 @@ describe('wordlist-controller.test.js', () => {
   let mockLClat
   let mockLCgrc
   let mockWILatin
+  let mockWILatin2
   let mockWIGreek
   let mockListLatin
   let mockListGreek
@@ -23,6 +24,7 @@ describe('wordlist-controller.test.js', () => {
     mockLClat = 'lat'
     mockLCgrc = 'grc'
     mockWILatin = new WordItem({languageCode: mockLClat,targetWord:'mare'})
+    mockWILatin2 = new WordItem({languageCode: mockLClat,targetWord:'veni'})
     mockWIGreek = new WordItem({languageCode: mockLCgrc,targetWord:'mou=sa'})
     //mockListLatin = new WordList(mockLClat,[mockWILatin])
     //mockListGreek = new WordList(mockLCgrc,[mockWIGreek])
@@ -165,13 +167,108 @@ describe('wordlist-controller.test.js', () => {
     expect(WordlistController.evt.WORDLIST_UPDATED.pub).toHaveBeenCalledWith(latList)
   })
 
-  it.skip('12 WordlistController - onHomonymReady adds new item to list and emits events',() => {})
-  it.skip('13 WordlistController - onDefinitionsReady updates list and emits events',() => {})
-  it.skip('14 WordlistController - onLemmaTranslationsReady updates list and emits events',() => {})
-  it.skip('15 WordlistController - onTextQuoteSelectorRecieved updates list and emits events',() => {})
-  it.skip('16 WordlistController - onTextQuoteSelectorRecieved adds new item to list and emits events',() => {})
-  it.skip('17 WordlistController - updateWordItemImportant updates word item important and emits events',() => {})
-  it.skip('18 WordlistController - updateAllImportant updates word item important and emits events',() => {})
-  it.skip('19 WordlistController - selectWordItem emits event',() => {})
+  it('12 WordlistController - onHomonymReady adds new item to list and emits events',() => {
+    let wc = new WordlistController([mockLClat,mockLCgrc],mockEvents)
+    let latList = wc.getWordList(mockLClat,true)
+    let testTarget = 'mare'
+    jest.spyOn(WordlistController.evt.WORDITEM_UPDATED,'pub')
+    jest.spyOn(WordlistController.evt.WORDLIST_UPDATED,'pub')
+    wc.onHomonymReady({homonym: {language: mockLClat, targetWord: testTarget}})
+    let item = wc.getWordListItem(mockLClat,testTarget)
+    expect(item.homonym).toBeDefined()
+    expect(item.homonym.targetWord).toEqual(testTarget)
+    expect(WordlistController.evt.WORDITEM_UPDATED.pub).toHaveBeenCalledWith({dataObj:item,params:{segment:'homonym'}})
+    expect(WordlistController.evt.WORDLIST_UPDATED.pub).toHaveBeenCalledWith(latList)
+  })
+  it('13 WordlistController - onDefinitionsReady updates list and emits events',() => {
+    let wc = new WordlistController([mockLClat,mockLCgrc],mockEvents)
+    let latList = wc.getWordList(mockLClat,true)
+    let testTarget = 'mare'
+    latList.addWordItem(mockWILatin)
+    jest.spyOn(WordlistController.evt.WORDITEM_UPDATED,'pub')
+    jest.spyOn(WordlistController.evt.WORDLIST_UPDATED,'pub')
+    wc.onDefinitionsReady({homonym: {language: mockLClat, targetWord: testTarget}})
+    let item = wc.getWordListItem(mockLClat,testTarget)
+    expect(item.homonym).toBeDefined()
+    expect(item.homonym.targetWord).toEqual(testTarget)
+    expect(WordlistController.evt.WORDITEM_UPDATED.pub).toHaveBeenCalledWith({dataObj:item,params:{segment:'homonym'}})
+  })
+  it.skip('14 WordlistController - onDefinitionsReady fails if item does not exist',() => {})
+  it('15 WordlistController - onLemmaTranslationsReady updates list and emits events',() => {
+    let wc = new WordlistController([mockLClat,mockLCgrc],mockEvents)
+    let latList = wc.getWordList(mockLClat,true)
+    let testTarget = 'mare'
+    latList.addWordItem(mockWILatin)
+    jest.spyOn(WordlistController.evt.WORDITEM_UPDATED,'pub')
+    jest.spyOn(WordlistController.evt.WORDLIST_UPDATED,'pub')
+    wc.onLemmaTranslationsReady({homonym: {language: mockLClat, targetWord: testTarget}})
+    let item = wc.getWordListItem(mockLClat,testTarget)
+    expect(item.homonym).toBeDefined()
+    expect(item.homonym.targetWord).toEqual(testTarget)
+    expect(WordlistController.evt.WORDITEM_UPDATED.pub).toHaveBeenCalledWith({dataObj:item,params:{segment:'homonym'}})
+  })
+  it.skip('16 WordlistController - onLemmaTranslationsReady fails if item does not exist',() => {})
+  it('17 WordlistController - onTextQuoteSelectorReceived updates list and emits events',() => {
+    let wc = new WordlistController([mockLClat,mockLCgrc],mockEvents)
+    let latList = wc.getWordList(mockLClat,true)
+    let testTarget = 'mare'
+    latList.addWordItem(mockWILatin)
+    jest.spyOn(WordlistController.evt.WORDITEM_UPDATED,'pub')
+    jest.spyOn(WordlistController.evt.WORDLIST_UPDATED,'pub')
+    wc.onTextQuoteSelectorReceived({textQuoteSelector: {languageCode: mockLClat, normalizedText: testTarget}})
+    let item = wc.getWordListItem(mockLClat,testTarget)
+    expect(item.context).toBeDefined()
+    expect(item.context.length).toEqual(1)
+    expect(item.context[0].normalizedText).toEqual(testTarget)
+    expect(WordlistController.evt.WORDITEM_UPDATED.pub).toHaveBeenCalledWith({dataObj:item,params:{segment:'context'}})
+    expect(WordlistController.evt.WORDLIST_UPDATED.pub).toHaveBeenCalledWith(latList)
+  })
+  it('18 WordlistController - onTextQuoteSelectorReceived adds new item to list and emits events',() => {
+    let wc = new WordlistController([mockLClat,mockLCgrc],mockEvents)
+    let latList = wc.getWordList(mockLClat,true)
+    let testTarget = 'mare'
+    jest.spyOn(WordlistController.evt.WORDITEM_UPDATED,'pub')
+    jest.spyOn(WordlistController.evt.WORDLIST_UPDATED,'pub')
+    wc.onTextQuoteSelectorReceived({textQuoteSelector: {languageCode: mockLClat, normalizedText: testTarget}})
+    let item = wc.getWordListItem(mockLClat,testTarget)
+    expect(item.context).toBeDefined()
+    expect(item.context.length).toEqual(1)
+    expect(item.context[0].normalizedText).toEqual(testTarget)
+    expect(WordlistController.evt.WORDITEM_UPDATED.pub).toHaveBeenCalledWith({dataObj:item,params:{segment:'context'}})
+  })
+  it('19 WordlistController - updateWordItemImportant updates word item important and emits events',() => {
+    let wc = new WordlistController([mockLClat,mockLCgrc],mockEvents)
+    let latList = wc.getWordList(mockLClat,true)
+    let testTarget = 'mare'
+    latList.addWordItem(mockWILatin)
+    jest.spyOn(WordlistController.evt.WORDITEM_UPDATED,'pub')
+    wc.updateWordItemImportant(mockLClat,testTarget,true)
+    let item = wc.getWordListItem(mockLClat,testTarget)
+    expect(item.important).toBeTruthy()
+    wc.updateWordItemImportant(mockLClat,testTarget,false)
+    expect(item.important).toBeFalsy()
+    expect(WordlistController.evt.WORDITEM_UPDATED.pub).toHaveBeenCalledWith({dataObj:item,params:{segment:'important'}})
+    expect(WordlistController.evt.WORDITEM_UPDATED.pub).toHaveBeenCalledTimes(2)
+  })
+  it('20 WordlistController - updateAllImportant updates word item important and emits events',() => {
+    let wc = new WordlistController([mockLClat,mockLCgrc],mockEvents)
+    let latList = wc.getWordList(mockLClat,true)
+    let testTarget = 'mare'
+    let testTarget2 = 'veni'
+    latList.addWordItem(mockWILatin)
+    latList.addWordItem(mockWILatin2)
+    expect(mockWILatin.important).toBeFalsy()
+    expect(mockWILatin2.important).toBeFalsy()
+    jest.spyOn(WordlistController.evt.WORDITEM_UPDATED,'pub')
+    wc.updateAllImportant(mockLClat,true)
+    let item = wc.getWordListItem(mockLClat,testTarget)
+    let item2 = wc.getWordListItem(mockLClat,testTarget2)
+    expect(item.important).toBeTruthy()
+    expect(item2.important).toBeTruthy()
+    expect(WordlistController.evt.WORDITEM_UPDATED.pub).toHaveBeenCalledWith({dataObj:item,params:{segment:'important'}})
+    expect(WordlistController.evt.WORDITEM_UPDATED.pub).toHaveBeenCalledWith({dataObj:item2,params:{segment:'important'}})
+    expect(WordlistController.evt.WORDITEM_UPDATED.pub).toHaveBeenCalledTimes(2)
+  })
+  it.skip('21 WordlistController - selectWordItem emits event',() => {})
 
 })

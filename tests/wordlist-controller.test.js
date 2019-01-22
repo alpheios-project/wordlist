@@ -8,7 +8,7 @@ import { Constants } from 'alpheios-data-models'
 describe('wordlist-controller.test.js', () => {
   console.error = function () {}
   console.log = function () {}
-  console.warn = function () {}  
+  console.warn = function () {}
 
   let testHomonymLatin, testHomonymGreek
   let testUserID = 'userIDTest'
@@ -32,29 +32,29 @@ describe('wordlist-controller.test.js', () => {
     })
     testHomonymGreek = resTestHomonymGreek.result
   })
-  
+
   beforeEach(() => {
     jest.spyOn(console, 'error')
     jest.spyOn(console, 'log')
     jest.spyOn(console, 'warn')
   })
-  
+
   afterEach(() => {
     jest.resetModules()
   })
-  
+
   afterAll(() => {
     jest.clearAllMocks()
   })
-  
-  it('1 WordlistController - constructor saves userID from properties and inits wordLists', () => {
+
+  it.skip('1 WordlistController - constructor saves userID from properties and inits wordLists', () => {
     let wC = new WordlistController(testUserID)
     expect(wC.userID).toEqual(testUserID)
     expect(wC.wordLists).toBeInstanceOf(Object)
     expect(Object.values(wC.wordLists).length).toEqual(0)
   })
 
-  it('2 WordlistController - updateWordList checks wordLists map, doesn\'t add duplicate and create a separate WordList for each languageID', () => {
+  it.skip('2 WordlistController - updateWordList checks wordLists map, doesn\'t add duplicate and create a separate WordList for each languageID', () => {
     let wC = new WordlistController(testUserID)
     wC.updateWordList(testHomonymLatin)
 

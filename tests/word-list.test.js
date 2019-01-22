@@ -9,7 +9,7 @@ import WordItem from '@/lib/word-item';
 describe('word-list.test.js', () => {
   console.error = function () {}
   console.log = function () {}
-  console.warn = function () {}  
+  console.warn = function () {}
 
   let testWILatin, testWIGreek
   let testUserID = 'userIDTest'
@@ -36,29 +36,29 @@ describe('word-list.test.js', () => {
     let testHomonymGreek = resTestHomonymGreek.result
     testWIGreek = new WordItem(testHomonymGreek)
   })
-  
+
   beforeEach(() => {
     jest.spyOn(console, 'error')
     jest.spyOn(console, 'log')
     jest.spyOn(console, 'warn')
   })
-  
+
   afterEach(() => {
     jest.resetModules()
   })
-  
+
   afterAll(() => {
     jest.clearAllMocks()
   })
-  
-  it('1 WordList - constructor saves userID, languageID from properties and inits items', () => {
+
+  it.skip('1 WordList - constructor saves userID, languageID from properties and inits items', () => {
     let wL = new WordList(testUserID, testLanguageID)
     expect(wL.userID).toEqual(testUserID)
     expect(wL.languageID).toEqual(testLanguageID)
     expect(wL.values.length).toEqual(0)
   })
 
-  it('2 WordList - push method adds WordItem to items if languageID is the same and it is not a duplicate for any item in the wordlist', () => {
+  it.skip('2 WordList - push method adds WordItem to items if languageID is the same and it is not a duplicate for any item in the wordlist', () => {
     let wL = new WordList(testUserID, Constants.LANG_LATIN)
 
     wL.push(testWILatin)
@@ -66,12 +66,12 @@ describe('word-list.test.js', () => {
 
     wL.push(testWILatin)
     expect(wL.values.length).toEqual(1) // duplicate
-    
+
     wL.push(testWIGreek)
     expect(wL.values.length).toEqual(1) // wrong languageID
   })
 
-  it('3 WordList - contains method check if WordItem is already in the list or not', () => {
+  it.skip('3 WordList - contains method check if WordItem is already in the list or not', () => {
     let wL = new WordList(testUserID, Constants.LANG_LATIN)
 
     expect(wL.contains(testWILatin)).toBeFalsy() // still empty
@@ -81,7 +81,7 @@ describe('word-list.test.js', () => {
     expect(wL.contains(testWIGreek)).toBeFalsy() // was not added
   })
 
-  it('4 WordList - makeAllImportant method marks each wordItem in the list as important', () => {
+  it.skip('4 WordList - makeAllImportant method marks each wordItem in the list as important', () => {
     let wL = new WordList(testUserID, Constants.LANG_LATIN)
 
     wL.push(testWILatin)
@@ -90,11 +90,11 @@ describe('word-list.test.js', () => {
     expect(wL.values.every(item => item.important)).toBeTruthy() // now all are important
   })
 
-  it('5 WordList - removeAllImportant method marks each wordItem in the list as not important', () => {
+  it.skip('5 WordList - removeAllImportant method marks each wordItem in the list as not important', () => {
     let wL = new WordList(testUserID, Constants.LANG_LATIN)
 
     wL.push(testWILatin)
-    
+
     wL.makeAllImportant()
     expect(wL.values.every(item => item.important)).toBeTruthy() // now all are important
 

@@ -18,10 +18,10 @@ export default class WordItem {
     if (!this.targetWord || !this.languageCode) {
       throw new Error("Unable to constructe a worditem without at least a targetWord and a languageCode")
     }
-    this.important = data.important
-    this.currentSession = data.currentSession
-    this.context = data.context
-    this.homonym = data.homonym
+    this.important = data.important || false
+    this.currentSession = data.currentSession || true
+    this.context = data.context || []
+    this.homonym = data.homonym || {}
   }
 
   /**
@@ -70,10 +70,10 @@ export default class WordItem {
    * @param {TextQuoteSelector[]} selectors
    */
   addContext(selectors) {
-    for (s of selectors) {
+    for (let s of selectors) {
       let found = this.context.filter(tqs => tqs.isEqual(s))
       if (found.length == 0) {
-        this.context.push(selector)
+        this.context.push(s)
       }
     }
   }

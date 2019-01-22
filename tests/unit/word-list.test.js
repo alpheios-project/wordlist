@@ -4,7 +4,6 @@ import 'whatwg-fetch'
 import WordList from '@/lib/word-list.js'
 import { ClientAdapters } from 'alpheios-client-adapters'
 import { Constants } from 'alpheios-data-models'
-import WordItem from '@/lib/word-item';
 
 describe('word-list.test.js', () => {
   console.error = function () {}
@@ -66,22 +65,25 @@ describe('word-list.test.js', () => {
     }).toThrowError(/mismatch/)
   })
 
-  it.skip('4 WordList - deleteWordItem removes an item from the list',() = {
+  it.skip('4 WordList - deleteWordItem removes an item from the list',() => {
 
   })
 
-  it.skip('5 WordList - removeAllWordItems removes all items from the list',() = {
+  it.skip('5 WordList - removeAllWordItems removes all items from the list',() => {
 
 
   })
 
-  it.skip('6 WordList - getWordItem creates new item if it does not exist',() = {
+  it.skip('6 WordList - getWordItem creates new item if it does not exist',() => {
 
   })
 
-  it.skip('6 WordList - getWordItem does not create new item if it does not exist',() = {
+  it.skip('7 WordList - getWordItem does not create new item if it does not exist',() => {
 
   })
 
+  it.skip('8 WordList - test isEmpty method', () => {
+
+  })
 
 })

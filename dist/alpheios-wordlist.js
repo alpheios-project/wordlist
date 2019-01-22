@@ -12652,6 +12652,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alpheios-data-models */ "alpheios-data-models");
 /* harmony import */ var alpheios_data_models__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var _lib_word_list__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/lib/word-list */ "./lib/word-list.js");
+/* harmony import */ var _lib_word_item__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/lib/word-item */ "./lib/word-item.js");
+
 
 
 
@@ -12666,8 +12668,8 @@ class WordlistController {
     this.availableLangs = availableLangs
     events.TEXT_QUOTE_SELECTOR_RECEIVED.sub(this.onTextQuoteSelectorRecieved.bind(this))
     events.LEXICAL_QUERY_COMPLETE.sub(this.onHomonymReady.bind(this))
-    events.DEFS_READY.sub(uiController.wordlistC.onDefinitionsReady.bind(uiController.wordlistC))
-    events.LEMMA_TRANSL_READY.sub(uiController.wordlistC.onLemmaTranslationsReady.bind(uiController.wordlistC))
+    events.DEFS_READY.sub(this.onDefinitionsReady.bind(this))
+    events.LEMMA_TRANSL_READY.sub(this.onLemmaTranslationsReady.bind(this))
   }
 
   /**
@@ -12678,12 +12680,12 @@ class WordlistController {
    * Emits a WORDLIST_UPDATED event when the wordlists are available
    */
   async initLists (dataManager) {
-    this.availableLangs.forEach(async (languageCode) => {
-      let wordItems = await dataManager.query({dataType: WordItem.constructor.name, params: {languageCode: languageCode}})
+    for (let languageCode of this.availableLangs) {
+      let wordItems = await dataManager.query({dataType: 'WordItem', params: {languageCode: languageCode}})
       if (wordItems.length > 0) {
         this.wordLists[languageCode] = new _lib_word_list__WEBPACK_IMPORTED_MODULE_1__["default"](languageCode,wordItems)
       }
-    })
+    }
     WordlistController.evt.WORDLIST_UPDATED.pub(this.wordLists)
   }
 
@@ -12695,8 +12697,8 @@ class WordlistController {
    * @return {WordList} the wordlist
    */
   getWordList (languageCode, create=true) {
-    if (create && ! this.wordListExist(languageCode)) {
-      let wordList = new _lib_word_list__WEBPACK_IMPORTED_MODULE_1__["default"]([])
+    if (create && ! this._wordListExist(languageCode)) {
+      let wordList = new _lib_word_list__WEBPACK_IMPORTED_MODULE_1__["default"](languageCode,[])
       this.wordLists[languageCode] = wordList
       WordlistController.evt.WORDLIST_CREATED.pub(wordList)
     }
@@ -12711,7 +12713,7 @@ class WordlistController {
   removeWordList (languageCode) {
     let toDelete = this.wordLists[languageCode]
     delete this.wordLists[languageCode]
-    WordlistController.evt.WORDLIST_DELETED.pub({dataType: WordItem.constructor.name, params: {languageCode: languageCode}})
+    WordlistController.evt.WORDLIST_DELETED.pub({dataType: 'WordItem', params: {languageCode: languageCode}})
   }
 
   /**
@@ -12725,19 +12727,11 @@ class WordlistController {
     if (wordList) {
       let deleted = wordList.deleteWordItem(targetWord)
       if (deleted) {
-        WordlistController.evt.WORDITEM_DELETED.pub({dataObj: wordItem})
+        WordlistController.evt.WORDITEM_DELETED.pub({dataObj: deleted})
       }
     }
     // TODO error handling if item not found
-  }
-
-  /**
-   * Check to see if we have a wordlist for a specific language code
-   * @param {String} languageCode the language code
-   * @return {Boolean} true if the wordlist exists otherwise false
-   */
-  wordListExist (languageCode) {
-    return Object.keys(this.wordLists).includes(languageCode)
+    // TODO call removeWordList if the list is empty now
   }
 
   /**
@@ -12869,6 +12863,16 @@ class WordlistController {
     let wordItem = this.getWordListItem(languageCode, targetWord,false)
     this.evt.WORDITEM_SELECTED.pub(wordItem)
   }
+
+  /**
+   * Private method - check to see if we have a wordlist for a specific language code
+   * @param {String} languageCode the language code
+   * @return {Boolean} true if the wordlist exists otherwise false
+   */
+  _wordListExist (languageCode) {
+    return Object.keys(this.wordLists).includes(languageCode)
+  }
+
 }
 
 WordlistController.evt = {
@@ -13443,9 +13447,18 @@ class WordList {
     return Object.values(this.items)
   }
 
+  /**
+   * checks to see if the list is empty
+   * @return {Boolean}
+   */
+  get isEmpty() {
+    return Object.values(this.items).length === 0
+  }
+
+
   addWordItem (item) {
     if (item.languageCode !== this.languageCode) {
-      throw new Error("Language Code mismatch")
+      throw new Error(`Language Code mismatch ${item.languageCode} !=== ${this.languageCode}`)
     }
     let existingItem = this.getWordItem(item.targetWord,false)
     if (existingItem) {

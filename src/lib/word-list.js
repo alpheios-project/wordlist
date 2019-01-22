@@ -24,9 +24,18 @@ export default class WordList {
     return Object.values(this.items)
   }
 
+  /**
+   * checks to see if the list is empty
+   * @return {Boolean}
+   */
+  get isEmpty() {
+    return Object.values(this.items).length === 0
+  }
+
+
   addWordItem (item) {
     if (item.languageCode !== this.languageCode) {
-      throw new Error("Language Code mismatch")
+      throw new Error(`Language Code mismatch ${item.languageCode} !=== ${this.languageCode}`)
     }
     let existingItem = this.getWordItem(item.targetWord,false)
     if (existingItem) {

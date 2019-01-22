@@ -1,5 +1,6 @@
 import { PsEvent } from 'alpheios-data-models'
 import WordList from '@/lib/word-list'
+import WordItem from '@/lib/word-item'
 
 export default class WordlistController {
   /**
@@ -12,8 +13,8 @@ export default class WordlistController {
     this.availableLangs = availableLangs
     events.TEXT_QUOTE_SELECTOR_RECEIVED.sub(this.onTextQuoteSelectorRecieved.bind(this))
     events.LEXICAL_QUERY_COMPLETE.sub(this.onHomonymReady.bind(this))
-    events.DEFS_READY.sub(uiController.wordlistC.onDefinitionsReady.bind(uiController.wordlistC))
-    events.LEMMA_TRANSL_READY.sub(uiController.wordlistC.onLemmaTranslationsReady.bind(uiController.wordlistC))
+    events.DEFS_READY.sub(this.onDefinitionsReady.bind(this))
+    events.LEMMA_TRANSL_READY.sub(this.onLemmaTranslationsReady.bind(this))
   }
 
   /**
@@ -24,12 +25,12 @@ export default class WordlistController {
    * Emits a WORDLIST_UPDATED event when the wordlists are available
    */
   async initLists (dataManager) {
-    this.availableLangs.forEach(async (languageCode) => {
-      let wordItems = await dataManager.query({dataType: WordItem.constructor.name, params: {languageCode: languageCode}})
+    for (let languageCode of this.availableLangs) {
+      let wordItems = await dataManager.query({dataType: 'WordItem', params: {languageCode: languageCode}})
       if (wordItems.length > 0) {
         this.wordLists[languageCode] = new WordList(languageCode,wordItems)
       }
-    })
+    }
     WordlistController.evt.WORDLIST_UPDATED.pub(this.wordLists)
   }
 
@@ -41,8 +42,8 @@ export default class WordlistController {
    * @return {WordList} the wordlist
    */
   getWordList (languageCode, create=true) {
-    if (create && ! this.wordListExist(languageCode)) {
-      let wordList = new WordList([])
+    if (create && ! this._wordListExist(languageCode)) {
+      let wordList = new WordList(languageCode,[])
       this.wordLists[languageCode] = wordList
       WordlistController.evt.WORDLIST_CREATED.pub(wordList)
     }
@@ -57,7 +58,7 @@ export default class WordlistController {
   removeWordList (languageCode) {
     let toDelete = this.wordLists[languageCode]
     delete this.wordLists[languageCode]
-    WordlistController.evt.WORDLIST_DELETED.pub({dataType: WordItem.constructor.name, params: {languageCode: languageCode}})
+    WordlistController.evt.WORDLIST_DELETED.pub({dataType: 'WordItem', params: {languageCode: languageCode}})
   }
 
   /**
@@ -71,19 +72,11 @@ export default class WordlistController {
     if (wordList) {
       let deleted = wordList.deleteWordItem(targetWord)
       if (deleted) {
-        WordlistController.evt.WORDITEM_DELETED.pub({dataObj: wordItem})
+        WordlistController.evt.WORDITEM_DELETED.pub({dataObj: deleted})
       }
     }
     // TODO error handling if item not found
-  }
-
-  /**
-   * Check to see if we have a wordlist for a specific language code
-   * @param {String} languageCode the language code
-   * @return {Boolean} true if the wordlist exists otherwise false
-   */
-  wordListExist (languageCode) {
-    return Object.keys(this.wordLists).includes(languageCode)
+    // TODO call removeWordList if the list is empty now
   }
 
   /**
@@ -215,6 +208,16 @@ export default class WordlistController {
     let wordItem = this.getWordListItem(languageCode, targetWord,false)
     this.evt.WORDITEM_SELECTED.pub(wordItem)
   }
+
+  /**
+   * Private method - check to see if we have a wordlist for a specific language code
+   * @param {String} languageCode the language code
+   * @return {Boolean} true if the wordlist exists otherwise false
+   */
+  _wordListExist (languageCode) {
+    return Object.keys(this.wordLists).includes(languageCode)
+  }
+
 }
 
 WordlistController.evt = {

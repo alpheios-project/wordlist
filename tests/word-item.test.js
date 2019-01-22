@@ -83,4 +83,8 @@ describe('word-item.test.js', () => {
 
   })
 
+  it.skip('9 WordItem - merges two items', () => {
+
+  })
+
 })

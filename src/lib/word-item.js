@@ -16,7 +16,7 @@ export default class WordItem {
     this.targetWord = data.targetWord
     this.languageCode = data.languageCode
     if (!this.targetWord || !this.languageCode) {
-      throw new Error("Unable to constructe a worditem without at least a targetWord and a languageCode")
+      throw new Error("Unable to construct a worditem without at least a targetWord and a languageCode")
     }
     this.important = data.important || false
     this.currentSession = data.currentSession || true

@@ -13310,12 +13310,12 @@ class WordItem {
     this.targetWord = data.targetWord
     this.languageCode = data.languageCode
     if (!this.targetWord || !this.languageCode) {
-      throw new Error("Unable to constructe a worditem without at least a targetWord and a languageCode")
+      throw new Error("Unable to construct a worditem without at least a targetWord and a languageCode")
     }
-    this.important = data.important
-    this.currentSession = data.currentSession
-    this.context = data.context
-    this.homonym = data.homonym
+    this.important = data.important || false
+    this.currentSession = data.currentSession || true
+    this.context = data.context || []
+    this.homonym = data.homonym || {}
   }
 
   /**
@@ -13364,10 +13364,10 @@ class WordItem {
    * @param {TextQuoteSelector[]} selectors
    */
   addContext(selectors) {
-    for (s of selectors) {
+    for (let s of selectors) {
       let found = this.context.filter(tqs => tqs.isEqual(s))
       if (found.length == 0) {
-        this.context.push(selector)
+        this.context.push(s)
       }
     }
   }
@@ -13425,12 +13425,14 @@ class WordList {
   * @param {String} languageCode the language code of the list
   * @param {WordItem[]} worditems an optional array of WordItems with which to initialize the list
   */
-  constructor (languageCode,worditems) {
+  constructor (languageCode,worditems=[]) {
+    if (!languageCode) {
+      throw new Error("Unable to construct a wordlist without a languagecode")
+    }
     this.languageCode = languageCode
     this.items = {}
     worditems.forEach(item => {
-      let key = this._makeItemKey(this.languageCode,item.targetWord)
-      this.items[key]  = item
+      this.addWordItem(item)
     })
   }
 
@@ -13439,6 +13441,18 @@ class WordList {
    */
   get values () {
     return Object.values(this.items)
+  }
+
+  addWordItem (item) {
+    if (item.languageCode !== this.languageCode) {
+      throw new Error("Language Code mismatch")
+    }
+    let existingItem = this.getWordItem(item.targetWord,false)
+    if (existingItem) {
+      item = item.merge(existingItem)
+    }
+    let key = this._makeItemKey(this.languageCode,item.targetWord)
+    this.items[key]  = item
   }
 
   /**
@@ -13471,7 +13485,7 @@ class WordList {
    */
   getWordItem(targetWord, create=true) {
     let key = this._makeItemKey(this.languageCode,targetWord)
-    if (!this.items[key]) {
+    if (create && !this.items[key]) {
       let wordItem = new _lib_word_item__WEBPACK_IMPORTED_MODULE_0__["default"]({targetWord: targetWord, languageCode: this.languageCode})
       this.items[key]  = wordItem
     }

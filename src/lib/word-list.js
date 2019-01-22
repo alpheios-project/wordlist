@@ -6,12 +6,14 @@ export default class WordList {
   * @param {String} languageCode the language code of the list
   * @param {WordItem[]} worditems an optional array of WordItems with which to initialize the list
   */
-  constructor (languageCode,worditems) {
+  constructor (languageCode,worditems=[]) {
+    if (!languageCode) {
+      throw new Error("Unable to construct a wordlist without a languagecode")
+    }
     this.languageCode = languageCode
     this.items = {}
     worditems.forEach(item => {
-      let key = this._makeItemKey(this.languageCode,item.targetWord)
-      this.items[key]  = item
+      this.addWordItem(item)
     })
   }
 
@@ -20,6 +22,18 @@ export default class WordList {
    */
   get values () {
     return Object.values(this.items)
+  }
+
+  addWordItem (item) {
+    if (item.languageCode !== this.languageCode) {
+      throw new Error("Language Code mismatch")
+    }
+    let existingItem = this.getWordItem(item.targetWord,false)
+    if (existingItem) {
+      item = item.merge(existingItem)
+    }
+    let key = this._makeItemKey(this.languageCode,item.targetWord)
+    this.items[key]  = item
   }
 
   /**
@@ -52,7 +66,7 @@ export default class WordList {
    */
   getWordItem(targetWord, create=true) {
     let key = this._makeItemKey(this.languageCode,targetWord)
-    if (!this.items[key]) {
+    if (create && !this.items[key]) {
       let wordItem = new WordItem({targetWord: targetWord, languageCode: this.languageCode})
       this.items[key]  = wordItem
     }

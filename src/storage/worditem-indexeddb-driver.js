@@ -126,7 +126,7 @@ export default class WordItemIndexedDbDriver {
     }
   }
 
-  deleteOneSegmentQuery(segment,worditem) {
+  segmentDeleteQuery(segment,worditem) {
     let ID = this._makeStorageID(worditem)
     return {
       objectStoreName: this.storageMap[segment].objectStoreName,
@@ -134,7 +134,7 @@ export default class WordItemIndexedDbDriver {
     }
   }
 
-  deleteManySegmentQuery(segment,params) {
+  segmentDeleteManyQuery(segment,params) {
     if (params.languageCode) {
       let listID = this.userId + '-' + params.languageCode
       return  {
@@ -173,6 +173,7 @@ export default class WordItemIndexedDbDriver {
         condition: {indexName: 'listID', value: listID, type: 'only' }
       }
     } else {
+      throw new Error("Invalid query parameters - missing languageCode")
       // TODO throw error
     }
   }

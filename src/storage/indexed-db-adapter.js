@@ -19,11 +19,12 @@ export default class IndexedDBAdapter {
    */
   async create(data) {
     let segments = this.dbDriver.segments
+    let updated
     // iterate through the declared segmentation of the object
     // and store accordingly
     // TODO we need transaction handling here
     for (let segment of segments) {
-      let updated = await this.update(data, {segment: segment})
+      updated = await this.update(data, {segment: segment})
       if (! updated) {
         break
         // TODO rollback?
@@ -41,7 +42,7 @@ export default class IndexedDBAdapter {
    */
   async deleteMany(params) {
     for (let segment of this.dbDriver.segments) {
-      let q = dbDriver.segmentDeleteManyQuery(segment,params)
+      let q = this.dbDriver.segmentDeleteManyQuery(segment,params)
       await this._deleteFromStore(q)
     }
     // TODO error handling
@@ -55,7 +56,7 @@ export default class IndexedDBAdapter {
    */
   async deleteOne(data) {
     for (let segment of this.dbDriver.segments) {
-      let q = dbDriver.segmentDeleteQuery(segment,data)
+      let q = this.dbDriver.segmentDeleteQuery(segment,data)
       await this._deleteFromStore(q)
     }
     // TODO error handling
@@ -75,11 +76,13 @@ export default class IndexedDBAdapter {
     if (segments.length === 0)  {
       segments = this.dbDriver.segments
     }
-    for (let s of segements) {
+    for (let s of segments) {
       let q = this.dbDriver.updateSegmentQuery(s,data)
       try {
+        console.log("Try ",q)
         return await this._set(q)
       } catch(error) {
+        console.info("Error on update",error)
         // TODO need transaction rollback handling here if mulitple segments?
         return false
       }
@@ -113,6 +116,34 @@ export default class IndexedDBAdapter {
     return items
   }
 
+  /**
+   * Clear all the object stores
+   * Used primarily for testing right now
+   * TODO needs to be enhanced to support async removal of old database versions
+   */
+  clear () {
+    let request = this.indexedDB.open(this.dbDriver.dbName, this.dbDriver.dbVersion)
+    request.onsuccess = (event) => {
+      let db = event.target.result
+      let objectStores = this.dbDriver.objectStores
+      for (let store of objectStores) {
+        // open a read/write db transaction, ready for clearing the data
+        let transaction = db.transaction([store], 'readwrite')
+        // create an object store on the transaction
+        let objectStore = transaction.objectStore(store)
+        // Make a request to clear all the data out of the object store
+        let objectStoreRequest = objectStore.clear();
+        objectStoreRequest.onsuccess = function(event) {
+          console.info(`store ${store} cleared`)
+        }
+        objectStoreRequest.onerror = function(event) {
+          console.info(`store ${store} clear error`)
+        }
+      }
+    }
+  }
+
+
 
   /**
    * This method checks if IndexedDB is used in the current browser
@@ -134,11 +165,11 @@ export default class IndexedDBAdapter {
    */
   _openDatabaseRequest () {
     let request = this.indexedDB.open(this.dbDriver.dbName, this.dbDriver.dbVersion)
-    // TODO - will onupgradeneeded be called if the database doesn't exist? Is this how it gets created?
     request.onupgradeneeded = (event) => {
       const db = event.target.result
       const upgradeTransaction = event.target.transaction
       this._createObjectStores(db, upgradeTransaction)
+      // TODO we should clean up old database versions
     }
     return request
   }
@@ -203,9 +234,9 @@ export default class IndexedDBAdapter {
       }
       const objectStore = transaction.objectStore(data.objectStoreName)
       let objectsDone = data.dataItems.length
-      // console.info('************************data.dataItems', data.dataItems)
+      console.info('************************data.dataItems', data.dataItems)
       for (let dataItem of data.dataItems) {
-        // console.info('************************dataItem', dataItem)
+        console.info('************************dataItem', dataItem)
         const requestPut = objectStore.put(dataItem)
         requestPut.onsuccess = () => {
           objectsDone = objectsDone - 1

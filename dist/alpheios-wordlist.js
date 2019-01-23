@@ -13296,6 +13296,9 @@ class Message {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return WordItem; });
+/* harmony import */ var alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alpheios-data-models */ "alpheios-data-models");
+/* harmony import */ var alpheios_data_models__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__);
+
 class WordItem {
   /**
    * @constructor
@@ -13316,8 +13319,8 @@ class WordItem {
     if (!this.targetWord || !this.languageCode) {
       throw new Error("Unable to construct a worditem without at least a targetWord and a languageCode")
     }
-    this.important = data.important || false
-    this.currentSession = data.currentSession || true
+    this.important = data.important === undefined ? false : data.important
+    this.currentSession = data.currentSession == undefined ? true : data.currentSession
     this.context = data.context || []
     this.homonym = data.homonym || {}
   }
@@ -13348,7 +13351,7 @@ class WordItem {
    * Construct the homonym portion of a WordItem from JSON
    */
   static readHomonym(jsonObject) {
-    return Homonym.readObject(jsonObj.homonym)
+    return alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["Homonym"].readObject(jsonObj.homonym)
   }
 
   /**
@@ -13357,7 +13360,7 @@ class WordItem {
   static readContext(jsonObject) {
     let tqs = []
     for (let jsonObj of jsonObject) {
-      let tq = TextQuoteSelector.readObject(jsonObj)
+      let tq = alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["TextQuoteSelector"].readObject(jsonObj)
       tqs.push(tq)
     }
     return tqs

@@ -10,21 +10,21 @@ export default class WordItemIndexedDbDriver {
     this.storageMap = {
       common: {
         objectStoreName: 'WordListsCommon',
-        serialize: this._serializeCommon
+        serialize: this._serializeCommon.bind(this)
       },
       context: {
         objectStoreName: 'WordListsContext',
-        serialize: this._serializeContext,
+        serialize: this._serializeContext.bind(this),
         load: this._loadContext
       },
       shortHomonym: {
         objectStoreName: 'WordListsHomonym',
-        serialize: this._serializeHomonym,
+        serialize: this._serializeHomonym.bind(this),
         load: this._loadHomonym
       },
       fullHomonym: {
         objectStoreName: 'WordListsFullHomonym',
-        serialize: this._serializeHomonymWithFullDefs,
+        serialize: this._serializeHomonymWithFullDefs.bind(this),
         load: this._loadHomonym
       }
     }
@@ -41,7 +41,7 @@ export default class WordItemIndexedDbDriver {
    * dbVersion getter
    */
   get dbVersion () {
-    return 2
+    return 3
   }
 
   /**
@@ -189,7 +189,7 @@ export default class WordItemIndexedDbDriver {
    * private method to load the Context property of a WordItem
    */
   _loadContext (worditem, jsonObjs) {
-    worditem.context = WordItem.readContext(jsonObj)
+    worditem.context = WordItem.readContext(jsonObjs)
   }
 
   /**
@@ -198,7 +198,8 @@ export default class WordItemIndexedDbDriver {
   _serializeCommon (worditem) {
     return {
       ID: this._makeStorageID(worditem),
-      listID: worditem.listID,
+      listID: this.userId + '-' + worditem.languageCode,
+      userID: this.userId,
       languageCode: worditem.languageCode,
       targetWord: worditem.targetWord,
       important: worditem.important,
@@ -213,12 +214,12 @@ export default class WordItemIndexedDbDriver {
     let result = []
     let index = 0
     let wordItemId = this._makeStorageID(worditem)
-    for (let tq of worditem.textQuoteSelectors) {
+    for (let tq of worditem.context) {
       index++
       let resultItem = {
         ID: wordItemId + '-' + index,
-        listID: worditem.listID,
-        userID: worditem.userID,
+        listID: this.userId + '-' + worditem.languageCode,
+        userID: this.userId,
         languageCode: worditem.languageCode,
         targetWord: worditem.targetWord,
         wordItemID: wordItemId,
@@ -248,8 +249,8 @@ export default class WordItemIndexedDbDriver {
     let resultHomonym = worditem.homonym.convertToJSONObject(addMeaning)
     return {
       ID: this._makeStorageID(worditem),
-      listID: worditem.listID,
-      userID: worditem.userID,
+      listID: this.userId + '-' + worditem.languageCode,
+      userID: this.userId,
       languageCode: worditem.languageCode,
       targetWord: worditem.targetWord,
       homonym: resultHomonym

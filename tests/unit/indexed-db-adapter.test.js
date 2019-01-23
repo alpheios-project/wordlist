@@ -18,8 +18,7 @@ describe('indexed-db-adapter.test.js', () => {
   let mockDriver
 
 
-  beforeAll(async () => {
-    // TODO it would be nice to use a real mock here
+  beforeAll( () => {
     mockDriver = {
       dbName: 'mockDatabase',
       dbVersion: 1,
@@ -191,4 +190,5 @@ describe('indexed-db-adapter.test.js', () => {
     ])
     ida.clear()
   })
+  // TODO explicitly test all error conditions
 })

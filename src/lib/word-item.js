@@ -1,3 +1,4 @@
+import {Homonym, TextQuoteSelector} from 'alpheios-data-models'
 export default class WordItem {
   /**
    * @constructor
@@ -18,8 +19,8 @@ export default class WordItem {
     if (!this.targetWord || !this.languageCode) {
       throw new Error("Unable to construct a worditem without at least a targetWord and a languageCode")
     }
-    this.important = data.important || false
-    this.currentSession = data.currentSession || true
+    this.important = data.important === undefined ? false : data.important
+    this.currentSession = data.currentSession == undefined ? true : data.currentSession
     this.context = data.context || []
     this.homonym = data.homonym || {}
   }

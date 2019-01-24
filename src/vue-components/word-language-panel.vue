@@ -19,11 +19,12 @@
             </alph-tooltip>
         </div>
 
-        <div 
-                v-for="wordItem in wordItems" 
-                v-bind:key="wordItem.storageID">
-            <word-item-panel 
-              :worditem="wordItem" 
+        <div
+                v-for="wordItem in wordItems"
+                v-bind:key="wordItem.targetWord">
+            <word-item-panel
+              :controller="controller"
+              :worditem="wordItem"
               :messages="messages"
               @changeImportant = "changeImportant"
               @deleteItem = "deleteItem"
@@ -49,8 +50,12 @@ export default {
     alphTooltip: TooltipWrap
   },
   props: {
-    wordlist: {
+    controller: {
       type: Object,
+      required: true
+    },
+    languageCode: {
+      type: String,
       required: true
     },
     messages: {
@@ -68,39 +73,40 @@ export default {
     }
   },
   computed: {
+    wordlist () {
+      return this.controller.getWordList(this.languageCode)
+    },
     wordItems () {
       return this.updated && this.reloadList ? this.wordlist.values : []
     },
     languageName () {
-      return this.wordlist.languageName
+      // TODO with upcoming merge, this can be retrived from utility library
+      // so just return the code for now
+      return this.languageCode
     }
   },
   methods: {
     async makeAllImportant () {
-      await this.wordlist.makeAllImportant()
+      await this.controller.updateAllImportant(this.languageCode,true)
       this.$emit('eventChangeImportant')
     },
     async removeAllImportant () {
-      await this.wordlist.removeAllImportant()
+      await this.controller.updateAllImportant(this.languageCode,false)
       this.$emit('eventChangeImportant')
     },
-    async changeImportant (storageID, important) {
-      if (important) {
-        await this.wordlist.removeImportantByID(storageID)
-      } else {
-        await this.wordlist.makeImportantByID(storageID)
-      }
+    async changeImportant (targetWord, important) {
+      await this.controller.updateWordItemImportant(this.languageCode,targetWord,important)
     },
-    async deleteItem (storageID) {
-      await this.wordlist.removeWordItemByID(storageID)
+    async deleteItem (targetWord) {
+      await this.controller.removeWordListItem(this.languageCode,targetWord)
       this.reloadList = this.reloadList + 1
     },
     async deleteAll () {
-      await this.wordlist.removeAllWordItems()
+      await this.controller.removeWordList(this.languageCode)
       this.reloadList = this.reloadList + 1
     },
-    showContexts (wordItemStorageID) {
-      this.$emit('showContexts', wordItemStorageID, this.wordlist.languageCode)
+    showContexts (targetWord) {
+      this.$emit('showContexts', targetWord, thislanguageCode)
     }
   }
 }
@@ -123,7 +129,7 @@ export default {
         height: 15px;
         display: inline-block;
         vertical-align: top;
-      } 
+      }
     }
 
     .alpheios-wordlist-commands__item.alpheios-wordlist-commands__item-no-important {

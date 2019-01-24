@@ -765,6 +765,10 @@ __webpack_require__.r(__webpack_exports__);
     alphTooltip: _vue_components_common_components_tooltip_wrap_vue__WEBPACK_IMPORTED_MODULE_3__["default"]
   },
   props: {
+   controller: {
+     type: Object,
+     required: true
+   },
     worditem: {
       type: Object,
       required: true
@@ -786,7 +790,7 @@ __webpack_require__.r(__webpack_exports__);
   computed: {
     itemClasses () {
       // console.info('********************itemClasses', this.worditem.currentSession, this.worditem)
-      return { 
+      return {
         'alpheios-wordlist-language__worditem__active': this.important,
         'alpheios-wordlist-language__worditem__current_session': this.worditem.currentSession
       }
@@ -794,20 +798,20 @@ __webpack_require__.r(__webpack_exports__);
   },
   methods: {
     changeImportant () {
-      this.$emit('changeImportant', this.worditem.storageID, this.worditem.important)
+      this.$emit('changeImportant', this.worditem.targetWord, this.worditem.important)
       this.important = this.worditem.important
     },
     eventChangeImportant () {
       this.important = this.worditem.important
     },
     selectWordItem () {
-      this.worditem.selectWordItem()
+      this.controller.selectWordItem(this.worditem.languageCode,this.worditem.targetWord)
     },
     deleteItem () {
-      this.$emit('deleteItem', this.worditem.storageID)
+      this.$emit('deleteItem', this.worditem.targetWord)
     },
     showContexts () {
-      this.$emit('showContexts', this.worditem.storageID)
+      this.$emit('showContexts', this.worditem.targetWord)
     }
   }
 });
@@ -868,6 +872,7 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
 
 
 
@@ -885,8 +890,12 @@ __webpack_require__.r(__webpack_exports__);
     alphTooltip: _vue_components_common_components_tooltip_wrap_vue__WEBPACK_IMPORTED_MODULE_0__["default"]
   },
   props: {
-    wordlist: {
+    controller: {
       type: Object,
+      required: true
+    },
+    languageCode: {
+      type: String,
       required: true
     },
     messages: {
@@ -904,39 +913,40 @@ __webpack_require__.r(__webpack_exports__);
     }
   },
   computed: {
+    wordlist () {
+      return this.controller.getWordList(this.languageCode)
+    },
     wordItems () {
       return this.updated && this.reloadList ? this.wordlist.values : []
     },
     languageName () {
-      return this.wordlist.languageName
+      // TODO with upcoming merge, this can be retrived from utility library
+      // so just return the code for now
+      return this.languageCode
     }
   },
   methods: {
     async makeAllImportant () {
-      await this.wordlist.makeAllImportant()
+      await this.controller.updateAllImportant(this.languageCode,true)
       this.$emit('eventChangeImportant')
     },
     async removeAllImportant () {
-      await this.wordlist.removeAllImportant()
+      await this.controller.updateAllImportant(this.languageCode,false)
       this.$emit('eventChangeImportant')
     },
-    async changeImportant (storageID, important) {
-      if (important) {
-        await this.wordlist.removeImportantByID(storageID)
-      } else {
-        await this.wordlist.makeImportantByID(storageID)
-      }
+    async changeImportant (targetWord, important) {
+      await this.controller.updateWordItemImportant(this.languageCode,targetWord,important)
     },
-    async deleteItem (storageID) {
-      await this.wordlist.removeWordItemByID(storageID)
+    async deleteItem (targetWord) {
+      await this.controller.removeWordListItem(this.languageCode,targetWord)
       this.reloadList = this.reloadList + 1
     },
     async deleteAll () {
-      await this.wordlist.removeAllWordItems()
+      await this.controller.removeWordList(this.languageCode)
       this.reloadList = this.reloadList + 1
     },
-    showContexts (wordItemStorageID) {
-      this.$emit('showContexts', wordItemStorageID, this.wordlist.languageCode)
+    showContexts (targetWord) {
+      this.$emit('showContexts', targetWord, thislanguageCode)
     }
   }
 });
@@ -961,6 +971,7 @@ var _locales_en_us_messages_json__WEBPACK_IMPORTED_MODULE_2___namespace = /*#__P
 var _locales_en_gb_messages_json__WEBPACK_IMPORTED_MODULE_3___namespace = /*#__PURE__*/__webpack_require__.t(/*! @/locales/en-gb/messages.json */ "./locales/en-gb/messages.json", 1);
 /* harmony import */ var _vue_components_word_language_panel_vue__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @/vue-components/word-language-panel.vue */ "./vue-components/word-language-panel.vue");
 /* harmony import */ var _vue_components_word_context_panel_vue__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @/vue-components/word-context-panel.vue */ "./vue-components/word-context-panel.vue");
+//
 //
 //
 //
@@ -1345,10 +1356,14 @@ var render = function() {
       _vm._l(_vm.wordItems, function(wordItem) {
         return _c(
           "div",
-          { key: wordItem.storageID },
+          { key: wordItem.targetWord },
           [
             _c("word-item-panel", {
-              attrs: { worditem: wordItem, messages: _vm.messages },
+              attrs: {
+                controller: _vm.controller,
+                worditem: wordItem,
+                messages: _vm.messages
+              },
               on: {
                 changeImportant: _vm.changeImportant,
                 deleteItem: _vm.deleteItem,
@@ -1397,7 +1412,8 @@ var render = function() {
               [
                 _c("word-language-panel", {
                   attrs: {
-                    wordlist: _vm.wordLists[languageCode],
+                    controller: _vm.wordListC,
+                    languageCode: languageCode,
                     messages: _vm.l10n.messages,
                     updated: _vm.updated
                   },
@@ -12969,11 +12985,12 @@ var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._sel
 /*!******************!*\
   !*** ./index.js ***!
   \******************/
-/*! exports provided: Style, WordlistController, WordListPanel */
+/*! exports provided: Style, WordlistController, WordListPanel, UserDataManager */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "UserDataManager", function() { return UserDataManager; });
 /* harmony import */ var _styles_style_scss__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./styles/style.scss */ "./styles/style.scss");
 /* harmony import */ var _styles_style_scss__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_styles_style_scss__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony reexport (default from non-harmony) */ __webpack_require__.d(__webpack_exports__, "Style", function() { return _styles_style_scss__WEBPACK_IMPORTED_MODULE_0___default.a; });

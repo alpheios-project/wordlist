@@ -2,19 +2,20 @@
   <div>
     <div class="alpheios-wordlist" v-if="!showContext">
         <div class="alpheios-wordlist-language" v-for="(languageCode, langIndex) in languagesList" v-bind:key="langIndex">
-          <word-language-panel 
-            :wordlist = "wordLists[languageCode]" 
-            :messages = "l10n.messages" 
+          <word-language-panel
+            :controller = "wordListC"
+            :languageCode = "languageCode"
+            :messages = "l10n.messages"
             :updated = "updated"
             @showContexts = "showContexts"
             ></word-language-panel>
         </div>
     </div>
     <div class="alpheios-wordlist-contexts" v-if="showContext">
-      <word-context-panel 
+      <word-context-panel
         :worditem = "showContextWordItem"
         :messages = "l10n.messages"
-      ></word-context-panel>       
+      ></word-context-panel>
     </div>
   </div>
 </template>

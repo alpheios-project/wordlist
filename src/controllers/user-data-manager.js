@@ -4,20 +4,20 @@ import IndexedDBAdapter from '@/storage/indexed-db-adapter.js'
 import RemoteDBAdapter from '@/storage/remote-db-adapter.js'
 export default class UserDataManager {
 
-  constructor (userID) {
+  constructor (userID,events) {
     this.userID = userID
-    WordlistController.evt.WORDITEM_UPDATED.sub(UserDataController.update.bind(this))
-    WordlistController.evt.WORDITEM_DELETED.sub(UserDataController.delete.bind(this))
-    WordlistController.evt.WORDLIST_DELETED.sub(UserDataController.deleteMany.bind(this))
+    events.WORDITEM_UPDATED.sub(this.update.bind(this))
+    events.WORDITEM_DELETED.sub(this.delete.bind(this))
+    events.WORDLIST_DELETED.sub(this.deleteMany.bind(this))
   }
 
   _localStorageAdapter(dataType) {
-    let dbDriver = new LOCAL_DRIVER_CLASSES[dataType](this.userID)
-    return new IndexedDBAdapter()
+    let dbDriver = new UserDataManager.LOCAL_DRIVER_CLASSES[dataType](this.userID)
+    return new IndexedDBAdapter(dbDriver)
   }
 
   _remoteStorageAdapter(dataType) {
-    let dbDriver = new REMOTE_DRIVER_CLASSES[dataType](this.userID)
+    let dbDriver = new UserDataManager.REMOTE_DRIVER_CLASSES[dataType](this.userID)
     return new RemoteDBAdapter(dbDriver)
   }
 
@@ -124,9 +124,9 @@ export default class UserDataManager {
 }
 
 // Constants (could be done better, dynamically, etc.)
-UserDataController.LOCAL_DRIVER_CLASSES = {
+UserDataManager.LOCAL_DRIVER_CLASSES = {
   WordItem: WordItemIndexedDbDriver
 }
-UserDataController.REMOTE_DRIVER_CLASSES = {
+UserDataManager.REMOTE_DRIVER_CLASSES = {
   WordItem: WordItemRemoteDbDriver
 }

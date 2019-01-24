@@ -12655,6 +12655,156 @@ module.exports = g;
 
 /***/ }),
 
+/***/ "./controllers/user-data-manager.js":
+/*!******************************************!*\
+  !*** ./controllers/user-data-manager.js ***!
+  \******************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return UserDataManager; });
+/* harmony import */ var _storage_worditem_indexeddb_driver_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/storage/worditem-indexeddb-driver.js */ "./storage/worditem-indexeddb-driver.js");
+/* harmony import */ var _storage_worditem_remotedb_driver_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/storage/worditem-remotedb-driver.js */ "./storage/worditem-remotedb-driver.js");
+/* harmony import */ var _storage_indexed_db_adapter_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/storage/indexed-db-adapter.js */ "./storage/indexed-db-adapter.js");
+/* harmony import */ var _storage_remote_db_adapter_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @/storage/remote-db-adapter.js */ "./storage/remote-db-adapter.js");
+
+
+
+
+class UserDataManager {
+
+  constructor (userID,events) {
+    this.userID = userID
+    events.WORDITEM_UPDATED.sub(this.update.bind(this))
+    events.WORDITEM_DELETED.sub(this.delete.bind(this))
+    events.WORDLIST_DELETED.sub(this.deleteMany.bind(this))
+  }
+
+  _localStorageAdapter(dataType) {
+    let dbDriver = new UserDataManager.LOCAL_DRIVER_CLASSES[dataType](this.userID)
+    return new _storage_indexed_db_adapter_js__WEBPACK_IMPORTED_MODULE_2__["default"](dbDriver)
+  }
+
+  _remoteStorageAdapter(dataType) {
+    let dbDriver = new UserDataManager.REMOTE_DRIVER_CLASSES[dataType](this.userID)
+    return new _storage_remote_db_adapter_js__WEBPACK_IMPORTED_MODULE_3__["default"](dbDriver)
+  }
+
+  /**
+   * Update data in the user data stores
+   * @param {Object} data object adhering to
+   *                      { dataObj: the data model object to be updated}
+   *                        params: datatype specific parameters
+   *                      }
+   * @return {Boolean} true if update succeeded false if not
+   */
+  async update(data) {
+    let ls = this._localStorageAdapter(data.dataObj.constructor.name)
+    let rs = this._remoteStorageAdapter(data.dataObj.constructor.name)
+    let updatedLocal = await ls.update(data.dataObj,data.params)
+    let updatedRemote = await rs.update(data.dataObj,data.params)
+    // TODO error handling upon update failure
+    return updatedLocal && updatedRemote
+  }
+
+  /**
+   * Delete a single data model object from the user data stores
+   * @param {Object} data object adhering to
+   *                      { dataObj: the data model object to be updated} }
+   * @return {Boolean} true if delete succeeded false if not
+   */
+  async delete(data) {
+    let ls = this._localStorageAdapter(data.dataObj.constructor.name)
+    let rs = this._remoteStorageAdapter(data.dataObj.constructor.name)
+    let deletedLocal = await ls.deleteOne(data.dataObj)
+    let deletedRemote = await rs.deleteOne(data.dataObj)
+    // TODO error handling upon delete failure
+    return deletedLocal && deletedRemote
+  }
+
+  /**
+   * Delete a set objects from the data store
+   * @param {Object} data object adhering to
+   *                      { dataType: the name of the datatype to delete,
+   *                        params: parameters to identify items to be deleted
+   *                      }
+   */
+  async deleteMany(data) {
+    let remoteAdapter =  this._remoteStorageAdapter(data.dataType)
+    let localAdapter = this._localStorageAdapter(data.dataType)
+    localAdapter.deleteMany(data.params)
+    remoteAdapter.deleteMany(data.params)
+  }
+
+  /**
+   * Query the user data stores
+   * @param {Object} data object adhering to
+   *                      { dataType: the name of the datatype to query
+   *                        params: query parameters to
+   *                      }
+   * @return {Object[]} an array of data items
+   */
+  async query(data) {
+    // query queries both the remote and local stores and merges
+    // the results
+    let remoteAdapter =  this._remoteStorageAdapter(data.dataType)
+    let localAdapter = this._localStorageAdapter(data.dataType)
+    let remoteDataItems = await remoteAdapter.query(data.params)
+    let localDataItems = await localAdapter.query(data.params)
+
+    // if we have any remoteData items then we are going to
+    // reset the local store from the remoteData, adding back in any
+    // items that appeared only in the local
+    if (remoteDataItems.length > 0) {
+        localAdapter.deleteMany(params)
+    }
+    let addToRemote = []
+    let updateInRemote = []
+    localDataItems.forEach(item => {
+      let inRemote = false
+      for (let i=0; i<remoteDataItems.length; i++ ) {
+        if (remoteDataItems[i].isSameItem(item)) {
+          inRemote = true
+          // if the item exists in the remote db, check to see if they differ
+          // and if so merge and update
+          if (remoteDataItems[i].isNotEqual(item)) {
+            let merged = remoteDataItems[i].merge(item)
+            remoteDataItems[i] = merged
+            updateInRemote.push(remoteDataItems[i].merge(item))
+          }
+        }
+      }
+      if (!inRemote) {
+        addToRemote.push(item)
+      }
+    })
+    addToRemote.forEach(item => {
+      remoteAdapter.create(item)
+    })
+    updateInRemote.forEach(item => {
+      remoteAdapter.update(item)
+    })
+    let mergedList = [...remoteDataItems, ...addToRemote]
+    mergedList.forEach(item=> {
+      localAdapter.create(item)
+    })
+    return [...remoteDataItems,...addToRemote]
+  }
+}
+
+// Constants (could be done better, dynamically, etc.)
+UserDataManager.LOCAL_DRIVER_CLASSES = {
+  WordItem: _storage_worditem_indexeddb_driver_js__WEBPACK_IMPORTED_MODULE_0__["default"]
+}
+UserDataManager.REMOTE_DRIVER_CLASSES = {
+  WordItem: _storage_worditem_remotedb_driver_js__WEBPACK_IMPORTED_MODULE_1__["default"]
+}
+
+
+/***/ }),
+
 /***/ "./controllers/wordlist-controller.js":
 /*!********************************************!*\
   !*** ./controllers/wordlist-controller.js ***!
@@ -12990,7 +13140,6 @@ var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._sel
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "UserDataManager", function() { return UserDataManager; });
 /* harmony import */ var _styles_style_scss__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./styles/style.scss */ "./styles/style.scss");
 /* harmony import */ var _styles_style_scss__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_styles_style_scss__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony reexport (default from non-harmony) */ __webpack_require__.d(__webpack_exports__, "Style", function() { return _styles_style_scss__WEBPACK_IMPORTED_MODULE_0___default.a; });
@@ -12999,6 +13148,10 @@ __webpack_require__.r(__webpack_exports__);
 
 /* harmony import */ var _vue_components_word_list_panel_vue__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/vue-components/word-list-panel.vue */ "./vue-components/word-list-panel.vue");
 /* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "WordListPanel", function() { return _vue_components_word_list_panel_vue__WEBPACK_IMPORTED_MODULE_2__["default"]; });
+
+/* harmony import */ var _controllers_user_data_manager_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @/controllers/user-data-manager.js */ "./controllers/user-data-manager.js");
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "UserDataManager", function() { return _controllers_user_data_manager_js__WEBPACK_IMPORTED_MODULE_3__["default"]; });
+
 
 
 
@@ -13584,6 +13737,700 @@ var _en_gb_messages_json__WEBPACK_IMPORTED_MODULE_1___namespace = /*#__PURE__*/_
     en_GB: _en_gb_messages_json__WEBPACK_IMPORTED_MODULE_1__
   }
 });
+
+
+/***/ }),
+
+/***/ "./storage/indexed-db-adapter.js":
+/*!***************************************!*\
+  !*** ./storage/indexed-db-adapter.js ***!
+  \***************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return IndexedDBAdapter; });
+/**
+ * An interface to IndexedDB Storage
+ */
+class IndexedDBAdapter {
+
+  /**
+   * @param {String} domain the storage domain
+   * @param {Object} dbDriver a driver for a specific data type
+   */
+  constructor (dbDriver) {
+    this.available = this._initIndexedDBNamespaces()
+    this.dbDriver = dbDriver
+  }
+
+  /**
+   * Create a new data item in the data base
+   * @param {Object} data the data model item to be created
+   * @return {Boolean} true if create succeeded false if not
+   */
+  async create(data) {
+    let segments = this.dbDriver.segments
+    let updated
+    // iterate through the declared segmentation of the object
+    // and store accordingly
+    // TODO we need transaction handling here
+    for (let segment of segments) {
+      updated = await this.update(data, {segment: segment})
+      if (! updated) {
+        break
+        // TODO rollback?
+      }
+    }
+    return updated > 0
+  }
+
+  /**
+   * Clear the datastore of many items of a given type
+   * @param {Object} params data type specific parameters for identifying the items
+   *                        to be deleted
+   * @return {int} number of items deleted
+   *
+   */
+  async deleteMany(params) {
+    for (let segment of this.dbDriver.segments) {
+      let q = this.dbDriver.segmentDeleteManyQuery(segment,params)
+      await this._deleteFromStore(q)
+    }
+    // TODO error handling
+  }
+
+  /**
+   * Remove a single item from the data store
+   * @param {Object} data the deta model object to be deleted
+   * @return {int} number of items deleted
+   *
+   */
+  async deleteOne(data) {
+    for (let segment of this.dbDriver.segments) {
+      let q = this.dbDriver.segmentDeleteQuery(segment,data)
+      await this._deleteFromStore(q)
+    }
+    // TODO error handling
+  }
+
+  /**
+   * Update a data item, creating it if it doesn't exist
+   * @param {Object} data the data model object to update
+   * @param {Object} params update params
+   *                  { segment: name of segment needing update }
+   * @return {Boolean} true if update succeeded false if not
+   */
+  async update (data, params) {
+    let segments = [params.segment]
+    let result
+    // if we weren't asked to update a specific segment, update them all
+    if (segments.length === 0)  {
+      segments = this.dbDriver.segments
+    }
+    for (let s of segments) {
+      let q = this.dbDriver.updateSegmentQuery(s,data)
+      try {
+        console.log("Try ",q)
+        return await this._set(q)
+      } catch(error) {
+        console.info("Error on update",error)
+        // TODO need transaction rollback handling here if mulitple segments?
+        return false
+      }
+    }
+    return result
+  }
+
+  /**
+   * Query for a set of data items
+   * @param {Object} params datatype specific query parameters
+   * @return Object[] array of data model items
+   */
+  async query(params) {
+    let listQuery = this.dbDriver.listQuery(params)
+    let res = await this._getFromStore(listQuery)
+    let items = []
+    if (res.length > 0) {
+      for (let item of res) {
+        let modelObj = this.dbDriver.load(item)
+        let segments = this.dbDriver.segments
+        for (let segment of segments) {
+          let query = this.dbDriver.segmentQuery(segment,modelObj)
+          let res = await this._getFromStore(query)
+          if (res.length > 0) {
+            this.dbDriver.loadSegment(segment,modelObj,res[0])
+          }
+        }
+        items.push(modelObj)
+      }
+    }
+    return items
+  }
+
+  /**
+   * Clear all the object stores
+   * Used primarily for testing right now
+   * TODO needs to be enhanced to support async removal of old database versions
+   */
+  clear () {
+    let request = this.indexedDB.open(this.dbDriver.dbName, this.dbDriver.dbVersion)
+    request.onsuccess = (event) => {
+      let db = event.target.result
+      let objectStores = this.dbDriver.objectStores
+      for (let store of objectStores) {
+        // open a read/write db transaction, ready for clearing the data
+        let transaction = db.transaction([store], 'readwrite')
+        // create an object store on the transaction
+        let objectStore = transaction.objectStore(store)
+        // Make a request to clear all the data out of the object store
+        let objectStoreRequest = objectStore.clear();
+        objectStoreRequest.onsuccess = function(event) {
+          console.info(`store ${store} cleared`)
+        }
+        objectStoreRequest.onerror = function(event) {
+          console.info(`store ${store} clear error`)
+        }
+      }
+    }
+  }
+
+
+
+  /**
+   * This method checks if IndexedDB is used in the current browser
+   */
+  _initIndexedDBNamespaces () {
+    this.indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
+    this.IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.msIDBTransaction || {READ_WRITE: "readwrite"}; // This line should only be needed if it is needed to support the object's constants for older browsers
+    this.IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange || window.msIDBKeyRange;
+    if (!this.indexedDB) {
+      console.info("Your browser doesn't support a stable version of IndexedDB. Such and such feature will not be available.");
+      return false
+    }
+    return true
+  }
+
+
+  /**
+   * utility method ot open a database. Sets a callback which causes the database to be created if it doesn't exist
+   */
+  _openDatabaseRequest () {
+    let request = this.indexedDB.open(this.dbDriver.dbName, this.dbDriver.dbVersion)
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result
+      const upgradeTransaction = event.target.transaction
+      this._createObjectStores(db, upgradeTransaction)
+      // TODO we should clean up old database versions
+    }
+    return request
+  }
+
+  /**
+   * Iniitalize the object store(s) for for an IndexedDb adapter
+   */
+  _createObjectStores (db, upgradeTransaction) {
+    let objectStores = this.dbDriver.objectStores
+    objectStores.forEach(objectStoreName => {
+      const objectStoreStructure = this.dbDriver[objectStoreName]
+
+      let objectStore
+      if (!db.objectStoreNames.contains(objectStoreName)) {
+        objectStore = db.createObjectStore(objectStoreName, { keyPath: objectStoreStructure.keyPath })
+      } else {
+        objectStore = upgradeTransaction.objectStore(objectStoreName)
+      }
+      objectStoreStructure.indexes.forEach(index => {
+        if (!objectStore.indexNames.contains(index.indexName)) {
+          objectStore.createIndex(index.indexName, index.keyPath, { unique: index.unique })
+        }
+      })
+    })
+  }
+
+  /**
+   * Internal method to open a database and update one or items in a specific store
+   * @param {Object} data data item to be updated  in the format
+   *                      { objectStoreName: name of the object store,
+   *                        dataItems: array of data items to be updated }
+   * @return {Promise} resolves to true on success
+   */
+  async _set (data) {
+    let promiseOpenDB = await new Promise((resolve, reject) => {
+      let request = this._openDatabaseRequest()
+      request.onsuccess = async (event) => {
+        const db = event.target.result
+        let rv = await this._putItem(db, data)
+        resolve(rv)
+      }
+      request.onerror = (event) => {
+        reject()
+      }
+    })
+    return promiseOpenDB
+  }
+
+  /**
+   * Internal method to put an item into a database
+   * @param {} db the database handle
+   * @param {Object} data data item to be updated  in the format
+   *                      { objectStoreName: name of the object store,
+   *                        dataItems: array of data items to be updated }
+   * @return {Promise} resolves to true on success
+   */
+  async _putItem (db, data) {
+    let promisePut = await new Promise((resolve, reject) => {
+      const transaction = db.transaction([data.objectStoreName], 'readwrite')
+      transaction.onerror = (event) => {
+        reject()
+      }
+      const objectStore = transaction.objectStore(data.objectStoreName)
+      let objectsDone = data.dataItems.length
+      console.info('************************data.dataItems', data.dataItems)
+      for (let dataItem of data.dataItems) {
+        console.info('************************dataItem', dataItem)
+        const requestPut = objectStore.put(dataItem)
+        requestPut.onsuccess = () => {
+          objectsDone = objectsDone - 1
+          if (objectsDone === 0) {
+            resolve(true)
+          }
+        }
+        requestPut.onerror = () => {
+          reject()
+        }
+      }
+    })
+    return promisePut
+  }
+
+  /**
+   * Internal method to get an item from a database store
+   * @param {Object} data data item to be retrieved  in the format
+   *                      { objectStoreName: name of the object store,
+   *                        condition: query parameters }
+   * @return {Promise} resolves to the retrieved items
+   */
+  async _getFromStore (data) {
+    let promiseOpenDB = await new Promise((resolve, reject) => {
+      let request = this._openDatabaseRequest()
+      request.onsuccess = (event) => {
+        const db = event.target.result
+        const transaction = db.transaction([data.objectStoreName])
+        const objectStore = transaction.objectStore(data.objectStoreName)
+
+        const index = objectStore.index(data.condition.indexName)
+        const keyRange = this.IDBKeyRange[data.condition.type](data.condition.value)
+
+        const requestOpenCursor = index.getAll(keyRange, 0)
+        requestOpenCursor.onsuccess = (event) => {
+          resolve(event.target.result)
+        }
+
+        requestOpenCursor.onerror = (event) => {
+          reject()
+        }
+      }
+      request.onerror = (event) => {
+        reject()
+      }
+    })
+    return promiseOpenDB
+  }
+
+  /**
+   * Internal method to delete an item from  a specific data store
+   * @param {Object} data data item to be retrieved  in the format
+   *                      { objectStoreName: name of the object store,
+   *                        condition: query parameters }
+   * @return {Promise} resolves to the number of deleted items
+   */
+  async _deleteFromStore (data) {
+    let promiseOpenDB = await new Promise((resolve, reject) => {
+      let request = this._openDatabaseRequest()
+      request.onsuccess = (event) => {
+        const db = event.target.result
+        const transaction = db.transaction([data.objectStoreName], 'readwrite')
+        const objectStore = transaction.objectStore(data.objectStoreName)
+
+        const index = objectStore.index(data.condition.indexName)
+        const keyRange = this.IDBKeyRange[data.condition.type](data.condition.value)
+
+        let requestOpenCursor = index.openCursor(keyRange)
+        requestOpenCursor.onsuccess = (event) => {
+          const cursor = event.target.result
+          if (cursor) {
+            const requestDelete = cursor.delete()
+            requestDelete.onerror = (event) => {
+              reject()
+            }
+            cursor.continue()
+          } else {
+            // TODO I want to return the number of items deleted here
+            resolve()
+          }
+        }
+      }
+
+      request.onerror = (event) => {
+        reject()
+      }
+    })
+
+    return promiseOpenDB
+  }
+
+}
+
+/***/ }),
+
+/***/ "./storage/remote-db-adapter.js":
+/*!**************************************!*\
+  !*** ./storage/remote-db-adapter.js ***!
+  \**************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return RemoteDBAdapter; });
+class RemoteDBAdapter {
+
+}
+
+
+/***/ }),
+
+/***/ "./storage/worditem-indexeddb-driver.js":
+/*!**********************************************!*\
+  !*** ./storage/worditem-indexeddb-driver.js ***!
+  \**********************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return WordItemIndexedDbDriver; });
+/* harmony import */ var _lib_word_item__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/lib/word-item */ "./lib/word-item.js");
+
+class WordItemIndexedDbDriver {
+
+  /**
+   * @constructor
+   * @param {String} userId user id for the database
+   */
+  constructor(userId) {
+    this.userId = userId
+    this.storageMap = {
+      common: {
+        objectStoreName: 'WordListsCommon',
+        serialize: this._serializeCommon.bind(this)
+      },
+      context: {
+        objectStoreName: 'WordListsContext',
+        serialize: this._serializeContext.bind(this),
+        load: this._loadContext
+      },
+      shortHomonym: {
+        objectStoreName: 'WordListsHomonym',
+        serialize: this._serializeHomonym.bind(this),
+        load: this._loadHomonym
+      },
+      fullHomonym: {
+        objectStoreName: 'WordListsFullHomonym',
+        serialize: this._serializeHomonymWithFullDefs.bind(this),
+        load: this._loadHomonym
+      }
+    }
+  }
+
+  /**
+  * dbName getter
+  */
+  get dbName () {
+    return 'AlpheiosWordLists'
+  }
+
+  /**
+   * dbVersion getter
+   */
+  get dbVersion () {
+    return 3
+  }
+
+  /**
+   * db segments getter
+   */
+  get segments() {
+    return Object.keys(this.storageMap)
+  }
+
+  /**
+   * objectStores getter
+   * @return {Object} the IndexedDb objectStores for the WordItems
+   */
+  get objectStores () {
+    return Object.keys(this.storageMap).map(k => this.storageMap[k].objectStoreName)
+  }
+
+  /**
+   * getter for the Common segment store
+   */
+  get WordListsCommon () {
+    return this._objectStoreTemplate()
+  }
+
+  /**
+   * getter for the Context segment store
+   */
+  get WordListsContext () {
+    let structure = this._objectStoreTemplate()
+    structure.indexes.push(
+      { indexName: 'wordItemID', keyPath: 'wordItemID', unique: false}
+    )
+    return structure
+  }
+
+  /**
+   * getter for the Homonym segment store
+   */
+  get WordListsHomonym () {
+    return this._objectStoreTemplate()
+  }
+
+  /**
+   * getter for the Full Homonym segment store
+   */
+  get WordListsFullHomonym () {
+    return this._objectStoreTemplate()
+  }
+
+
+  /**
+   * load a data model object from the database
+   */
+  load(data) {
+    // make sure when we create from the database
+    // that the currentSession flag is set to false
+    data.currentSession = false
+    return new _lib_word_item__WEBPACK_IMPORTED_MODULE_0__["default"](data)
+  }
+
+  /**
+   * load a segment of a data model object from the database
+   */
+  loadSegment(segment,dataObj,data) {
+    if (this.storageMap[segment].load) {
+      this.storageMap[segment].load(dataObj,data)
+    }
+  }
+
+  /**
+   * get a query object which retrieves a segment of an item
+   * @param {String} segment segment name
+   * @param {WordItem} worditem the worditem object
+   * @return {Object} IndexedDBQuery object
+   */
+  segmentQuery(segment,worditem) {
+    let id = this._makeStorageID(worditem)
+    let index = segment === 'context' ? 'worditemID' : 'ID'
+    return {
+      objectStoreName: this.storageMap[segment].objectStoreName,
+      condition: {indexName: index, value: id, type: 'only' }
+    }
+  }
+
+  segmentDeleteQuery(segment,worditem) {
+    let ID = this._makeStorageID(worditem)
+    return {
+      objectStoreName: this.storageMap[segment].objectStoreName,
+      condition: { indexName: 'ID', value: ID, type: 'only' }
+    }
+  }
+
+  segmentDeleteManyQuery(segment,params) {
+    if (params.languageCode) {
+      let listID = this.userId + '-' + params.languageCode
+      return  {
+        objectStoreName: this.storageMap[segment].objectStoreName,
+        condition: { indexName: 'listID', value: listID, type: 'only' }
+      }
+    } else {
+      // TODO throw error
+    }
+  }
+
+  updateSegmentQuery(segment,data) {
+    let dataItems = []
+    let resDataItem = this.storageMap[segment].serialize(data)
+    if (!Array.isArray(resDataItem)) {
+      dataItems.push(resDataItem)
+    } else {
+      dataItems = dataItems.concat(resDataItem)
+    }
+    return {
+      objectStoreName: this.storageMap[segment].objectStoreName,
+      dataItems: dataItems
+    }
+  }
+
+  /**
+   * get a query object which retrieves a list of WordItems
+   * @param {Object} params query parameters
+   * @return {Object} IndexedDBQuery object
+   */
+  listQuery(params) {
+    if (params.languageCode) {
+      let listID = this.userId + '-' + params.languageCode
+      return {
+        objectStoreName: this.storageMap.common.objectStoreName,
+        condition: {indexName: 'listID', value: listID, type: 'only' }
+      }
+    } else {
+      throw new Error("Invalid query parameters - missing languageCode")
+      // TODO throw error
+    }
+  }
+
+  /**
+   * private method to load the Homonym property of a WordItem
+   */
+  _loadHomonym (worditem,jsonObj) {
+    worditem.homonym = _lib_word_item__WEBPACK_IMPORTED_MODULE_0__["default"].readHomonym(jsonObj)
+  }
+
+  /**
+   * private method to load the Context property of a WordItem
+   */
+  _loadContext (worditem, jsonObjs) {
+    worditem.context = _lib_word_item__WEBPACK_IMPORTED_MODULE_0__["default"].readContext(jsonObjs)
+  }
+
+  /**
+   * private method to convert the common segment to storage
+   */
+  _serializeCommon (worditem) {
+    return {
+      ID: this._makeStorageID(worditem),
+      listID: this.userId + '-' + worditem.languageCode,
+      userID: this.userId,
+      languageCode: worditem.languageCode,
+      targetWord: worditem.targetWord,
+      important: worditem.important,
+      createdDT: WordItemIndexedDbDriver.currentDate
+    }
+  }
+
+  /**
+   * private method to convert the context segment to storage
+   */
+  _serializeContext (worditem) {
+    let result = []
+    let index = 0
+    let wordItemId = this._makeStorageID(worditem)
+    for (let tq of worditem.context) {
+      index++
+      let resultItem = {
+        ID: wordItemId + '-' + index,
+        listID: this.userId + '-' + worditem.languageCode,
+        userID: this.userId,
+        languageCode: worditem.languageCode,
+        targetWord: worditem.targetWord,
+        wordItemID: wordItemId,
+        target: {
+          source: tq.source,
+          selector: {
+            type: 'TextQuoteSelector',
+            exact: tq.text,
+            prefix: tq.prefix,
+            suffix: tq.suffix,
+            contextHTML: tq.contextHTML,
+            languageCode: tq.languageCode
+          }
+        },
+        createdDT: WordItemIndexedDbDriver.currentDate
+      }
+      result.push(resultItem)
+    }
+    return result
+  }
+
+  /**
+   * private method to convert the homonym segment to storage
+   * @param {WordItem}
+   */
+  _serializeHomonym (worditem,addMeaning = false) {
+    let resultHomonym = worditem.homonym.convertToJSONObject(addMeaning)
+    return {
+      ID: this._makeStorageID(worditem),
+      listID: this.userId + '-' + worditem.languageCode,
+      userID: this.userId,
+      languageCode: worditem.languageCode,
+      targetWord: worditem.targetWord,
+      homonym: resultHomonym
+    }
+  }
+
+  /**
+   * private method to serialize homonymns with full defs
+   * @param {WordItem}
+   */
+  _serializeHomonymWithFullDefs (worditem) {
+    return this._serializeHomonym(worditem,true)
+  }
+
+  /**
+  * private method to create the storage ID for a WordItem
+  */
+  _makeStorageID(item) {
+    return this.userId + '-' + item.languageCode + '-' + item.targetWord
+  }
+
+  /**
+   * private method - creates a template for a new Object Store
+   */
+  _objectStoreTemplate () {
+    return {
+      keyPath: 'ID',
+      indexes: [
+        { indexName: 'ID', keyPath: 'ID', unique: true},
+        { indexName: 'listID', keyPath: 'listID', unique: false},
+        { indexName: 'userID', keyPath: 'userID', unique: false},
+        { indexName: 'languageCode', keyPath: 'languageCode', unique: false},
+        { indexName: 'targetWord', keyPath: 'targetWord', unique: false}
+      ]
+    }
+  }
+
+  static get currentDate () {
+    let dt = new Date()
+    return dt.getFullYear() + '/'
+        + ((dt.getMonth()+1) < 10 ? '0' : '') + (dt.getMonth()+1)  + '/'
+        + ((dt.getDate() < 10) ? '0' : '') + dt.getDate() + ' @ '
+                + ((dt.getHours() < 10) ? '0' : '') + dt.getHours() + ":"
+                + ((dt.getMinutes() < 10) ? '0' : '') + dt.getMinutes() + ":"
+                + ((dt.getSeconds() < 10) ? '0' : '') + dt.getSeconds()
+
+  }
+
+}
+
+
+/***/ }),
+
+/***/ "./storage/worditem-remotedb-driver.js":
+/*!*********************************************!*\
+  !*** ./storage/worditem-remotedb-driver.js ***!
+  \*********************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return WordItemRemoteDbDriver; });
+class WordItemRemoteDbDriver {
+}
 
 
 /***/ }),

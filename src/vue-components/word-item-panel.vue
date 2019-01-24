@@ -75,8 +75,8 @@
     },
     methods: {
       changeImportant () {
-        this.$emit('changeImportant', this.worditem.targetWord, this.worditem.important)
-        this.important = this.worditem.important
+        this.$emit('changeImportant', this.worditem.targetWord, ! this.worditem.important)
+        this.important = ! this.worditem.important
       },
       eventChangeImportant () {
         this.important = this.worditem.important

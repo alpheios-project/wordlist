@@ -106,7 +106,7 @@ export default {
       this.reloadList = this.reloadList + 1
     },
     showContexts (targetWord) {
-      this.$emit('showContexts', targetWord, thislanguageCode)
+      this.$emit('showContexts', targetWord, this.languageCode)
     }
   }
 }

@@ -798,8 +798,8 @@ __webpack_require__.r(__webpack_exports__);
   },
   methods: {
     changeImportant () {
-      this.$emit('changeImportant', this.worditem.targetWord, this.worditem.important)
-      this.important = this.worditem.important
+      this.$emit('changeImportant', this.worditem.targetWord, ! this.worditem.important)
+      this.important = ! this.worditem.important
     },
     eventChangeImportant () {
       this.important = this.worditem.important
@@ -946,7 +946,7 @@ __webpack_require__.r(__webpack_exports__);
       this.reloadList = this.reloadList + 1
     },
     showContexts (targetWord) {
-      this.$emit('showContexts', targetWord, thislanguageCode)
+      this.$emit('showContexts', targetWord, this.languageCode)
     }
   }
 });
@@ -1412,7 +1412,7 @@ var render = function() {
               [
                 _c("word-language-panel", {
                   attrs: {
-                    controller: _vm.wordListC,
+                    controller: _vm.wordlistC,
                     languageCode: languageCode,
                     messages: _vm.l10n.messages,
                     updated: _vm.updated
@@ -12833,7 +12833,7 @@ class WordlistController {
     this.wordLists = {}
     this.availableLangs = availableLangs
     events.TEXT_QUOTE_SELECTOR_RECEIVED.sub(this.onTextQuoteSelectorReceived.bind(this))
-    events.LEXICAL_QUERY_COMPLETE.sub(this.onHomonymReady.bind(this))
+    events.HOMONYM_READY.sub(this.onHomonymReady.bind(this))
     events.DEFS_READY.sub(this.onDefinitionsReady.bind(this))
     events.LEMMA_TRANSL_READY.sub(this.onLemmaTranslationsReady.bind(this))
   }
@@ -12919,33 +12919,31 @@ class WordlistController {
 
   /**
    * Responds to a HOMONYM_READY event by creating or updating a wordlist item for a retrieved Homonym
-   * @param {Object} data - expected to adhere to
-   *                        { homonym: Homonym }
+   * @param {Homonym} data
    * Emits WORDITEM_UPDATED and WORDLIST_UPDATED events
    */
    onHomonymReady (data) {
     console.info('********************onHomonymReady1', data)
     // when receiving this event, it's possible this is the first time we are seeing the word so
     // create the item in the word list if it doesn't exist
-    let wordItem = this.getWordListItem(data.homonym.language,data.homonym.targetWord,true)
-    wordItem.homonym = data.homonym
-    WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'homonym'}})
+    let wordItem = this.getWordListItem(data.language,data.targetWord,true)
+    wordItem.homonym = data
+    WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'shortHomonym'}})
     // emit a wordlist updated event too in case the wordlist was updated
     WordlistController.evt.WORDLIST_UPDATED.pub(this.getWordList(wordItem.languageCode))
   }
 
   /**
   * Responds to a DEFINITIONS_READY event by updating a wordlist item for retrieved Definitions
-  * @param {Object} data - expected to adhere to
-  *                        { homonym: Homonym }
+  * @param {Object} data {requestType: 'fullDefs',homonym: {Homonym}}
   * Emits a WORDITEM_UPDATED event
   */
   onDefinitionsReady (data) {
-    console.info('********************onDefinitionsReady', data)
+    console.info('********************onDefinitionsReady', data.homonym)
     let wordItem = this.getWordListItem(data.homonym.language,data.homonym.targetWord)
     if (wordItem) {
       wordItem.homonym = data.homonym
-      WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'homonym'}})
+      WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'fullHomonym'}})
     } else {
       // TODO error handling
       console.error("Something went wrong: request to add definitions to non-existent item")
@@ -12955,16 +12953,15 @@ class WordlistController {
   /**
   * Responds to a LEMMA_TRANSLATIONS_READY event by updating a wordlist item for retrieved translations
   * (because lemma translations could come much later we need to resave homonym with translations data to database)
-  * @param {Object} data - expected to adhere to
-  *                        { homonym: Homonym }
+  * @param {Homonym} data
   * Emits a WORDITEM_UPDATED event
   */
   onLemmaTranslationsReady (data) {
-    console.info('********************onLemmaTranslationsReady', data.homonym)
-    let wordItem = this.getWordListItem(data.homonym.language, data.homonym.targetWord)
+    console.info('********************onLemmaTranslationsReady', data)
+    let wordItem = this.getWordListItem(data.language, data.targetWord)
     if (wordItem) {
-      wordItem.homonym = data.homonym
-      WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'homonym'}})
+      wordItem.homonym = data
+      WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'fullHomonym'}})
     } else {
       console.error("Something went wrong: request to add translations to non-existent item")
     }
@@ -12972,19 +12969,22 @@ class WordlistController {
 
   /**
   * Responds to a TextQuoteSelectorReceived  event by creating or updating a wordlist item for a retrieved Homonym
-  * @param {Object} data - expected to adhere to
-  *                        { textquoteselector: TextQuoteSelector }
+  * @param {TextQuoteSelector} data
   * Emits a WORDITEM_UPDATED and WORDLIST_UPDATED events
   */
   onTextQuoteSelectorReceived (data) {
-    console.info('********************onTextQuoteSelectorReceived', data.textQuoteSelector)
+    console.info('********************onTextQuoteSelectorReceived', data)
     // when receiving this event, it's possible this is the first time we are seeing the word so
     // create the item in the word list if it doesn't exist
-    let wordItem = this.getWordListItem(data.textQuoteSelector.languageCode, data.textQuoteSelector.normalizedText,true)
-    wordItem.addContext([data.textQuoteSelector])
-    WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'context'}})
-    // emit a wordlist updated event too in case the wordlist was updated
-    WordlistController.evt.WORDLIST_UPDATED.pub(this.getWordList(wordItem.languageCode))
+    let wordItem = this.getWordListItem(data.languageCode, data.normalizedText,true)
+    if (wordItem) {
+      wordItem.addContext([data])
+      WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'context'}})
+      // emit a wordlist updated event too in case the wordlist was updated
+      WordlistController.evt.WORDLIST_UPDATED.pub(this.getWordList(wordItem.languageCode))
+    } else {
+      console.error("Unable to create or retrieve worditem")
+    }
 
   }
 
@@ -12999,7 +12999,7 @@ class WordlistController {
     let wordItem = this.getWordListItem(languageCode, targetWord,false)
     if (wordItem) {
       wordItem.important = important
-      WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'important'}})
+      WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'common'}})
     } else {
       console.error("Something went wrong: request to set important flag on non-existent item")
     }
@@ -13015,7 +13015,7 @@ class WordlistController {
     let wordList = this.getWordList(languageCode, false)
     wordList.values.forEach(wordItem => {
       wordItem.important = important
-      WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'important'}})
+      WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'common'}})
     })
   }
 
@@ -13521,7 +13521,7 @@ class WordItem {
    * Construct the homonym portion of a WordItem from JSON
    */
   static readHomonym(jsonObject) {
-    return alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["Homonym"].readObject(jsonObj.homonym)
+    return alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["Homonym"].readObject(jsonObject.homonym)
   }
 
   /**
@@ -14097,6 +14097,25 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return RemoteDBAdapter; });
 class RemoteDBAdapter {
 
+  create() {
+    return true
+  }
+
+  update() {
+    return true
+  }
+
+  deleteOne() {
+    return true
+  }
+
+  deleteMany() {
+    return true
+  }
+
+  query() {
+    return []
+  }
 }
 
 
@@ -14234,7 +14253,7 @@ class WordItemIndexedDbDriver {
    */
   segmentQuery(segment,worditem) {
     let id = this._makeStorageID(worditem)
-    let index = segment === 'context' ? 'worditemID' : 'ID'
+    let index = segment === 'context' ? 'wordItemID' : 'ID'
     return {
       objectStoreName: this.storageMap[segment].objectStoreName,
       condition: {indexName: index, value: id, type: 'only' }
@@ -14304,6 +14323,9 @@ class WordItemIndexedDbDriver {
    * private method to load the Context property of a WordItem
    */
   _loadContext (worditem, jsonObjs) {
+    if (! Array.isArray(jsonObjs)) {
+      jsonObjs = [jsonObjs]  
+    }
     worditem.context = _lib_word_item__WEBPACK_IMPORTED_MODULE_0__["default"].readContext(jsonObjs)
   }
 

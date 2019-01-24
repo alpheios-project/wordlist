@@ -30,7 +30,7 @@ describe('wordlist-controller.test.js', () => {
     //mockListGreek = new WordList(mockLCgrc,[mockWIGreek])
     mockEvents = {
       TEXT_QUOTE_SELECTOR_RECEIVED: {sub: jest.fn()},
-      LEXICAL_QUERY_COMPLETE: {sub: jest.fn()},
+      HOMONYM_READY: {sub: jest.fn()},
       DEFS_READY: {sub: jest.fn()},
       LEMMA_TRANSL_READY: { sub: jest.fn()}
     }
@@ -65,13 +65,13 @@ describe('wordlist-controller.test.js', () => {
 
   it('1 WordlistController - constructor subscribes to events',() => {
     jest.spyOn(mockEvents.TEXT_QUOTE_SELECTOR_RECEIVED,'sub')
-    jest.spyOn(mockEvents.LEXICAL_QUERY_COMPLETE,'sub')
+    jest.spyOn(mockEvents.HOMONYM_READY,'sub')
     jest.spyOn(mockEvents.DEFS_READY,'sub')
     jest.spyOn(mockEvents.LEMMA_TRANSL_READY,'sub')
     let wc = new WordlistController([mockLClat,mockLCgrc],mockEvents)
     expect(wc.availableLangs).toEqual([mockLClat,mockLCgrc])
     expect(mockEvents.TEXT_QUOTE_SELECTOR_RECEIVED.sub).toHaveBeenCalled()
-    expect(mockEvents.LEXICAL_QUERY_COMPLETE.sub).toHaveBeenCalled()
+    expect(mockEvents.HOMONYM_READY.sub).toHaveBeenCalled()
     expect(mockEvents.DEFS_READY.sub).toHaveBeenCalled()
     expect(mockEvents.LEMMA_TRANSL_READY.sub).toHaveBeenCalled()
   })
@@ -159,11 +159,11 @@ describe('wordlist-controller.test.js', () => {
     latList.addWordItem(mockWILatin)
     jest.spyOn(WordlistController.evt.WORDITEM_UPDATED,'pub')
     jest.spyOn(WordlistController.evt.WORDLIST_UPDATED,'pub')
-    wc.onHomonymReady({homonym: {language: mockLClat, targetWord: testTarget}})
+    wc.onHomonymReady({language: mockLClat, targetWord: testTarget})
     let item = wc.getWordListItem(mockLClat,testTarget)
     expect(item.homonym).toBeDefined()
     expect(item.homonym.targetWord).toEqual(testTarget)
-    expect(WordlistController.evt.WORDITEM_UPDATED.pub).toHaveBeenCalledWith({dataObj:item,params:{segment:'homonym'}})
+    expect(WordlistController.evt.WORDITEM_UPDATED.pub).toHaveBeenCalledWith({dataObj:item,params:{segment:'shortHomonym'}})
     expect(WordlistController.evt.WORDLIST_UPDATED.pub).toHaveBeenCalledWith(latList)
   })
 
@@ -173,11 +173,11 @@ describe('wordlist-controller.test.js', () => {
     let testTarget = 'mare'
     jest.spyOn(WordlistController.evt.WORDITEM_UPDATED,'pub')
     jest.spyOn(WordlistController.evt.WORDLIST_UPDATED,'pub')
-    wc.onHomonymReady({homonym: {language: mockLClat, targetWord: testTarget}})
+    wc.onHomonymReady({language: mockLClat, targetWord: testTarget})
     let item = wc.getWordListItem(mockLClat,testTarget)
     expect(item.homonym).toBeDefined()
     expect(item.homonym.targetWord).toEqual(testTarget)
-    expect(WordlistController.evt.WORDITEM_UPDATED.pub).toHaveBeenCalledWith({dataObj:item,params:{segment:'homonym'}})
+    expect(WordlistController.evt.WORDITEM_UPDATED.pub).toHaveBeenCalledWith({dataObj:item,params:{segment:'shortHomonym'}})
     expect(WordlistController.evt.WORDLIST_UPDATED.pub).toHaveBeenCalledWith(latList)
   })
   it('13 WordlistController - onDefinitionsReady updates list and emits events',() => {
@@ -187,11 +187,11 @@ describe('wordlist-controller.test.js', () => {
     latList.addWordItem(mockWILatin)
     jest.spyOn(WordlistController.evt.WORDITEM_UPDATED,'pub')
     jest.spyOn(WordlistController.evt.WORDLIST_UPDATED,'pub')
-    wc.onDefinitionsReady({homonym: {language: mockLClat, targetWord: testTarget}})
+    wc.onDefinitionsReady({homonym:{language: mockLClat, targetWord: testTarget}})
     let item = wc.getWordListItem(mockLClat,testTarget)
     expect(item.homonym).toBeDefined()
     expect(item.homonym.targetWord).toEqual(testTarget)
-    expect(WordlistController.evt.WORDITEM_UPDATED.pub).toHaveBeenCalledWith({dataObj:item,params:{segment:'homonym'}})
+    expect(WordlistController.evt.WORDITEM_UPDATED.pub).toHaveBeenCalledWith({dataObj:item,params:{segment:'fullHomonym'}})
   })
   it.skip('14 WordlistController - onDefinitionsReady fails if item does not exist',() => {})
   it('15 WordlistController - onLemmaTranslationsReady updates list and emits events',() => {
@@ -201,11 +201,11 @@ describe('wordlist-controller.test.js', () => {
     latList.addWordItem(mockWILatin)
     jest.spyOn(WordlistController.evt.WORDITEM_UPDATED,'pub')
     jest.spyOn(WordlistController.evt.WORDLIST_UPDATED,'pub')
-    wc.onLemmaTranslationsReady({homonym: {language: mockLClat, targetWord: testTarget}})
+    wc.onLemmaTranslationsReady({language: mockLClat, targetWord: testTarget})
     let item = wc.getWordListItem(mockLClat,testTarget)
     expect(item.homonym).toBeDefined()
     expect(item.homonym.targetWord).toEqual(testTarget)
-    expect(WordlistController.evt.WORDITEM_UPDATED.pub).toHaveBeenCalledWith({dataObj:item,params:{segment:'homonym'}})
+    expect(WordlistController.evt.WORDITEM_UPDATED.pub).toHaveBeenCalledWith({dataObj:item,params:{segment:'fullHomonym'}})
   })
   it.skip('16 WordlistController - onLemmaTranslationsReady fails if item does not exist',() => {})
   it('17 WordlistController - onTextQuoteSelectorReceived updates list and emits events',() => {
@@ -215,7 +215,7 @@ describe('wordlist-controller.test.js', () => {
     latList.addWordItem(mockWILatin)
     jest.spyOn(WordlistController.evt.WORDITEM_UPDATED,'pub')
     jest.spyOn(WordlistController.evt.WORDLIST_UPDATED,'pub')
-    wc.onTextQuoteSelectorReceived({textQuoteSelector: {languageCode: mockLClat, normalizedText: testTarget}})
+    wc.onTextQuoteSelectorReceived({languageCode: mockLClat, normalizedText: testTarget})
     let item = wc.getWordListItem(mockLClat,testTarget)
     expect(item.context).toBeDefined()
     expect(item.context.length).toEqual(1)
@@ -229,7 +229,7 @@ describe('wordlist-controller.test.js', () => {
     let testTarget = 'mare'
     jest.spyOn(WordlistController.evt.WORDITEM_UPDATED,'pub')
     jest.spyOn(WordlistController.evt.WORDLIST_UPDATED,'pub')
-    wc.onTextQuoteSelectorReceived({textQuoteSelector: {languageCode: mockLClat, normalizedText: testTarget}})
+    wc.onTextQuoteSelectorReceived({languageCode: mockLClat, normalizedText: testTarget})
     let item = wc.getWordListItem(mockLClat,testTarget)
     expect(item.context).toBeDefined()
     expect(item.context.length).toEqual(1)
@@ -247,7 +247,7 @@ describe('wordlist-controller.test.js', () => {
     expect(item.important).toBeTruthy()
     wc.updateWordItemImportant(mockLClat,testTarget,false)
     expect(item.important).toBeFalsy()
-    expect(WordlistController.evt.WORDITEM_UPDATED.pub).toHaveBeenCalledWith({dataObj:item,params:{segment:'important'}})
+    expect(WordlistController.evt.WORDITEM_UPDATED.pub).toHaveBeenCalledWith({dataObj:item,params:{segment:'common'}})
     expect(WordlistController.evt.WORDITEM_UPDATED.pub).toHaveBeenCalledTimes(2)
   })
   it('20 WordlistController - updateAllImportant updates word item important and emits events',() => {
@@ -265,8 +265,8 @@ describe('wordlist-controller.test.js', () => {
     let item2 = wc.getWordListItem(mockLClat,testTarget2)
     expect(item.important).toBeTruthy()
     expect(item2.important).toBeTruthy()
-    expect(WordlistController.evt.WORDITEM_UPDATED.pub).toHaveBeenCalledWith({dataObj:item,params:{segment:'important'}})
-    expect(WordlistController.evt.WORDITEM_UPDATED.pub).toHaveBeenCalledWith({dataObj:item2,params:{segment:'important'}})
+    expect(WordlistController.evt.WORDITEM_UPDATED.pub).toHaveBeenCalledWith({dataObj:item,params:{segment:'common'}})
+    expect(WordlistController.evt.WORDITEM_UPDATED.pub).toHaveBeenCalledWith({dataObj:item2,params:{segment:'common'}})
     expect(WordlistController.evt.WORDITEM_UPDATED.pub).toHaveBeenCalledTimes(2)
   })
   it.skip('21 WordlistController - selectWordItem emits event',() => {})

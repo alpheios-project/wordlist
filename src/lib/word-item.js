@@ -51,7 +51,7 @@ export default class WordItem {
    * Construct the homonym portion of a WordItem from JSON
    */
   static readHomonym(jsonObject) {
-    return Homonym.readObject(jsonObj.homonym)
+    return Homonym.readObject(jsonObject.homonym)
   }
 
   /**

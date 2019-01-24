@@ -3,7 +3,7 @@
     <div class="alpheios-wordlist" v-if="!showContext">
         <div class="alpheios-wordlist-language" v-for="(languageCode, langIndex) in languagesList" v-bind:key="langIndex">
           <word-language-panel
-            :controller = "wordListC"
+            :controller = "wordlistC"
             :languageCode = "languageCode"
             :messages = "l10n.messages"
             :updated = "updated"

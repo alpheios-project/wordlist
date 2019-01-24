@@ -119,7 +119,7 @@ export default class WordItemIndexedDbDriver {
    */
   segmentQuery(segment,worditem) {
     let id = this._makeStorageID(worditem)
-    let index = segment === 'context' ? 'worditemID' : 'ID'
+    let index = segment === 'context' ? 'wordItemID' : 'ID'
     return {
       objectStoreName: this.storageMap[segment].objectStoreName,
       condition: {indexName: index, value: id, type: 'only' }
@@ -189,6 +189,9 @@ export default class WordItemIndexedDbDriver {
    * private method to load the Context property of a WordItem
    */
   _loadContext (worditem, jsonObjs) {
+    if (! Array.isArray(jsonObjs)) {
+      jsonObjs = [jsonObjs]  
+    }
     worditem.context = WordItem.readContext(jsonObjs)
   }
 

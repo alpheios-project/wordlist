@@ -12,7 +12,7 @@ export default class WordlistController {
     this.wordLists = {}
     this.availableLangs = availableLangs
     events.TEXT_QUOTE_SELECTOR_RECEIVED.sub(this.onTextQuoteSelectorReceived.bind(this))
-    events.LEXICAL_QUERY_COMPLETE.sub(this.onHomonymReady.bind(this))
+    events.HOMONYM_READY.sub(this.onHomonymReady.bind(this))
     events.DEFS_READY.sub(this.onDefinitionsReady.bind(this))
     events.LEMMA_TRANSL_READY.sub(this.onLemmaTranslationsReady.bind(this))
   }
@@ -98,33 +98,31 @@ export default class WordlistController {
 
   /**
    * Responds to a HOMONYM_READY event by creating or updating a wordlist item for a retrieved Homonym
-   * @param {Object} data - expected to adhere to
-   *                        { homonym: Homonym }
+   * @param {Homonym} data
    * Emits WORDITEM_UPDATED and WORDLIST_UPDATED events
    */
    onHomonymReady (data) {
     console.info('********************onHomonymReady1', data)
     // when receiving this event, it's possible this is the first time we are seeing the word so
     // create the item in the word list if it doesn't exist
-    let wordItem = this.getWordListItem(data.homonym.language,data.homonym.targetWord,true)
-    wordItem.homonym = data.homonym
-    WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'homonym'}})
+    let wordItem = this.getWordListItem(data.language,data.targetWord,true)
+    wordItem.homonym = data
+    WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'shortHomonym'}})
     // emit a wordlist updated event too in case the wordlist was updated
     WordlistController.evt.WORDLIST_UPDATED.pub(this.getWordList(wordItem.languageCode))
   }
 
   /**
   * Responds to a DEFINITIONS_READY event by updating a wordlist item for retrieved Definitions
-  * @param {Object} data - expected to adhere to
-  *                        { homonym: Homonym }
+  * @param {Object} data {requestType: 'fullDefs',homonym: {Homonym}}
   * Emits a WORDITEM_UPDATED event
   */
   onDefinitionsReady (data) {
-    console.info('********************onDefinitionsReady', data)
+    console.info('********************onDefinitionsReady', data.homonym)
     let wordItem = this.getWordListItem(data.homonym.language,data.homonym.targetWord)
     if (wordItem) {
       wordItem.homonym = data.homonym
-      WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'homonym'}})
+      WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'fullHomonym'}})
     } else {
       // TODO error handling
       console.error("Something went wrong: request to add definitions to non-existent item")
@@ -134,16 +132,15 @@ export default class WordlistController {
   /**
   * Responds to a LEMMA_TRANSLATIONS_READY event by updating a wordlist item for retrieved translations
   * (because lemma translations could come much later we need to resave homonym with translations data to database)
-  * @param {Object} data - expected to adhere to
-  *                        { homonym: Homonym }
+  * @param {Homonym} data
   * Emits a WORDITEM_UPDATED event
   */
   onLemmaTranslationsReady (data) {
-    console.info('********************onLemmaTranslationsReady', data.homonym)
-    let wordItem = this.getWordListItem(data.homonym.language, data.homonym.targetWord)
+    console.info('********************onLemmaTranslationsReady', data)
+    let wordItem = this.getWordListItem(data.language, data.targetWord)
     if (wordItem) {
-      wordItem.homonym = data.homonym
-      WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'homonym'}})
+      wordItem.homonym = data
+      WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'fullHomonym'}})
     } else {
       console.error("Something went wrong: request to add translations to non-existent item")
     }
@@ -151,19 +148,22 @@ export default class WordlistController {
 
   /**
   * Responds to a TextQuoteSelectorReceived  event by creating or updating a wordlist item for a retrieved Homonym
-  * @param {Object} data - expected to adhere to
-  *                        { textquoteselector: TextQuoteSelector }
+  * @param {TextQuoteSelector} data
   * Emits a WORDITEM_UPDATED and WORDLIST_UPDATED events
   */
   onTextQuoteSelectorReceived (data) {
-    console.info('********************onTextQuoteSelectorReceived', data.textQuoteSelector)
+    console.info('********************onTextQuoteSelectorReceived', data)
     // when receiving this event, it's possible this is the first time we are seeing the word so
     // create the item in the word list if it doesn't exist
-    let wordItem = this.getWordListItem(data.textQuoteSelector.languageCode, data.textQuoteSelector.normalizedText,true)
-    wordItem.addContext([data.textQuoteSelector])
-    WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'context'}})
-    // emit a wordlist updated event too in case the wordlist was updated
-    WordlistController.evt.WORDLIST_UPDATED.pub(this.getWordList(wordItem.languageCode))
+    let wordItem = this.getWordListItem(data.languageCode, data.normalizedText,true)
+    if (wordItem) {
+      wordItem.addContext([data])
+      WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'context'}})
+      // emit a wordlist updated event too in case the wordlist was updated
+      WordlistController.evt.WORDLIST_UPDATED.pub(this.getWordList(wordItem.languageCode))
+    } else {
+      console.error("Unable to create or retrieve worditem")
+    }
 
   }
 
@@ -178,7 +178,7 @@ export default class WordlistController {
     let wordItem = this.getWordListItem(languageCode, targetWord,false)
     if (wordItem) {
       wordItem.important = important
-      WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'important'}})
+      WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'common'}})
     } else {
       console.error("Something went wrong: request to set important flag on non-existent item")
     }
@@ -194,7 +194,7 @@ export default class WordlistController {
     let wordList = this.getWordList(languageCode, false)
     wordList.values.forEach(wordItem => {
       wordItem.important = important
-      WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'important'}})
+      WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'common'}})
     })
   }
 

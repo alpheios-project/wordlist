@@ -164,7 +164,7 @@ describe('wordlist-controller.test.js', () => {
     expect(item.homonym).toBeDefined()
     expect(item.homonym.targetWord).toEqual(testTarget)
     expect(WordlistController.evt.WORDITEM_UPDATED.pub).toHaveBeenCalledWith({dataObj:item,params:{segment:'shortHomonym'}})
-    expect(WordlistController.evt.WORDLIST_UPDATED.pub).toHaveBeenCalledWith(latList)
+    expect(WordlistController.evt.WORDLIST_UPDATED.pub).toHaveBeenCalledWith({ lat: latList })
   })
 
   it('12 WordlistController - onHomonymReady adds new item to list and emits events',() => {
@@ -178,7 +178,7 @@ describe('wordlist-controller.test.js', () => {
     expect(item.homonym).toBeDefined()
     expect(item.homonym.targetWord).toEqual(testTarget)
     expect(WordlistController.evt.WORDITEM_UPDATED.pub).toHaveBeenCalledWith({dataObj:item,params:{segment:'shortHomonym'}})
-    expect(WordlistController.evt.WORDLIST_UPDATED.pub).toHaveBeenCalledWith(latList)
+    expect(WordlistController.evt.WORDLIST_UPDATED.pub).toHaveBeenCalledWith({ lat: latList })
   })
   it('13 WordlistController - onDefinitionsReady updates list and emits events',() => {
     let wc = new WordlistController([mockLClat,mockLCgrc],mockEvents)

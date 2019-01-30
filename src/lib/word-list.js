@@ -1,3 +1,4 @@
+import WordlistController from '@/controllers/wordlist-controller'
 import WordItem from '@/lib/word-item'
 
 export default class WordList {
@@ -77,6 +78,8 @@ export default class WordList {
     let key = this._makeItemKey(this.languageCode,targetWord)
     if (create && !this.items[key]) {
       let wordItem = new WordItem({targetWord: targetWord, languageCode: this.languageCode})
+      WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'common'}})
+
       this.items[key]  = wordItem
     }
     return this.items[key]

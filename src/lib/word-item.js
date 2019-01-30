@@ -45,6 +45,7 @@ export default class WordItem {
       context: context,
       homonym: homonym
     })
+    return worditem
   }
 
   /**
@@ -107,5 +108,17 @@ export default class WordItem {
    */
   _emptyProp (propName) {
     return !this[propName] || (typeof this[propName] === 'object' && Object.keys(this[propName]).length === 0)
+  }
+
+  get formattedContext () {
+    let res = {}
+    for (let tq of this.context) {
+      console.info('*************************formattedContext tq', tq)
+      if (!res[tq.source]) {
+        res[tq.source] = []
+      }
+      res[tq.source].push(tq)
+    }
+    return res
   }
 }

@@ -24,7 +24,7 @@
           class="alpheios-worditem__data alpheios-worditem__targetWord"
           @click="selectWordItem()"
         >{{ worditem.targetWord }}</div>
-        <div class="alpheios-worditem__data alpheios-worditem__lemmasList">{{ worditem.lemmasList }}</div>
+        <div class="alpheios-worditem__data alpheios-worditem__lemmasList">{{ lemmasList }}</div>
     </div>
 </template>
 <script>
@@ -53,6 +53,10 @@
       messages: {
         type: Object,
         required: true
+      },
+      updated: {
+        type: Number,
+        required: true
       }
     },
     data () {
@@ -66,28 +70,31 @@
     },
     computed: {
       itemClasses () {
-        // console.info('********************itemClasses', this.worditem.currentSession, this.worditem)
         return {
           'alpheios-wordlist-language__worditem__active': this.important,
           'alpheios-wordlist-language__worditem__current_session': this.worditem.currentSession
         }
+      },
+      lemmasList () {
+        return this.updated ? this.worditem.lemmasList : ''
       }
     },
     methods: {
       changeImportant () {
         this.$emit('changeImportant', this.worditem.targetWord, ! this.worditem.important)
-        this.important = ! this.worditem.important
+        this.important = this.worditem.important
       },
       eventChangeImportant () {
         this.important = this.worditem.important
       },
       selectWordItem () {
-        this.controller.selectWordItem(this.worditem.languageCode,this.worditem.targetWord)
+        this.controller.selectWordItem(this.worditem.languageCode, this.worditem.targetWord)
       },
       deleteItem () {
         this.$emit('deleteItem', this.worditem.targetWord)
       },
       showContexts () {
+        console.info('*********************WordItemPanel showContexts', this.worditem.targetWord)
         this.$emit('showContexts', this.worditem.targetWord)
       }
     }

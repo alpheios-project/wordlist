@@ -12,10 +12,11 @@
         </div>
     </div>
     <div class="alpheios-wordlist-contexts" v-if="showContext">
-      <word-context-panel
+      <word-context-panel 
         :worditem = "showContextWordItem"
         :messages = "l10n.messages"
-      ></word-context-panel>
+        @backToWordList = "backToWordList"
+      ></word-context-panel>     
     </div>
   </div>
 </template>
@@ -68,8 +69,11 @@
       }
     },
     methods: {
-      showContexts (wordItemStorageID, wordListLanguageCode) {
-        this.showContextWordItem = this.wordLists[wordListLanguageCode].items[wordItemStorageID]
+      showContexts (targetWord, wordListLanguageCode) {
+        this.showContextWordItem = this.wordLists[wordListLanguageCode].getWordItem(targetWord)
+      },
+      backToWordList () {
+        this.showContextWordItem = null
       }
     }
   }

@@ -168,7 +168,7 @@ describe('indexed-db-adapter.test.js', () => {
       {ID:'mockItemId', listID: 'mockListId',segmenta:'mockSegment',segmentb:'mockSegmentB'},
       {ID:'mockItemId2', listID: 'mockListId',segmenta:'mockSegment',segmentb:'mockSegmentB'}
     ])
-    await ida.deleteMany({mockListParam:'mockListId'})
+    await ida.deleteMany({dataObj: {}, mockListParam:'mockListId'})
     items = await ida.query({mockListParam:'mockListId'})
     expect(items).toEqual([])
     ida.clear()

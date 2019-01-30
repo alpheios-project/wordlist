@@ -77,9 +77,10 @@ export default class IndexedDBAdapter {
       segments = this.dbDriver.segments
     }
     for (let s of segments) {
+      // console.info('***************updateSegmentQuery', s,data)
       let q = this.dbDriver.updateSegmentQuery(s,data)
       try {
-        console.log("Try ",q)
+        // console.log("Try ",q)
         return await this._set(q)
       } catch(error) {
         console.info("Error on update",error)
@@ -204,9 +205,11 @@ export default class IndexedDBAdapter {
    * @return {Promise} resolves to true on success
    */
   async _set (data) {
+    // console.info('**********************IndexedDB set', data)
     let promiseOpenDB = await new Promise((resolve, reject) => {
       let request = this._openDatabaseRequest()
       request.onsuccess = async (event) => {
+        // console.info('**********************IndexedDB set inside on success', data)
         const db = event.target.result
         let rv = await this._putItem(db, data)
         resolve(rv)
@@ -234,17 +237,17 @@ export default class IndexedDBAdapter {
       }
       const objectStore = transaction.objectStore(data.objectStoreName)
       let objectsDone = data.dataItems.length
-      console.info('************************data.dataItems', data.dataItems)
       for (let dataItem of data.dataItems) {
-        console.info('************************dataItem', dataItem)
         const requestPut = objectStore.put(dataItem)
         requestPut.onsuccess = () => {
           objectsDone = objectsDone - 1
+          // console.info('requestPut success')
           if (objectsDone === 0) {
             resolve(true)
           }
         }
         requestPut.onerror = () => {
+          console.info('requestPut error', event.target)
           reject()
         }
       }

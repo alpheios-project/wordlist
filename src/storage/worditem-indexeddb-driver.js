@@ -1,4 +1,6 @@
 import WordItem from '@/lib/word-item'
+import { Homonym } from 'alpheios-data-models'
+
 export default class WordItemIndexedDbDriver {
 
   /**
@@ -249,7 +251,8 @@ export default class WordItemIndexedDbDriver {
    * @param {WordItem}
    */
   _serializeHomonym (worditem,addMeaning = false) {
-    let resultHomonym = worditem.homonym.convertToJSONObject(addMeaning)
+    // console.info('**************_serializeHomonym', worditem)
+    let resultHomonym = worditem.homonym && (worditem.homonym instanceof Homonym) ? worditem.homonym.convertToJSONObject(addMeaning) : {}
     return {
       ID: this._makeStorageID(worditem),
       listID: this.userId + '-' + worditem.languageCode,

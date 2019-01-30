@@ -21,6 +21,20 @@ export default class UserDataManager {
     return new RemoteDBAdapter(dbDriver)
   }
 
+  defineConstructorName (sourceConstrName) {
+    let firstLetter = sourceConstrName.substr(0,1)
+    let finalConstrName
+
+    if (firstLetter == firstLetter.toUpperCase()) {
+      finalConstrName = sourceConstrName
+    } else {
+      let removed = sourceConstrName.split('_').length-1
+      let classNameStart = sourceConstrName.replace('_', '').toLowerCase().length/2
+      finalConstrName = sourceConstrName.substr(-(classNameStart+removed-2))
+    }
+    return finalConstrName
+  }
+
   /**
    * Update data in the user data stores
    * @param {Object} data object adhering to
@@ -30,8 +44,10 @@ export default class UserDataManager {
    * @return {Boolean} true if update succeeded false if not
    */
   async update(data) {
-    let ls = this._localStorageAdapter(data.dataObj.constructor.name)
-    let rs = this._remoteStorageAdapter(data.dataObj.constructor.name)
+    let finalConstrName = this.defineConstructorName(data.dataObj.constructor.name)
+
+    let ls = this._localStorageAdapter(finalConstrName)
+    let rs = this._remoteStorageAdapter(finalConstrName)
     let updatedLocal = await ls.update(data.dataObj,data.params)
     let updatedRemote = await rs.update(data.dataObj,data.params)
     // TODO error handling upon update failure
@@ -45,8 +61,10 @@ export default class UserDataManager {
    * @return {Boolean} true if delete succeeded false if not
    */
   async delete(data) {
-    let ls = this._localStorageAdapter(data.dataObj.constructor.name)
-    let rs = this._remoteStorageAdapter(data.dataObj.constructor.name)
+    let finalConstrName = this.defineConstructorName(data.dataObj.constructor.name)
+
+    let ls = this._localStorageAdapter(finalConstrName)
+    let rs = this._remoteStorageAdapter(finalConstrName)
     let deletedLocal = await ls.deleteOne(data.dataObj)
     let deletedRemote = await rs.deleteOne(data.dataObj)
     // TODO error handling upon delete failure

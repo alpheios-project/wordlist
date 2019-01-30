@@ -140,6 +140,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ }),
 
+/***/ "../node_modules/mini-css-extract-plugin/dist/loader.js!../node_modules/css-loader/index.js?!../node_modules/vue-loader/lib/loaders/stylePostLoader.js!../node_modules/sass-loader/lib/loader.js?!../node_modules/vue-loader/lib/index.js?!./vue-components/word-tq-source-block.vue?vue&type=style&index=0&lang=scss&":
+/*!************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ../node_modules/mini-css-extract-plugin/dist/loader.js!../node_modules/css-loader??ref--5-1!../node_modules/vue-loader/lib/loaders/stylePostLoader.js!../node_modules/sass-loader/lib/loader.js??ref--5-2!../node_modules/vue-loader/lib??vue-loader-options!./vue-components/word-tq-source-block.vue?vue&type=style&index=0&lang=scss& ***!
+  \************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+// extracted by mini-css-extract-plugin
+
+/***/ }),
+
 /***/ "../node_modules/process/browser.js":
 /*!******************************************!*\
   !*** ../node_modules/process/browser.js ***!
@@ -682,14 +693,43 @@ __webpack_require__.r(__webpack_exports__);
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _icons_back_svg__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/icons/back.svg */ "./icons/back.svg");
+/* harmony import */ var _icons_back_svg__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_icons_back_svg__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _vue_components_common_components_tooltip_wrap_vue__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/vue-components/common-components/tooltip-wrap.vue */ "./vue-components/common-components/tooltip-wrap.vue");
+/* harmony import */ var _vue_components_word_tq_source_block_vue__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/vue-components/word-tq-source-block.vue */ "./vue-components/word-tq-source-block.vue");
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 //
 //
 //
 //
 //
 
+
+
+
+
 /* harmony default export */ __webpack_exports__["default"] = ({
-  name: 'WordItemPanel',
+  name: 'WordContextBlock',
+  components: {
+    backIcon: _icons_back_svg__WEBPACK_IMPORTED_MODULE_0___default.a,
+    alphTooltip: _vue_components_common_components_tooltip_wrap_vue__WEBPACK_IMPORTED_MODULE_1__["default"],
+    wordTqSource: _vue_components_word_tq_source_block_vue__WEBPACK_IMPORTED_MODULE_2__["default"]
+  },
   props: {
     worditem: {
       type: Object,
@@ -698,6 +738,28 @@ __webpack_require__.r(__webpack_exports__);
     messages: {
       type: Object,
       required: true
+    }
+  },
+  computed: {
+    formattedContext () {
+      let finalFormattedContext = {}
+      console.info('***************this.worditem.formattedContext', this.formattedContext)
+      /*
+      this.worditem.formattedContext.forEach(contextItem => {
+        finalFormattedContext[contextItem.source] = contextItem
+      })
+      console.info('***************finalFormattedContext', finalFormattedContext)
+      */
+      return this.worditem.formattedContext
+    },
+    sourcesList () {
+      console.info('***************this.formattedContext', this.formattedContext)
+      return Object.keys(this.formattedContext)
+    }
+  },
+  methods: {
+    backToWordList () {
+      this.$emit('backToWordList')
     }
   }
 });
@@ -776,6 +838,10 @@ __webpack_require__.r(__webpack_exports__);
     messages: {
       type: Object,
       required: true
+    },
+    updated: {
+      type: Number,
+      required: true
     }
   },
   data () {
@@ -789,28 +855,31 @@ __webpack_require__.r(__webpack_exports__);
   },
   computed: {
     itemClasses () {
-      // console.info('********************itemClasses', this.worditem.currentSession, this.worditem)
       return {
         'alpheios-wordlist-language__worditem__active': this.important,
         'alpheios-wordlist-language__worditem__current_session': this.worditem.currentSession
       }
+    },
+    lemmasList () {
+      return this.updated ? this.worditem.lemmasList : ''
     }
   },
   methods: {
     changeImportant () {
       this.$emit('changeImportant', this.worditem.targetWord, ! this.worditem.important)
-      this.important = ! this.worditem.important
+      this.important = this.worditem.important
     },
     eventChangeImportant () {
       this.important = this.worditem.important
     },
     selectWordItem () {
-      this.controller.selectWordItem(this.worditem.languageCode,this.worditem.targetWord)
+      this.controller.selectWordItem(this.worditem.languageCode, this.worditem.targetWord)
     },
     deleteItem () {
       this.$emit('deleteItem', this.worditem.targetWord)
     },
     showContexts () {
+      console.info('*********************WordItemPanel showContexts', this.worditem.targetWord)
       this.$emit('showContexts', this.worditem.targetWord)
     }
   }
@@ -873,6 +942,7 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
 
 
 
@@ -882,7 +952,7 @@ __webpack_require__.r(__webpack_exports__);
  // Vue in a runtime + compiler configuration
 
 /* harmony default export */ __webpack_exports__["default"] = ({
-  name: 'WordListPanel',
+  name: 'WordLanguagePanel',
   components: {
     checkIcon: _icons_check_svg__WEBPACK_IMPORTED_MODULE_2___default.a,
     deleteIcon: _icons_delete_svg__WEBPACK_IMPORTED_MODULE_3___default.a,
@@ -917,6 +987,7 @@ __webpack_require__.r(__webpack_exports__);
       return this.controller.getWordList(this.languageCode)
     },
     wordItems () {
+      console.info('***************WordLanguagePanel wordItems', this.updated)
       return this.updated && this.reloadList ? this.wordlist.values : []
     },
     languageName () {
@@ -992,6 +1063,7 @@ var _locales_en_gb_messages_json__WEBPACK_IMPORTED_MODULE_3___namespace = /*#__P
 //
 //
 //
+//
 
 
 
@@ -1041,9 +1113,57 @@ var _locales_en_gb_messages_json__WEBPACK_IMPORTED_MODULE_3___namespace = /*#__P
     }
   },
   methods: {
-    showContexts (wordItemStorageID, wordListLanguageCode) {
-      this.showContextWordItem = this.wordLists[wordListLanguageCode].items[wordItemStorageID]
+    showContexts (targetWord, wordListLanguageCode) {
+      this.showContextWordItem = this.wordLists[wordListLanguageCode].getWordItem(targetWord)
+    },
+    backToWordList () {
+      this.showContextWordItem = null
     }
+  }
+});
+
+
+/***/ }),
+
+/***/ "../node_modules/vue-loader/lib/index.js?!../node_modules/source-map-loader/index.js!./vue-components/word-tq-source-block.vue?vue&type=script&lang=js&":
+/*!***************************************************************************************************************************************************************!*\
+  !*** ../node_modules/vue-loader/lib??vue-loader-options!../node_modules/source-map-loader!./vue-components/word-tq-source-block.vue?vue&type=script&lang=js& ***!
+  \***************************************************************************************************************************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+
+/* harmony default export */ __webpack_exports__["default"] = ({
+  name: 'WordTQSourceBlock',
+  props: {
+    source: {
+      type: String,
+      required: true
+    },
+    tqSelectors: {
+      type: Array,
+      required: true
+    },
+    messages: {
+      type: Object,
+      required: true
+    }
+  },
+  computed: {
+  },
+  methods: {
   }
 });
 
@@ -1107,7 +1227,66 @@ var render = function() {
   var _vm = this
   var _h = _vm.$createElement
   var _c = _vm._self._c || _h
-  return _c("div", [_vm._v("\n    " + _vm._s(_vm.worditem.targetWord) + "\n")])
+  return _c(
+    "div",
+    [
+      _c(
+        "div",
+        { staticClass: "alpheios-wordlist-commands" },
+        [
+          _c(
+            "alph-tooltip",
+            {
+              attrs: {
+                tooltipDirection: "top-left",
+                tooltipText: _vm.messages.TOOLTIP_BACK
+              }
+            },
+            [
+              _c(
+                "div",
+                {
+                  staticClass:
+                    "alpheios-wordlist-commands__item alpheios-wordlist-commands__item-back",
+                  on: { click: _vm.backToWordList }
+                },
+                [_c("back-icon")],
+                1
+              )
+            ]
+          ),
+          _vm._v(" "),
+          _c("div", { staticClass: "alpheios-wordlist-language__title" }, [
+            _vm._v(
+              _vm._s(_vm.worditem.targetWord) +
+                " (" +
+                _vm._s(_vm.worditem.languageCode) +
+                ")"
+            )
+          ])
+        ],
+        1
+      ),
+      _vm._v(" "),
+      _vm._l(_vm.sourcesList, function(source) {
+        return _c(
+          "div",
+          { staticClass: "alpheios-wordlists-tqs" },
+          [
+            _c("word-tq-source", {
+              attrs: {
+                source: source,
+                tqSelectors: _vm.formattedContext[source],
+                messages: _vm.messages
+              }
+            })
+          ],
+          1
+        )
+      })
+    ],
+    2
+  )
 }
 var staticRenderFns = []
 render._withStripped = true
@@ -1233,7 +1412,7 @@ var render = function() {
         {
           staticClass: "alpheios-worditem__data alpheios-worditem__lemmasList"
         },
-        [_vm._v(_vm._s(_vm.worditem.lemmasList))]
+        [_vm._v(_vm._s(_vm.lemmasList))]
       )
     ],
     1
@@ -1362,7 +1541,8 @@ var render = function() {
               attrs: {
                 controller: _vm.controller,
                 worditem: wordItem,
-                messages: _vm.messages
+                messages: _vm.messages,
+                updated: _vm.updated
               },
               on: {
                 changeImportant: _vm.changeImportant,
@@ -1436,13 +1616,68 @@ var render = function() {
               attrs: {
                 worditem: _vm.showContextWordItem,
                 messages: _vm.l10n.messages
-              }
+              },
+              on: { backToWordList: _vm.backToWordList }
             })
           ],
           1
         )
       : _vm._e()
   ])
+}
+var staticRenderFns = []
+render._withStripped = true
+
+
+
+/***/ }),
+
+/***/ "../node_modules/vue-loader/lib/loaders/templateLoader.js?!../node_modules/vue-loader/lib/index.js?!./vue-components/word-tq-source-block.vue?vue&type=template&id=caf65a48&":
+/*!****************************************************************************************************************************************************************************************************************!*\
+  !*** ../node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!../node_modules/vue-loader/lib??vue-loader-options!./vue-components/word-tq-source-block.vue?vue&type=template&id=caf65a48& ***!
+  \****************************************************************************************************************************************************************************************************************/
+/*! exports provided: render, staticRenderFns */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "render", function() { return render; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "staticRenderFns", function() { return staticRenderFns; });
+var render = function() {
+  var _vm = this
+  var _h = _vm.$createElement
+  var _c = _vm._self._c || _h
+  return _c(
+    "div",
+    { staticClass: "alpheios-wordlists-tq" },
+    [
+      _c(
+        "a",
+        {
+          staticClass: "alpheios-wordlists-tq-title",
+          attrs: { href: _vm.source }
+        },
+        [_vm._v(_vm._s(_vm.source))]
+      ),
+      _vm._v(" "),
+      _vm._l(_vm.tqSelectors, function(tq) {
+        return _c(
+          "div",
+          {
+            key: tq.ID,
+            staticClass: "alpheios-wordlists-tq-contextHTML-block"
+          },
+          [
+            _c("p", {
+              staticClass: "alpheios-wordlists-tq-contextHTML",
+              domProps: { innerHTML: _vm._s(tq.contextHTML) }
+            })
+          ]
+        )
+      })
+    ],
+    2
+  )
 }
 var staticRenderFns = []
 render._withStripped = true
@@ -12692,6 +12927,20 @@ class UserDataManager {
     return new _storage_remote_db_adapter_js__WEBPACK_IMPORTED_MODULE_3__["default"](dbDriver)
   }
 
+  defineConstructorName (sourceConstrName) {
+    let firstLetter = sourceConstrName.substr(0,1)
+    let finalConstrName
+
+    if (firstLetter == firstLetter.toUpperCase()) {
+      finalConstrName = sourceConstrName
+    } else {
+      let removed = sourceConstrName.split('_').length-1
+      let classNameStart = sourceConstrName.replace('_', '').toLowerCase().length/2
+      finalConstrName = sourceConstrName.substr(-(classNameStart+removed-2))
+    }
+    return finalConstrName
+  }
+
   /**
    * Update data in the user data stores
    * @param {Object} data object adhering to
@@ -12701,8 +12950,10 @@ class UserDataManager {
    * @return {Boolean} true if update succeeded false if not
    */
   async update(data) {
-    let ls = this._localStorageAdapter(data.dataObj.constructor.name)
-    let rs = this._remoteStorageAdapter(data.dataObj.constructor.name)
+    let finalConstrName = this.defineConstructorName(data.dataObj.constructor.name)
+
+    let ls = this._localStorageAdapter(finalConstrName)
+    let rs = this._remoteStorageAdapter(finalConstrName)
     let updatedLocal = await ls.update(data.dataObj,data.params)
     let updatedRemote = await rs.update(data.dataObj,data.params)
     // TODO error handling upon update failure
@@ -12716,8 +12967,10 @@ class UserDataManager {
    * @return {Boolean} true if delete succeeded false if not
    */
   async delete(data) {
-    let ls = this._localStorageAdapter(data.dataObj.constructor.name)
-    let rs = this._remoteStorageAdapter(data.dataObj.constructor.name)
+    let finalConstrName = this.defineConstructorName(data.dataObj.constructor.name)
+
+    let ls = this._localStorageAdapter(finalConstrName)
+    let rs = this._remoteStorageAdapter(finalConstrName)
     let deletedLocal = await ls.deleteOne(data.dataObj)
     let deletedRemote = await rs.deleteOne(data.dataObj)
     // TODO error handling upon delete failure
@@ -12880,6 +13133,7 @@ class WordlistController {
     let toDelete = this.wordLists[languageCode]
     delete this.wordLists[languageCode]
     WordlistController.evt.WORDLIST_DELETED.pub({dataType: 'WordItem', params: {languageCode: languageCode}})
+    WordlistController.evt.WORDLIST_UPDATED.pub(this.wordLists)
   }
 
   /**
@@ -12911,7 +13165,8 @@ class WordlistController {
     let wordList = this.getWordList(languageCode, create)
     let worditem
     if (wordList) {
-      worditem = wordList.getWordItem(targetWord,create)
+      // console.info('************* getWordItem targetWord', targetWord)
+      worditem = wordList.getWordItem(targetWord, create)
     }
     // TODO error handling for no item?
     return worditem
@@ -12930,7 +13185,7 @@ class WordlistController {
     wordItem.homonym = data
     WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'shortHomonym'}})
     // emit a wordlist updated event too in case the wordlist was updated
-    WordlistController.evt.WORDLIST_UPDATED.pub(this.getWordList(wordItem.languageCode))
+    WordlistController.evt.WORDLIST_UPDATED.pub(this.wordLists)
   }
 
   /**
@@ -13027,7 +13282,9 @@ class WordlistController {
   */
   selectWordItem (languageCode, targetWord) {
     let wordItem = this.getWordListItem(languageCode, targetWord,false)
-    this.evt.WORDITEM_SELECTED.pub(wordItem)
+    // console.info('*********************selectWordItem 1', languageCode, targetWord)
+    // console.info('*********************selectWordItem 2', wordItem)
+    WordlistController.evt.WORDITEM_SELECTED.pub(wordItem.homonym)
   }
 
   /**
@@ -13098,6 +13355,17 @@ WordlistController.evt = {
 
 /***/ }),
 
+/***/ "./icons/back.svg":
+/*!************************!*\
+  !*** ./icons/back.svg ***!
+  \************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;return _c('svg',{attrs:{"viewBox":"0 0 459 459"}},[_c('path',{attrs:{"d":"M178.5 140.25v-102L0 216.75l178.5 178.5V290.7c127.5 0 216.75 40.8 280.5 130.05-25.5-127.5-102-255-280.5-280.5z"}})])};var toString = function () {return "C:\\_Alpheios\\wordlist\\src\\icons\\back.svg"};module.exports = { render: render, toString: toString };
+
+/***/ }),
+
 /***/ "./icons/check.svg":
 /*!*************************!*\
   !*** ./icons/check.svg ***!
@@ -13105,7 +13373,7 @@ WordlistController.evt = {
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;return _c('svg',{attrs:{"viewBox":"0 0 447.6 757.4"}},[_c('path',{attrs:{"d":"M-128.4 305.8c74.8 53.3 146.8 110.5 215.7 171.3 0 0 348.4-399.4 557.1-477.1l27 53S277.2 418 150.5 757.4l-374.3-378.7 95.4-72.9z"}})])};var toString = function () {return "/home/balmas/workspace/wordlist/src/icons/check.svg"};module.exports = { render: render, toString: toString };
+var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;return _c('svg',{attrs:{"viewBox":"0 0 447.6 757.4"}},[_c('path',{attrs:{"d":"M-128.4 305.8c74.8 53.3 146.8 110.5 215.7 171.3 0 0 348.4-399.4 557.1-477.1l27 53S277.2 418 150.5 757.4l-374.3-378.7 95.4-72.9z"}})])};var toString = function () {return "C:\\_Alpheios\\wordlist\\src\\icons\\check.svg"};module.exports = { render: render, toString: toString };
 
 /***/ }),
 
@@ -13116,7 +13384,7 @@ var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._sel
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;return _c('svg',{attrs:{"viewBox":"0 0 900.5 900.5"}},[_c('path',{attrs:{"d":"M176.42 880.5c0 11.046 8.954 20 20 20h507.67c11.046 0 20-8.954 20-20V232.49H176.42V880.5zm386.33-537.73h75V778.8h-75V342.77zm-150 0h75V778.8h-75V342.77zm-150 0h75V778.8h-75V342.77zM618.82 91.911V20c0-11.046-8.954-20-20-20H301.67c-11.046 0-20 8.954-20 20v96.911h-139.8c-11.046 0-20 8.954-20 20v50.576c0 11.045 8.954 20 20 20h616.75c11.046 0 20-8.955 20-20v-50.576c0-11.046-8.954-20-20-20h-139.8V91.912zm-75 20.889H356.67V75.001h187.15v37.801z"}})])};var toString = function () {return "/home/balmas/workspace/wordlist/src/icons/delete.svg"};module.exports = { render: render, toString: toString };
+var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;return _c('svg',{attrs:{"viewBox":"0 0 900.5 900.5"}},[_c('path',{attrs:{"d":"M176.42 880.5c0 11.046 8.954 20 20 20h507.67c11.046 0 20-8.954 20-20V232.49H176.42V880.5zm386.33-537.73h75V778.8h-75V342.77zm-150 0h75V778.8h-75V342.77zm-150 0h75V778.8h-75V342.77zM618.82 91.911V20c0-11.046-8.954-20-20-20H301.67c-11.046 0-20 8.954-20 20v96.911h-139.8c-11.046 0-20 8.954-20 20v50.576c0 11.045 8.954 20 20 20h616.75c11.046 0 20-8.955 20-20v-50.576c0-11.046-8.954-20-20-20h-139.8V91.912zm-75 20.889H356.67V75.001h187.15v37.801z"}})])};var toString = function () {return "C:\\_Alpheios\\wordlist\\src\\icons\\delete.svg"};module.exports = { render: render, toString: toString };
 
 /***/ }),
 
@@ -13127,7 +13395,7 @@ var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._sel
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;return _c('svg',{attrs:{"viewBox":"0 0 442 442"}},[_c('path',{attrs:{"d":"M171 336H70c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.523 0 10-4.477 10-10s-4.477-10-10-10zM322 336H221c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.522 0 10-4.477 10-10s-4.478-10-10-10zM322 86H70c-5.523 0-10 4.477-10 10s4.477 10 10 10h252c5.522 0 10-4.477 10-10s-4.478-10-10-10zM322 136H221c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.522 0 10-4.477 10-10s-4.478-10-10-10zM322 186H221c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.522 0 10-4.477 10-10s-4.478-10-10-10zM322 236H221c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.522 0 10-4.477 10-10s-4.478-10-10-10zM322 286H221c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.522 0 10-4.477 10-10s-4.478-10-10-10zM171 286H70c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.523 0 10-4.477 10-10s-4.477-10-10-10zM171 136H70c-5.523 0-10 4.477-10 10v101c0 5.523 4.477 10 10 10h101c5.523 0 10-4.477 10-10V146c0-5.523-4.477-10-10-10zm-10 101H80v-81h81v81z"}}),_c('path',{attrs:{"d":"M422 76h-30V46c0-11.028-8.972-20-20-20H20C8.972 26 0 34.972 0 46v320c0 27.57 22.43 50 50 50h342c27.57 0 50-22.43 50-50V96c0-11.028-8.972-20-20-20zm0 290c0 16.542-13.458 30-30 30H50c-16.542 0-30-13.458-30-30V46h352v305c0 13.785 11.215 25 25 25 5.522 0 10-4.477 10-10s-4.478-10-10-10c-2.757 0-5-2.243-5-5V96h30v270z"}})])};var toString = function () {return "/home/balmas/workspace/wordlist/src/icons/text-quote.svg"};module.exports = { render: render, toString: toString };
+var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;return _c('svg',{attrs:{"viewBox":"0 0 442 442"}},[_c('path',{attrs:{"d":"M171 336H70c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.523 0 10-4.477 10-10s-4.477-10-10-10zM322 336H221c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.522 0 10-4.477 10-10s-4.478-10-10-10zM322 86H70c-5.523 0-10 4.477-10 10s4.477 10 10 10h252c5.522 0 10-4.477 10-10s-4.478-10-10-10zM322 136H221c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.522 0 10-4.477 10-10s-4.478-10-10-10zM322 186H221c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.522 0 10-4.477 10-10s-4.478-10-10-10zM322 236H221c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.522 0 10-4.477 10-10s-4.478-10-10-10zM322 286H221c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.522 0 10-4.477 10-10s-4.478-10-10-10zM171 286H70c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.523 0 10-4.477 10-10s-4.477-10-10-10zM171 136H70c-5.523 0-10 4.477-10 10v101c0 5.523 4.477 10 10 10h101c5.523 0 10-4.477 10-10V146c0-5.523-4.477-10-10-10zm-10 101H80v-81h81v81z"}}),_c('path',{attrs:{"d":"M422 76h-30V46c0-11.028-8.972-20-20-20H20C8.972 26 0 34.972 0 46v320c0 27.57 22.43 50 50 50h342c27.57 0 50-22.43 50-50V96c0-11.028-8.972-20-20-20zm0 290c0 16.542-13.458 30-30 30H50c-16.542 0-30-13.458-30-30V46h352v305c0 13.785 11.215 25 25 25 5.522 0 10-4.477 10-10s-4.478-10-10-10c-2.757 0-5-2.243-5-5V96h30v270z"}})])};var toString = function () {return "C:\\_Alpheios\\wordlist\\src\\icons\\text-quote.svg"};module.exports = { render: render, toString: toString };
 
 /***/ }),
 
@@ -13515,6 +13783,7 @@ class WordItem {
       context: context,
       homonym: homonym
     })
+    return worditem
   }
 
   /**
@@ -13578,6 +13847,18 @@ class WordItem {
   _emptyProp (propName) {
     return !this[propName] || (typeof this[propName] === 'object' && Object.keys(this[propName]).length === 0)
   }
+
+  get formattedContext () {
+    let res = {}
+    for (let tq of this.context) {
+      console.info('*************************formattedContext tq', tq)
+      if (!res[tq.source]) {
+        res[tq.source] = []
+      }
+      res[tq.source].push(tq)
+    }
+    return res
+  }
 }
 
 
@@ -13593,7 +13874,9 @@ class WordItem {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return WordList; });
-/* harmony import */ var _lib_word_item__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/lib/word-item */ "./lib/word-item.js");
+/* harmony import */ var _controllers_wordlist_controller__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/controllers/wordlist-controller */ "./controllers/wordlist-controller.js");
+/* harmony import */ var _lib_word_item__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/lib/word-item */ "./lib/word-item.js");
+
 
 
 class WordList {
@@ -13672,7 +13955,9 @@ class WordList {
   getWordItem(targetWord, create=true) {
     let key = this._makeItemKey(this.languageCode,targetWord)
     if (create && !this.items[key]) {
-      let wordItem = new _lib_word_item__WEBPACK_IMPORTED_MODULE_0__["default"]({targetWord: targetWord, languageCode: this.languageCode})
+      let wordItem = new _lib_word_item__WEBPACK_IMPORTED_MODULE_1__["default"]({targetWord: targetWord, languageCode: this.languageCode})
+      _controllers_wordlist_controller__WEBPACK_IMPORTED_MODULE_0__["default"].evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'common'}})
+
       this.items[key]  = wordItem
     }
     return this.items[key]
@@ -13706,10 +13991,10 @@ module.exports = {"COOKIE_TEST_MESSAGE":{"message":"This is a test message about
 /*!*************************************!*\
   !*** ./locales/en-us/messages.json ***!
   \*************************************/
-/*! exports provided: TOOLTIP_ALL_IMPORTANT, TOOLTIP_NO_IMPORTANT, TOOLTIP_REMOVE_ALL, TOOLTIP_CHANGE_IMPORTANT, TOOLTIP_REMOVE, TOOLTIP_TEXT_CONTEXT, default */
+/*! exports provided: TOOLTIP_ALL_IMPORTANT, TOOLTIP_NO_IMPORTANT, TOOLTIP_REMOVE_ALL, TOOLTIP_CHANGE_IMPORTANT, TOOLTIP_REMOVE, TOOLTIP_TEXT_CONTEXT, TOOLTIP_BACK, default */
 /***/ (function(module) {
 
-module.exports = {"TOOLTIP_ALL_IMPORTANT":{"message":"Make all important ","description":"Make all words inside language block important","component":"WordLanguagePanel"},"TOOLTIP_NO_IMPORTANT":{"message":"Remove all important ","description":"Remove important mark from all words inside language block","component":"WordLanguagePanel"},"TOOLTIP_REMOVE_ALL":{"message":"Remove all word items","description":"Remove all words inside language block","component":"WordLanguagePanel"},"TOOLTIP_CHANGE_IMPORTANT":{"message":"Change important status","description":"Change important status for the WordItem","component":"WordItemPanel"},"TOOLTIP_REMOVE":{"message":"Remove worditem","description":"Remove the WordItem form the list","component":"WordItemPanel"},"TOOLTIP_TEXT_CONTEXT":{"message":"Show contexts","description":"Show panle with contexts for the wordItem","component":"WordItemPanel"}};
+module.exports = {"TOOLTIP_ALL_IMPORTANT":{"message":"Make all important ","description":"Make all words inside language block important","component":"WordLanguagePanel"},"TOOLTIP_NO_IMPORTANT":{"message":"Remove all important ","description":"Remove important mark from all words inside language block","component":"WordLanguagePanel"},"TOOLTIP_REMOVE_ALL":{"message":"Remove all word items","description":"Remove all words inside language block","component":"WordLanguagePanel"},"TOOLTIP_CHANGE_IMPORTANT":{"message":"Change important status","description":"Change important status for the WordItem","component":"WordItemPanel"},"TOOLTIP_REMOVE":{"message":"Remove worditem","description":"Remove the WordItem form the list","component":"WordItemPanel"},"TOOLTIP_TEXT_CONTEXT":{"message":"Show contexts","description":"Show panle with contexts for the wordItem","component":"WordItemPanel"},"TOOLTIP_BACK":{"message":"Back to WordList","description":"Back to the WordList Tab","component":"WordContextPanel"}};
 
 /***/ }),
 
@@ -13830,9 +14115,10 @@ class IndexedDBAdapter {
       segments = this.dbDriver.segments
     }
     for (let s of segments) {
+      // console.info('***************updateSegmentQuery', s,data)
       let q = this.dbDriver.updateSegmentQuery(s,data)
       try {
-        console.log("Try ",q)
+        // console.log("Try ",q)
         return await this._set(q)
       } catch(error) {
         console.info("Error on update",error)
@@ -13957,9 +14243,11 @@ class IndexedDBAdapter {
    * @return {Promise} resolves to true on success
    */
   async _set (data) {
+    // console.info('**********************IndexedDB set', data)
     let promiseOpenDB = await new Promise((resolve, reject) => {
       let request = this._openDatabaseRequest()
       request.onsuccess = async (event) => {
+        // console.info('**********************IndexedDB set inside on success', data)
         const db = event.target.result
         let rv = await this._putItem(db, data)
         resolve(rv)
@@ -13987,17 +14275,17 @@ class IndexedDBAdapter {
       }
       const objectStore = transaction.objectStore(data.objectStoreName)
       let objectsDone = data.dataItems.length
-      console.info('************************data.dataItems', data.dataItems)
       for (let dataItem of data.dataItems) {
-        console.info('************************dataItem', dataItem)
         const requestPut = objectStore.put(dataItem)
         requestPut.onsuccess = () => {
           objectsDone = objectsDone - 1
+          // console.info('requestPut success')
           if (objectsDone === 0) {
             resolve(true)
           }
         }
         requestPut.onerror = () => {
+          console.info('requestPut error', event.target)
           reject()
         }
       }
@@ -14132,6 +14420,10 @@ class RemoteDBAdapter {
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return WordItemIndexedDbDriver; });
 /* harmony import */ var _lib_word_item__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/lib/word-item */ "./lib/word-item.js");
+/* harmony import */ var alpheios_data_models__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! alpheios-data-models */ "alpheios-data-models");
+/* harmony import */ var alpheios_data_models__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(alpheios_data_models__WEBPACK_IMPORTED_MODULE_1__);
+
+
 
 class WordItemIndexedDbDriver {
 
@@ -14383,7 +14675,8 @@ class WordItemIndexedDbDriver {
    * @param {WordItem}
    */
   _serializeHomonym (worditem,addMeaning = false) {
-    let resultHomonym = worditem.homonym.convertToJSONObject(addMeaning)
+    // console.info('**************_serializeHomonym', worditem)
+    let resultHomonym = worditem.homonym && (worditem.homonym instanceof alpheios_data_models__WEBPACK_IMPORTED_MODULE_1__["Homonym"]) ? worditem.homonym.convertToJSONObject(addMeaning) : {}
     return {
       ID: this._makeStorageID(worditem),
       listID: this.userId + '-' + worditem.languageCode,
@@ -14880,6 +15173,93 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "render", function() { return _node_modules_vue_loader_lib_loaders_templateLoader_js_vue_loader_options_node_modules_vue_loader_lib_index_js_vue_loader_options_word_list_panel_vue_vue_type_template_id_0f6bf074___WEBPACK_IMPORTED_MODULE_0__["render"]; });
 
 /* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "staticRenderFns", function() { return _node_modules_vue_loader_lib_loaders_templateLoader_js_vue_loader_options_node_modules_vue_loader_lib_index_js_vue_loader_options_word_list_panel_vue_vue_type_template_id_0f6bf074___WEBPACK_IMPORTED_MODULE_0__["staticRenderFns"]; });
+
+
+
+/***/ }),
+
+/***/ "./vue-components/word-tq-source-block.vue":
+/*!*************************************************!*\
+  !*** ./vue-components/word-tq-source-block.vue ***!
+  \*************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _word_tq_source_block_vue_vue_type_template_id_caf65a48___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./word-tq-source-block.vue?vue&type=template&id=caf65a48& */ "./vue-components/word-tq-source-block.vue?vue&type=template&id=caf65a48&");
+/* harmony import */ var _word_tq_source_block_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./word-tq-source-block.vue?vue&type=script&lang=js& */ "./vue-components/word-tq-source-block.vue?vue&type=script&lang=js&");
+/* empty/unused harmony star reexport *//* harmony import */ var _word_tq_source_block_vue_vue_type_style_index_0_lang_scss___WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./word-tq-source-block.vue?vue&type=style&index=0&lang=scss& */ "./vue-components/word-tq-source-block.vue?vue&type=style&index=0&lang=scss&");
+/* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../node_modules/vue-loader/lib/runtime/componentNormalizer.js */ "../node_modules/vue-loader/lib/runtime/componentNormalizer.js");
+
+
+
+
+
+
+/* normalize component */
+
+var component = Object(_node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_3__["default"])(
+  _word_tq_source_block_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__["default"],
+  _word_tq_source_block_vue_vue_type_template_id_caf65a48___WEBPACK_IMPORTED_MODULE_0__["render"],
+  _word_tq_source_block_vue_vue_type_template_id_caf65a48___WEBPACK_IMPORTED_MODULE_0__["staticRenderFns"],
+  false,
+  null,
+  null,
+  null
+  
+)
+
+/* hot reload */
+if (false) { var api; }
+component.options.__file = "vue-components/word-tq-source-block.vue"
+/* harmony default export */ __webpack_exports__["default"] = (component.exports);
+
+/***/ }),
+
+/***/ "./vue-components/word-tq-source-block.vue?vue&type=script&lang=js&":
+/*!**************************************************************************!*\
+  !*** ./vue-components/word-tq-source-block.vue?vue&type=script&lang=js& ***!
+  \**************************************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_vue_loader_lib_index_js_vue_loader_options_node_modules_source_map_loader_index_js_word_tq_source_block_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../node_modules/vue-loader/lib??vue-loader-options!../../node_modules/source-map-loader!./word-tq-source-block.vue?vue&type=script&lang=js& */ "../node_modules/vue-loader/lib/index.js?!../node_modules/source-map-loader/index.js!./vue-components/word-tq-source-block.vue?vue&type=script&lang=js&");
+/* empty/unused harmony star reexport */ /* harmony default export */ __webpack_exports__["default"] = (_node_modules_vue_loader_lib_index_js_vue_loader_options_node_modules_source_map_loader_index_js_word_tq_source_block_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_0__["default"]); 
+
+/***/ }),
+
+/***/ "./vue-components/word-tq-source-block.vue?vue&type=style&index=0&lang=scss&":
+/*!***********************************************************************************!*\
+  !*** ./vue-components/word-tq-source-block.vue?vue&type=style&index=0&lang=scss& ***!
+  \***********************************************************************************/
+/*! no static exports found */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_mini_css_extract_plugin_dist_loader_js_node_modules_css_loader_index_js_ref_5_1_node_modules_vue_loader_lib_loaders_stylePostLoader_js_node_modules_sass_loader_lib_loader_js_ref_5_2_node_modules_vue_loader_lib_index_js_vue_loader_options_word_tq_source_block_vue_vue_type_style_index_0_lang_scss___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../node_modules/mini-css-extract-plugin/dist/loader.js!../../node_modules/css-loader??ref--5-1!../../node_modules/vue-loader/lib/loaders/stylePostLoader.js!../../node_modules/sass-loader/lib/loader.js??ref--5-2!../../node_modules/vue-loader/lib??vue-loader-options!./word-tq-source-block.vue?vue&type=style&index=0&lang=scss& */ "../node_modules/mini-css-extract-plugin/dist/loader.js!../node_modules/css-loader/index.js?!../node_modules/vue-loader/lib/loaders/stylePostLoader.js!../node_modules/sass-loader/lib/loader.js?!../node_modules/vue-loader/lib/index.js?!./vue-components/word-tq-source-block.vue?vue&type=style&index=0&lang=scss&");
+/* harmony import */ var _node_modules_mini_css_extract_plugin_dist_loader_js_node_modules_css_loader_index_js_ref_5_1_node_modules_vue_loader_lib_loaders_stylePostLoader_js_node_modules_sass_loader_lib_loader_js_ref_5_2_node_modules_vue_loader_lib_index_js_vue_loader_options_word_tq_source_block_vue_vue_type_style_index_0_lang_scss___WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_mini_css_extract_plugin_dist_loader_js_node_modules_css_loader_index_js_ref_5_1_node_modules_vue_loader_lib_loaders_stylePostLoader_js_node_modules_sass_loader_lib_loader_js_ref_5_2_node_modules_vue_loader_lib_index_js_vue_loader_options_word_tq_source_block_vue_vue_type_style_index_0_lang_scss___WEBPACK_IMPORTED_MODULE_0__);
+/* harmony reexport (unknown) */ for(var __WEBPACK_IMPORT_KEY__ in _node_modules_mini_css_extract_plugin_dist_loader_js_node_modules_css_loader_index_js_ref_5_1_node_modules_vue_loader_lib_loaders_stylePostLoader_js_node_modules_sass_loader_lib_loader_js_ref_5_2_node_modules_vue_loader_lib_index_js_vue_loader_options_word_tq_source_block_vue_vue_type_style_index_0_lang_scss___WEBPACK_IMPORTED_MODULE_0__) if(__WEBPACK_IMPORT_KEY__ !== 'default') (function(key) { __webpack_require__.d(__webpack_exports__, key, function() { return _node_modules_mini_css_extract_plugin_dist_loader_js_node_modules_css_loader_index_js_ref_5_1_node_modules_vue_loader_lib_loaders_stylePostLoader_js_node_modules_sass_loader_lib_loader_js_ref_5_2_node_modules_vue_loader_lib_index_js_vue_loader_options_word_tq_source_block_vue_vue_type_style_index_0_lang_scss___WEBPACK_IMPORTED_MODULE_0__[key]; }) }(__WEBPACK_IMPORT_KEY__));
+ /* harmony default export */ __webpack_exports__["default"] = (_node_modules_mini_css_extract_plugin_dist_loader_js_node_modules_css_loader_index_js_ref_5_1_node_modules_vue_loader_lib_loaders_stylePostLoader_js_node_modules_sass_loader_lib_loader_js_ref_5_2_node_modules_vue_loader_lib_index_js_vue_loader_options_word_tq_source_block_vue_vue_type_style_index_0_lang_scss___WEBPACK_IMPORTED_MODULE_0___default.a); 
+
+/***/ }),
+
+/***/ "./vue-components/word-tq-source-block.vue?vue&type=template&id=caf65a48&":
+/*!********************************************************************************!*\
+  !*** ./vue-components/word-tq-source-block.vue?vue&type=template&id=caf65a48& ***!
+  \********************************************************************************/
+/*! exports provided: render, staticRenderFns */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_vue_loader_lib_loaders_templateLoader_js_vue_loader_options_node_modules_vue_loader_lib_index_js_vue_loader_options_word_tq_source_block_vue_vue_type_template_id_caf65a48___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!../../node_modules/vue-loader/lib??vue-loader-options!./word-tq-source-block.vue?vue&type=template&id=caf65a48& */ "../node_modules/vue-loader/lib/loaders/templateLoader.js?!../node_modules/vue-loader/lib/index.js?!./vue-components/word-tq-source-block.vue?vue&type=template&id=caf65a48&");
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "render", function() { return _node_modules_vue_loader_lib_loaders_templateLoader_js_vue_loader_options_node_modules_vue_loader_lib_index_js_vue_loader_options_word_tq_source_block_vue_vue_type_template_id_caf65a48___WEBPACK_IMPORTED_MODULE_0__["render"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "staticRenderFns", function() { return _node_modules_vue_loader_lib_loaders_templateLoader_js_vue_loader_options_node_modules_vue_loader_lib_index_js_vue_loader_options_word_tq_source_block_vue_vue_type_template_id_caf65a48___WEBPACK_IMPORTED_MODULE_0__["staticRenderFns"]; });
 
 
 

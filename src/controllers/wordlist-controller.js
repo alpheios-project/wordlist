@@ -59,6 +59,7 @@ export default class WordlistController {
     let toDelete = this.wordLists[languageCode]
     delete this.wordLists[languageCode]
     WordlistController.evt.WORDLIST_DELETED.pub({dataType: 'WordItem', params: {languageCode: languageCode}})
+    WordlistController.evt.WORDLIST_UPDATED.pub(this.wordLists)
   }
 
   /**
@@ -90,7 +91,8 @@ export default class WordlistController {
     let wordList = this.getWordList(languageCode, create)
     let worditem
     if (wordList) {
-      worditem = wordList.getWordItem(targetWord,create)
+      // console.info('************* getWordItem targetWord', targetWord)
+      worditem = wordList.getWordItem(targetWord, create)
     }
     // TODO error handling for no item?
     return worditem
@@ -109,7 +111,7 @@ export default class WordlistController {
     wordItem.homonym = data
     WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'shortHomonym'}})
     // emit a wordlist updated event too in case the wordlist was updated
-    WordlistController.evt.WORDLIST_UPDATED.pub(this.getWordList(wordItem.languageCode))
+    WordlistController.evt.WORDLIST_UPDATED.pub(this.wordLists)
   }
 
   /**
@@ -206,7 +208,9 @@ export default class WordlistController {
   */
   selectWordItem (languageCode, targetWord) {
     let wordItem = this.getWordListItem(languageCode, targetWord,false)
-    this.evt.WORDITEM_SELECTED.pub(wordItem)
+    // console.info('*********************selectWordItem 1', languageCode, targetWord)
+    // console.info('*********************selectWordItem 2', wordItem)
+    WordlistController.evt.WORDITEM_SELECTED.pub(wordItem.homonym)
   }
 
   /**

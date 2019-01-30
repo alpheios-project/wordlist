@@ -26,6 +26,7 @@
               :controller="controller"
               :worditem="wordItem"
               :messages="messages"
+              :updated="updated"
               @changeImportant = "changeImportant"
               @deleteItem = "deleteItem"
               @showContexts = "showContexts"
@@ -42,7 +43,7 @@ import WordItemPanel from '@/vue-components/word-item-panel.vue'
 import Vue from 'vue/dist/vue' // Vue in a runtime + compiler configuration
 
 export default {
-  name: 'WordListPanel',
+  name: 'WordLanguagePanel',
   components: {
     checkIcon: CheckIcon,
     deleteIcon: DeleteIcon,
@@ -77,6 +78,7 @@ export default {
       return this.controller.getWordList(this.languageCode)
     },
     wordItems () {
+      console.info('***************WordLanguagePanel wordItems', this.updated)
       return this.updated && this.reloadList ? this.wordlist.values : []
     },
     languageName () {

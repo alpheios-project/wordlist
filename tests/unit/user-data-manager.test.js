@@ -109,10 +109,10 @@ describe('indexed-db-adapter.test.js', () => {
     expect(rv).toBeTruthy()
   })
 
-  it('5 UserDataManager - deleteMany deletes from both local and remote', async () => {
+  it('6 UserDataManager - deleteMany deletes from both local and remote', async () => {
     jest.spyOn(mockIndexedDbAdapter,'update')
     jest.spyOn(mockRemoteDbAdapter,'update')
-    let dm = new UserDataManager(mockUserId,mockEvents)
+    let dm = new UserDataManager(mockUserId, mockEvents)
     dm._localStorageAdapter = jest.fn(()=>{ return mockIndexedDbAdapter })
     dm._remoteStorageAdapter = jest.fn(()=>{ return mockRemoteDbAdapter })
     let rv = await dm.deleteMany({dataType: 'WordItem', params: {}})

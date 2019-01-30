@@ -718,6 +718,7 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
 
 
 
@@ -742,18 +743,9 @@ __webpack_require__.r(__webpack_exports__);
   },
   computed: {
     formattedContext () {
-      let finalFormattedContext = {}
-      console.info('***************this.worditem.formattedContext', this.formattedContext)
-      /*
-      this.worditem.formattedContext.forEach(contextItem => {
-        finalFormattedContext[contextItem.source] = contextItem
-      })
-      console.info('***************finalFormattedContext', finalFormattedContext)
-      */
       return this.worditem.formattedContext
     },
     sourcesList () {
-      console.info('***************this.formattedContext', this.formattedContext)
       return Object.keys(this.formattedContext)
     }
   },
@@ -1115,6 +1107,7 @@ var _locales_en_gb_messages_json__WEBPACK_IMPORTED_MODULE_3___namespace = /*#__P
   methods: {
     showContexts (targetWord, wordListLanguageCode) {
       this.showContextWordItem = this.wordLists[wordListLanguageCode].getWordItem(targetWord)
+      console.info('***************this.worditem.formattedContext', this.showContextWordItem)
     },
     backToWordList () {
       this.showContextWordItem = null

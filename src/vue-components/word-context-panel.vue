@@ -10,6 +10,7 @@
 
         <div class="alpheios-wordlist-language__title">{{ worditem.targetWord }} ({{ worditem.languageCode}})</div>
       </div>
+
       <div class = "alpheios-wordlists-tqs" v-for="source in sourcesList">
         <word-tq-source
           :source = "source"
@@ -43,18 +44,9 @@
     },
     computed: {
       formattedContext () {
-        let finalFormattedContext = {}
-        console.info('***************this.worditem.formattedContext', this.formattedContext)
-        /*
-        this.worditem.formattedContext.forEach(contextItem => {
-          finalFormattedContext[contextItem.source] = contextItem
-        })
-        console.info('***************finalFormattedContext', finalFormattedContext)
-        */
         return this.worditem.formattedContext
       },
       sourcesList () {
-        console.info('***************this.formattedContext', this.formattedContext)
         return Object.keys(this.formattedContext)
       }
     },

@@ -71,6 +71,7 @@
     methods: {
       showContexts (targetWord, wordListLanguageCode) {
         this.showContextWordItem = this.wordLists[wordListLanguageCode].getWordItem(targetWord)
+        console.info('***************this.worditem.formattedContext', this.showContextWordItem)
       },
       backToWordList () {
         this.showContextWordItem = null

@@ -14,8 +14,10 @@
           </div>
         </alph-tooltip>
 
-        <alph-tooltip tooltipDirection="top-left" :tooltipText="messages.TOOLTIP_TEXT_CONTEXT">
-          <div class="alpheios-worditem__data alpheios-worditem__icon alpheios-worditem__delete_icon"
+        <alph-tooltip tooltipDirection="top-left" 
+          :tooltipText="messages.TOOLTIP_TEXT_CONTEXT"
+          v-bind:class="{ 'alpheios_no_tq ': !worditem.hasTextQuoteSelectors }">
+          <div class="alpheios-worditem__data alpheios-worditem__icon alpheios-worditem__delete_icon" 
                   @click="showContexts()">
                   <text-quote-icon></text-quote-icon>
           </div>
@@ -34,7 +36,7 @@
   import TooltipWrap from '@/vue-components/common-components/tooltip-wrap.vue'
 
   export default {
-    name: 'WordItemPanel',
+    name: 'WordItemBlock',
     components: {
       checkIcon: CheckIcon,
       deleteIcon: DeleteIcon,
@@ -158,5 +160,8 @@
   }
   .alpheios-worditem__lemmasList {
       width: 38%;
+  }
+  .alpheios_no_tq {
+    visibility: hidden;
   }
 </style>

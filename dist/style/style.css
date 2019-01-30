@@ -193,6 +193,9 @@
 .alpheios-worditem__lemmasList {
   width: 38%;
 }
+.alpheios_no_tq {
+  visibility: hidden;
+}
 
 /***************** panel settings **********************/
 .alpheios-wordlist-commands {

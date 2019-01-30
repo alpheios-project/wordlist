@@ -22,7 +22,7 @@
         <div
                 v-for="wordItem in wordItems"
                 v-bind:key="wordItem.targetWord">
-            <word-item-panel
+            <word-item
               :controller="controller"
               :worditem="wordItem"
               :messages="messages"
@@ -30,7 +30,7 @@
               @changeImportant = "changeImportant"
               @deleteItem = "deleteItem"
               @showContexts = "showContexts"
-            ></word-item-panel>
+            ></word-item>
         </div>
     </div>
 </template>
@@ -47,7 +47,7 @@ export default {
   components: {
     checkIcon: CheckIcon,
     deleteIcon: DeleteIcon,
-    wordItemPanel: WordItemPanel,
+    wordItem: WordItemPanel,
     alphTooltip: TooltipWrap
   },
   props: {

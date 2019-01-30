@@ -55,6 +55,10 @@ export default class WordItem {
     return Homonym.readObject(jsonObject.homonym)
   }
 
+  get hasTextQuoteSelectors () {
+    return this.context.length > 0
+  }
+
   /**
    * Construct the context portion of a WordItem from JSON
    */

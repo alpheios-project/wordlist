@@ -804,6 +804,8 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
+//
 
 
 
@@ -811,7 +813,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 /* harmony default export */ __webpack_exports__["default"] = ({
-  name: 'WordItemPanel',
+  name: 'WordItemBlock',
   components: {
     checkIcon: _icons_check_svg__WEBPACK_IMPORTED_MODULE_0___default.a,
     deleteIcon: _icons_delete_svg__WEBPACK_IMPORTED_MODULE_1___default.a,
@@ -948,7 +950,7 @@ __webpack_require__.r(__webpack_exports__);
   components: {
     checkIcon: _icons_check_svg__WEBPACK_IMPORTED_MODULE_2___default.a,
     deleteIcon: _icons_delete_svg__WEBPACK_IMPORTED_MODULE_3___default.a,
-    wordItemPanel: _vue_components_word_item_panel_vue__WEBPACK_IMPORTED_MODULE_4__["default"],
+    wordItem: _vue_components_word_item_panel_vue__WEBPACK_IMPORTED_MODULE_4__["default"],
     alphTooltip: _vue_components_common_components_tooltip_wrap_vue__WEBPACK_IMPORTED_MODULE_0__["default"]
   },
   props: {
@@ -1068,8 +1070,8 @@ var _locales_en_gb_messages_json__WEBPACK_IMPORTED_MODULE_3___namespace = /*#__P
 /* harmony default export */ __webpack_exports__["default"] = ({
   name: 'WordListPanel',
   components: {
-    wordLanguagePanel: _vue_components_word_language_panel_vue__WEBPACK_IMPORTED_MODULE_4__["default"],
-    wordContextPanel: _vue_components_word_context_panel_vue__WEBPACK_IMPORTED_MODULE_5__["default"]
+    wordLanguage: _vue_components_word_language_panel_vue__WEBPACK_IMPORTED_MODULE_4__["default"],
+    wordContext: _vue_components_word_context_panel_vue__WEBPACK_IMPORTED_MODULE_5__["default"]
   },
   props: {
     wordlistC: {
@@ -1364,6 +1366,7 @@ var render = function() {
       _c(
         "alph-tooltip",
         {
+          class: { "alpheios_no_tq ": !_vm.worditem.hasTextQuoteSelectors },
           attrs: {
             tooltipDirection: "top-left",
             tooltipText: _vm.messages.TOOLTIP_TEXT_CONTEXT
@@ -1530,7 +1533,7 @@ var render = function() {
           "div",
           { key: wordItem.targetWord },
           [
-            _c("word-item-panel", {
+            _c("word-item", {
               attrs: {
                 controller: _vm.controller,
                 worditem: wordItem,
@@ -1583,7 +1586,7 @@ var render = function() {
               "div",
               { key: langIndex, staticClass: "alpheios-wordlist-language" },
               [
-                _c("word-language-panel", {
+                _c("word-language", {
                   attrs: {
                     controller: _vm.wordlistC,
                     languageCode: languageCode,
@@ -1605,7 +1608,7 @@ var render = function() {
           "div",
           { staticClass: "alpheios-wordlist-contexts" },
           [
-            _c("word-context-panel", {
+            _c("word-context", {
               attrs: {
                 worditem: _vm.showContextWordItem,
                 messages: _vm.l10n.messages
@@ -13786,6 +13789,10 @@ class WordItem {
     return alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["Homonym"].readObject(jsonObject.homonym)
   }
 
+  get hasTextQuoteSelectors () {
+    return this.context.length > 0
+  }
+
   /**
    * Construct the context portion of a WordItem from JSON
    */
@@ -14185,7 +14192,7 @@ class IndexedDBAdapter {
     this.IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.msIDBTransaction || {READ_WRITE: "readwrite"}; // This line should only be needed if it is needed to support the object's constants for older browsers
     this.IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange || window.msIDBKeyRange;
     if (!this.indexedDB) {
-      console.info("Your browser doesn't support a stable version of IndexedDB. Such and such feature will not be available.");
+      console.warn("Your browser doesn't support a stable version of IndexedDB. Such and such feature will not be available.");
       return false
     }
     return true

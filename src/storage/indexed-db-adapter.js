@@ -154,7 +154,7 @@ export default class IndexedDBAdapter {
     this.IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.msIDBTransaction || {READ_WRITE: "readwrite"}; // This line should only be needed if it is needed to support the object's constants for older browsers
     this.IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange || window.msIDBKeyRange;
     if (!this.indexedDB) {
-      console.info("Your browser doesn't support a stable version of IndexedDB. Such and such feature will not be available.");
+      console.warn("Your browser doesn't support a stable version of IndexedDB. Such and such feature will not be available.");
       return false
     }
     return true

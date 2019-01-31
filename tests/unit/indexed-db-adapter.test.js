@@ -140,10 +140,12 @@ describe('indexed-db-adapter.test.js', () => {
 
   it('3 IndexedDBAdapter - create creates the database and the fully segmented item', async () => {
     let ida = new IndexedDBAdapter(mockDriver)
-    let rv = await ida.create({ID:'mockItemId', listID: 'mockListId',segmenta:'mockSegment',segmentb:'mockSegmentB'})
+    let rv = await ida.create({ID:'mockItemId', listID: 'mockListId', segmenta:'mockSegment', segmentb:'mockSegmentB'})
     expect(rv).toBeTruthy()
+
     let items = await ida.query({mockListParam:'mockListId'})
-    expect(items).toEqual([{ID:'mockItemId', listID: 'mockListId',segmenta:'mockSegment',segmentb:'mockSegmentB'}])
+
+    expect(items).toEqual([{ID:'mockItemId', listID: 'mockListId', segmenta:'mockSegment', segmentb:'mockSegmentB'}])
     ida.clear()
   })
 
@@ -190,5 +192,6 @@ describe('indexed-db-adapter.test.js', () => {
     ])
     ida.clear()
   })
+
   // TODO explicitly test all error conditions
 })

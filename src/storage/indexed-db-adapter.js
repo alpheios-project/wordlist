@@ -19,6 +19,7 @@ export default class IndexedDBAdapter {
    */
   async create(data) {
     let segments = this.dbDriver.segments
+    console.info('*****************create segments', segments)
     let updated
     // iterate through the declared segmentation of the object
     // and store accordingly
@@ -79,10 +80,10 @@ export default class IndexedDBAdapter {
     for (let s of segments) {
       let q = this.dbDriver.updateSegmentQuery(s,data)
       try {
-        // console.log("Try ",q)
+        console.info("Try ",q)
         return await this._set(q)
       } catch(error) {
-        console.info("Error on update",error)
+        console.error("Error on update",error)
         // TODO need transaction rollback handling here if mulitple segments?
         return false
       }
@@ -97,6 +98,7 @@ export default class IndexedDBAdapter {
    */
   async query(params) {
     let listQuery = this.dbDriver.listQuery(params)
+
     let res = await this._getFromStore(listQuery)
     let items = []
     if (res.length > 0) {
@@ -104,10 +106,10 @@ export default class IndexedDBAdapter {
         let modelObj = this.dbDriver.load(item)
         let segments = this.dbDriver.segments
         for (let segment of segments) {
-          let query = this.dbDriver.segmentQuery(segment,modelObj)
+          let query = this.dbDriver.segmentQuery(segment, modelObj)
           let res = await this._getFromStore(query)
           if (res.length > 0) {
-            this.dbDriver.loadSegment(segment,modelObj,res)
+            this.dbDriver.loadSegment(segment, modelObj, res)
           }
         }
         items.push(modelObj)

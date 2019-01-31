@@ -55,12 +55,8 @@ export default class IndexedDBAdapter {
    *
    */
   async deleteOne(data) {
-    console.info('****************deleteOne data', data)
-    console.info('****************deleteOne this.dbDriver.segments', this.dbDriver.segments)
     for (let segment of this.dbDriver.segments) {
-      console.info('****************deleteOne segment', segment)
       let q = this.dbDriver.segmentDeleteQuery(segment,data)
-      console.info('****************deleteOne q', q)
       await this._deleteFromStore(q)
     }
     // TODO error handling
@@ -81,7 +77,6 @@ export default class IndexedDBAdapter {
       segments = this.dbDriver.segments
     }
     for (let s of segments) {
-      // console.info('***************updateSegmentQuery', s,data)
       let q = this.dbDriver.updateSegmentQuery(s,data)
       try {
         // console.log("Try ",q)
@@ -112,7 +107,7 @@ export default class IndexedDBAdapter {
           let query = this.dbDriver.segmentQuery(segment,modelObj)
           let res = await this._getFromStore(query)
           if (res.length > 0) {
-            this.dbDriver.loadSegment(segment,modelObj,res[0])
+            this.dbDriver.loadSegment(segment,modelObj,res)
           }
         }
         items.push(modelObj)
@@ -139,10 +134,10 @@ export default class IndexedDBAdapter {
         // Make a request to clear all the data out of the object store
         let objectStoreRequest = objectStore.clear();
         objectStoreRequest.onsuccess = function(event) {
-          console.info(`store ${store} cleared`)
+          console.log(`store ${store} cleared`)
         }
         objectStoreRequest.onerror = function(event) {
-          console.info(`store ${store} clear error`)
+          console.log(`store ${store} clear error`)
         }
       }
     }
@@ -209,11 +204,9 @@ export default class IndexedDBAdapter {
    * @return {Promise} resolves to true on success
    */
   async _set (data) {
-    // console.info('**********************IndexedDB set', data)
     let promiseOpenDB = await new Promise((resolve, reject) => {
       let request = this._openDatabaseRequest()
       request.onsuccess = async (event) => {
-        // console.info('**********************IndexedDB set inside on success', data)
         const db = event.target.result
         let rv = await this._putItem(db, data)
         resolve(rv)
@@ -245,13 +238,12 @@ export default class IndexedDBAdapter {
         const requestPut = objectStore.put(dataItem)
         requestPut.onsuccess = () => {
           objectsDone = objectsDone - 1
-          // console.info('requestPut success')
           if (objectsDone === 0) {
             resolve(true)
           }
         }
         requestPut.onerror = () => {
-          console.info('requestPut error', event.target)
+          console.log('requestPut error', event.target)
           reject()
         }
       }

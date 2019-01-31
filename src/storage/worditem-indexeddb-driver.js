@@ -201,7 +201,7 @@ export default class WordItemIndexedDbDriver {
    * private method to load the Homonym property of a WordItem
    */
   _loadHomonym (worditem,jsonObj) {
-    worditem.homonym = WordItem.readHomonym(jsonObj)
+    worditem.homonym = WordItem.readHomonym(jsonObj[0])
   }
 
   /**
@@ -268,7 +268,6 @@ export default class WordItemIndexedDbDriver {
    * @param {WordItem}
    */
   _serializeHomonym (worditem,addMeaning = false) {
-    // console.info('**************_serializeHomonym', worditem)
     let resultHomonym = worditem.homonym && (worditem.homonym instanceof Homonym) ? worditem.homonym.convertToJSONObject(addMeaning) : {}
     return {
       ID: this._makeStorageID(worditem),

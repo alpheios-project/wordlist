@@ -91,7 +91,6 @@ export default class WordlistController {
     let wordList = this.getWordList(languageCode, create)
     let worditem
     if (wordList) {
-      // console.info('************* getWordItem targetWord', targetWord)
       worditem = wordList.getWordItem(targetWord, create)
     }
     // TODO error handling for no item?
@@ -104,7 +103,7 @@ export default class WordlistController {
    * Emits WORDITEM_UPDATED and WORDLIST_UPDATED events
    */
    onHomonymReady (data) {
-    console.info('********************onHomonymReady1', data)
+    // console.info('********************onHomonymReady1', data)
     // when receiving this event, it's possible this is the first time we are seeing the word so
     // create the item in the word list if it doesn't exist
     let wordItem = this.getWordListItem(data.language,data.targetWord,true)
@@ -120,7 +119,7 @@ export default class WordlistController {
   * Emits a WORDITEM_UPDATED event
   */
   onDefinitionsReady (data) {
-    console.info('********************onDefinitionsReady', data.homonym)
+    // console.info('********************onDefinitionsReady', data.homonym)
     let wordItem = this.getWordListItem(data.homonym.language,data.homonym.targetWord)
     if (wordItem) {
       wordItem.homonym = data.homonym
@@ -138,7 +137,7 @@ export default class WordlistController {
   * Emits a WORDITEM_UPDATED event
   */
   onLemmaTranslationsReady (data) {
-    console.info('********************onLemmaTranslationsReady', data)
+    // console.info('********************onLemmaTranslationsReady', data)
     let wordItem = this.getWordListItem(data.language, data.targetWord)
     if (wordItem) {
       wordItem.homonym = data
@@ -154,7 +153,7 @@ export default class WordlistController {
   * Emits a WORDITEM_UPDATED and WORDLIST_UPDATED events
   */
   onTextQuoteSelectorReceived (data) {
-    console.info('********************onTextQuoteSelectorReceived', data)
+    // console.info('********************onTextQuoteSelectorReceived', data)
     // when receiving this event, it's possible this is the first time we are seeing the word so
     // create the item in the word list if it doesn't exist
     let wordItem = this.getWordListItem(data.languageCode, data.normalizedText,true)

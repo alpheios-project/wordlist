@@ -873,7 +873,6 @@ __webpack_require__.r(__webpack_exports__);
       this.$emit('deleteItem', this.worditem.targetWord)
     },
     showContexts () {
-      console.info('*********************WordItemPanel showContexts', this.worditem.targetWord)
       this.$emit('showContexts', this.worditem.targetWord)
     }
   }
@@ -981,7 +980,6 @@ __webpack_require__.r(__webpack_exports__);
       return this.controller.getWordList(this.languageCode)
     },
     wordItems () {
-      console.info('***************WordLanguagePanel wordItems', this.updated)
       return this.updated && this.reloadList ? this.wordlist.values : []
     },
     languageName () {
@@ -1109,7 +1107,6 @@ var _locales_en_gb_messages_json__WEBPACK_IMPORTED_MODULE_3___namespace = /*#__P
   methods: {
     showContexts (targetWord, wordListLanguageCode) {
       this.showContextWordItem = this.wordLists[wordListLanguageCode].getWordItem(targetWord)
-      console.info('***************this.worditem.formattedContext', this.showContextWordItem)
     },
     backToWordList () {
       this.showContextWordItem = null
@@ -13161,7 +13158,6 @@ class WordlistController {
     let wordList = this.getWordList(languageCode, create)
     let worditem
     if (wordList) {
-      // console.info('************* getWordItem targetWord', targetWord)
       worditem = wordList.getWordItem(targetWord, create)
     }
     // TODO error handling for no item?
@@ -13174,7 +13170,7 @@ class WordlistController {
    * Emits WORDITEM_UPDATED and WORDLIST_UPDATED events
    */
    onHomonymReady (data) {
-    console.info('********************onHomonymReady1', data)
+    // console.info('********************onHomonymReady1', data)
     // when receiving this event, it's possible this is the first time we are seeing the word so
     // create the item in the word list if it doesn't exist
     let wordItem = this.getWordListItem(data.language,data.targetWord,true)
@@ -13190,7 +13186,7 @@ class WordlistController {
   * Emits a WORDITEM_UPDATED event
   */
   onDefinitionsReady (data) {
-    console.info('********************onDefinitionsReady', data.homonym)
+    // console.info('********************onDefinitionsReady', data.homonym)
     let wordItem = this.getWordListItem(data.homonym.language,data.homonym.targetWord)
     if (wordItem) {
       wordItem.homonym = data.homonym
@@ -13208,7 +13204,7 @@ class WordlistController {
   * Emits a WORDITEM_UPDATED event
   */
   onLemmaTranslationsReady (data) {
-    console.info('********************onLemmaTranslationsReady', data)
+    // console.info('********************onLemmaTranslationsReady', data)
     let wordItem = this.getWordListItem(data.language, data.targetWord)
     if (wordItem) {
       wordItem.homonym = data
@@ -13224,7 +13220,7 @@ class WordlistController {
   * Emits a WORDITEM_UPDATED and WORDLIST_UPDATED events
   */
   onTextQuoteSelectorReceived (data) {
-    console.info('********************onTextQuoteSelectorReceived', data)
+    // console.info('********************onTextQuoteSelectorReceived', data)
     // when receiving this event, it's possible this is the first time we are seeing the word so
     // create the item in the word list if it doesn't exist
     let wordItem = this.getWordListItem(data.languageCode, data.normalizedText,true)
@@ -13798,12 +13794,10 @@ class WordItem {
    */
   static readContext(jsonObject) {
     let tqs = []
-    console.info('*****************readContext start', jsonObject)
     for (let jsonObj of jsonObject) {
       let tq = alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["TextQuoteSelector"].readObject(jsonObj)
       tqs.push(tq)
     }
-    console.info('*****************readContext final', jsonObject)
     return tqs
   }
 
@@ -13853,7 +13847,6 @@ class WordItem {
   get formattedContext () {
     let res = {}
     for (let tq of this.context) {
-      console.info('*************************formattedContext tq', tq)
       if (!res[tq.source]) {
         res[tq.source] = []
       }
@@ -14095,12 +14088,8 @@ class IndexedDBAdapter {
    *
    */
   async deleteOne(data) {
-    console.info('****************deleteOne data', data)
-    console.info('****************deleteOne this.dbDriver.segments', this.dbDriver.segments)
     for (let segment of this.dbDriver.segments) {
-      console.info('****************deleteOne segment', segment)
       let q = this.dbDriver.segmentDeleteQuery(segment,data)
-      console.info('****************deleteOne q', q)
       await this._deleteFromStore(q)
     }
     // TODO error handling
@@ -14121,7 +14110,6 @@ class IndexedDBAdapter {
       segments = this.dbDriver.segments
     }
     for (let s of segments) {
-      // console.info('***************updateSegmentQuery', s,data)
       let q = this.dbDriver.updateSegmentQuery(s,data)
       try {
         // console.log("Try ",q)
@@ -14152,7 +14140,7 @@ class IndexedDBAdapter {
           let query = this.dbDriver.segmentQuery(segment,modelObj)
           let res = await this._getFromStore(query)
           if (res.length > 0) {
-            this.dbDriver.loadSegment(segment,modelObj,res[0])
+            this.dbDriver.loadSegment(segment,modelObj,res)
           }
         }
         items.push(modelObj)
@@ -14179,10 +14167,10 @@ class IndexedDBAdapter {
         // Make a request to clear all the data out of the object store
         let objectStoreRequest = objectStore.clear();
         objectStoreRequest.onsuccess = function(event) {
-          console.info(`store ${store} cleared`)
+          console.log(`store ${store} cleared`)
         }
         objectStoreRequest.onerror = function(event) {
-          console.info(`store ${store} clear error`)
+          console.log(`store ${store} clear error`)
         }
       }
     }
@@ -14249,11 +14237,9 @@ class IndexedDBAdapter {
    * @return {Promise} resolves to true on success
    */
   async _set (data) {
-    // console.info('**********************IndexedDB set', data)
     let promiseOpenDB = await new Promise((resolve, reject) => {
       let request = this._openDatabaseRequest()
       request.onsuccess = async (event) => {
-        // console.info('**********************IndexedDB set inside on success', data)
         const db = event.target.result
         let rv = await this._putItem(db, data)
         resolve(rv)
@@ -14285,13 +14271,12 @@ class IndexedDBAdapter {
         const requestPut = objectStore.put(dataItem)
         requestPut.onsuccess = () => {
           objectsDone = objectsDone - 1
-          // console.info('requestPut success')
           if (objectsDone === 0) {
             resolve(true)
           }
         }
         requestPut.onerror = () => {
-          console.info('requestPut error', event.target)
+          console.log('requestPut error', event.target)
           reject()
         }
       }
@@ -14631,7 +14616,7 @@ class WordItemIndexedDbDriver {
    * private method to load the Homonym property of a WordItem
    */
   _loadHomonym (worditem,jsonObj) {
-    worditem.homonym = _lib_word_item__WEBPACK_IMPORTED_MODULE_0__["default"].readHomonym(jsonObj)
+    worditem.homonym = _lib_word_item__WEBPACK_IMPORTED_MODULE_0__["default"].readHomonym(jsonObj[0])
   }
 
   /**
@@ -14698,7 +14683,6 @@ class WordItemIndexedDbDriver {
    * @param {WordItem}
    */
   _serializeHomonym (worditem,addMeaning = false) {
-    // console.info('**************_serializeHomonym', worditem)
     let resultHomonym = worditem.homonym && (worditem.homonym instanceof alpheios_data_models__WEBPACK_IMPORTED_MODULE_1__["Homonym"]) ? worditem.homonym.convertToJSONObject(addMeaning) : {}
     return {
       ID: this._makeStorageID(worditem),

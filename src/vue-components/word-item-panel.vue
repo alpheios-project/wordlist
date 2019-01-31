@@ -96,7 +96,6 @@
         this.$emit('deleteItem', this.worditem.targetWord)
       },
       showContexts () {
-        console.info('*********************WordItemPanel showContexts', this.worditem.targetWord)
         this.$emit('showContexts', this.worditem.targetWord)
       }
     }

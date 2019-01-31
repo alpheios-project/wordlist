@@ -78,7 +78,6 @@ export default {
       return this.controller.getWordList(this.languageCode)
     },
     wordItems () {
-      console.info('***************WordLanguagePanel wordItems', this.updated)
       return this.updated && this.reloadList ? this.wordlist.values : []
     },
     languageName () {

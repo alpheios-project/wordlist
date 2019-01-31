@@ -55,8 +55,12 @@ export default class IndexedDBAdapter {
    *
    */
   async deleteOne(data) {
+    console.info('****************deleteOne data', data)
+    console.info('****************deleteOne this.dbDriver.segments', this.dbDriver.segments)
     for (let segment of this.dbDriver.segments) {
+      console.info('****************deleteOne segment', segment)
       let q = this.dbDriver.segmentDeleteQuery(segment,data)
+      console.info('****************deleteOne q', q)
       await this._deleteFromStore(q)
     }
     // TODO error handling

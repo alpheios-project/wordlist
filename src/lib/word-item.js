@@ -64,10 +64,12 @@ export default class WordItem {
    */
   static readContext(jsonObject) {
     let tqs = []
+    console.info('*****************readContext start', jsonObject)
     for (let jsonObj of jsonObject) {
       let tq = TextQuoteSelector.readObject(jsonObj)
       tqs.push(tq)
     }
+    console.info('*****************readContext final', jsonObject)
     return tqs
   }
 

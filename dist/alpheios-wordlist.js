@@ -13798,10 +13798,12 @@ class WordItem {
    */
   static readContext(jsonObject) {
     let tqs = []
+    console.info('*****************readContext start', jsonObject)
     for (let jsonObj of jsonObject) {
       let tq = alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["TextQuoteSelector"].readObject(jsonObj)
       tqs.push(tq)
     }
+    console.info('*****************readContext final', jsonObject)
     return tqs
   }
 
@@ -14093,8 +14095,12 @@ class IndexedDBAdapter {
    *
    */
   async deleteOne(data) {
+    console.info('****************deleteOne data', data)
+    console.info('****************deleteOne this.dbDriver.segments', this.dbDriver.segments)
     for (let segment of this.dbDriver.segments) {
+      console.info('****************deleteOne segment', segment)
       let q = this.dbDriver.segmentDeleteQuery(segment,data)
+      console.info('****************deleteOne q', q)
       await this._deleteFromStore(q)
     }
     // TODO error handling
@@ -14436,22 +14442,26 @@ class WordItemIndexedDbDriver {
     this.storageMap = {
       common: {
         objectStoreName: 'WordListsCommon',
-        serialize: this._serializeCommon.bind(this)
+        serialize: this._serializeCommon.bind(this),
+        delete: this._segmentDeleteQueryByID.bind(this)
       },
       context: {
         objectStoreName: 'WordListsContext',
         serialize: this._serializeContext.bind(this),
-        load: this._loadContext
+        load: this._loadContext,
+        delete: this._segmentDeleteQueryByWordItemID.bind(this)
       },
       shortHomonym: {
         objectStoreName: 'WordListsHomonym',
         serialize: this._serializeHomonym.bind(this),
-        load: this._loadHomonym
+        load: this._loadHomonym,
+        delete: this._segmentDeleteQueryByID.bind(this)
       },
       fullHomonym: {
         objectStoreName: 'WordListsFullHomonym',
         serialize: this._serializeHomonymWithFullDefs.bind(this),
-        load: this._loadHomonym
+        load: this._loadHomonym,
+        delete: this._segmentDeleteQueryByID.bind(this)
       }
     }
   }
@@ -14552,13 +14562,26 @@ class WordItemIndexedDbDriver {
     }
   }
 
-  segmentDeleteQuery(segment,worditem) {
+  segmentDeleteQuery (segment,worditem) {
+    return this.storageMap[segment].delete(segment,worditem)
+  }
+
+  _segmentDeleteQueryByID(segment,worditem) {
     let ID = this._makeStorageID(worditem)
     return {
       objectStoreName: this.storageMap[segment].objectStoreName,
       condition: { indexName: 'ID', value: ID, type: 'only' }
     }
   }
+
+  _segmentDeleteQueryByWordItemID(segment,worditem) {
+    let ID = this._makeStorageID(worditem)
+    return {
+      objectStoreName: this.storageMap[segment].objectStoreName,
+      condition: { indexName: 'wordItemID', value: ID, type: 'only' }
+    }
+  }
+
 
   segmentDeleteManyQuery(segment,params) {
     if (params.languageCode) {

@@ -40,8 +40,8 @@ describe('indexed-db-adapter.test.js', () => {
       },
       load: (d) => { return d },
       loadSegment: (s,o,d) => {
-        if (d.segmenta) {o.segmenta = d.segmenta}
-        if (d.segmentb) {o.segmentb = d.segmentb}
+        if (d[0].segmenta) {o.segmenta = d[0].segmenta}
+        if (d[0].segmentb) {o.segmentb = d[0].segmentb}
       },
       objectStores: ['mockSegmentA','mockSegmentB'],
       listQuery: (p) => {
@@ -138,7 +138,7 @@ describe('indexed-db-adapter.test.js', () => {
     ida.clear()
   })
 
-  it('3 IndexedDBAdapter - create creates the database and the fully segmented item', async () => {
+  it('4 IndexedDBAdapter - create creates the database and the fully segmented item', async () => {
     let ida = new IndexedDBAdapter(mockDriver)
     let rv = await ida.create({ID:'mockItemId', listID: 'mockListId', segmenta:'mockSegment', segmentb:'mockSegmentB'})
     expect(rv).toBeTruthy()

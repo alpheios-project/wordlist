@@ -12920,6 +12920,12 @@ class UserDataManager {
     return new _storage_remote_db_adapter_js__WEBPACK_IMPORTED_MODULE_3__["default"](dbDriver)
   }
 
+  /**
+   * Checks and formats Class name (if neccessary) to a normal state (after uglifying pugins)
+   * @param {String} sourceConstrName recieved class name
+   * @return {String} formatted class name
+   */
+
   defineConstructorName (sourceConstrName) {
     let firstLetter = sourceConstrName.substr(0,1)
     let finalConstrName
@@ -14052,13 +14058,15 @@ class IndexedDBAdapter {
    */
   async create(data) {
     let segments = this.dbDriver.segments
-    console.info('*****************create segments', segments)
+    // console.info('*****************create segments', segments)
     let updated
     // iterate through the declared segmentation of the object
     // and store accordingly
     // TODO we need transaction handling here
     for (let segment of segments) {
+      // console.info('*****************create this.update', data, segment)
       updated = await this.update(data, {segment: segment})
+      // console.info('*****************create updated', updated)
       if (! updated) {
         break
         // TODO rollback?
@@ -14113,7 +14121,7 @@ class IndexedDBAdapter {
     for (let s of segments) {
       let q = this.dbDriver.updateSegmentQuery(s,data)
       try {
-        console.info("Try ",q)
+        // console.info("Try ",q)
         return await this._set(q)
       } catch(error) {
         console.error("Error on update",error)
@@ -14133,13 +14141,16 @@ class IndexedDBAdapter {
     let listQuery = this.dbDriver.listQuery(params)
 
     let res = await this._getFromStore(listQuery)
+
     let items = []
     if (res.length > 0) {
       for (let item of res) {
         let modelObj = this.dbDriver.load(item)
+
         let segments = this.dbDriver.segments
         for (let segment of segments) {
           let query = this.dbDriver.segmentQuery(segment, modelObj)
+
           let res = await this._getFromStore(query)
           if (res.length > 0) {
             this.dbDriver.loadSegment(segment, modelObj, res)

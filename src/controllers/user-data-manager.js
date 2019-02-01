@@ -21,6 +21,12 @@ export default class UserDataManager {
     return new RemoteDBAdapter(dbDriver)
   }
 
+  /**
+   * Checks and formats Class name (if neccessary) to a normal state (after uglifying pugins)
+   * @param {String} sourceConstrName recieved class name
+   * @return {String} formatted class name
+   */
+
   defineConstructorName (sourceConstrName) {
     let firstLetter = sourceConstrName.substr(0,1)
     let finalConstrName

@@ -13164,7 +13164,7 @@ class WordlistController {
     let wordList = this.getWordList(languageCode, create)
     let worditem
     if (wordList) {
-      worditem = wordList.getWordItem(targetWord, create)
+      worditem = wordList.getWordItem(targetWord, create, WordlistController.evt.WORDITEM_UPDATED)
     }
     // TODO error handling for no item?
     return worditem
@@ -13875,9 +13875,7 @@ class WordItem {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return WordList; });
-/* harmony import */ var _controllers_wordlist_controller__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/controllers/wordlist-controller */ "./controllers/wordlist-controller.js");
-/* harmony import */ var _lib_word_item__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/lib/word-item */ "./lib/word-item.js");
-
+/* harmony import */ var _lib_word_item__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/lib/word-item */ "./lib/word-item.js");
 
 
 class WordList {
@@ -13953,12 +13951,13 @@ class WordList {
    * @param {Boolean} create true to create the item if it doesn't exist
    * @return {WordItem} the retrieved item
    */
-  getWordItem(targetWord, create=true) {
+  getWordItem(targetWord, create = true, eventWordItemUpdated = null) {
     let key = this._makeItemKey(this.languageCode,targetWord)
     if (create && !this.items[key]) {
-      let wordItem = new _lib_word_item__WEBPACK_IMPORTED_MODULE_1__["default"]({targetWord: targetWord, languageCode: this.languageCode})
-      _controllers_wordlist_controller__WEBPACK_IMPORTED_MODULE_0__["default"].evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'common'}})
-
+      let wordItem = new _lib_word_item__WEBPACK_IMPORTED_MODULE_0__["default"]({targetWord: targetWord, languageCode: this.languageCode})
+      if (eventWordItemUpdated) {
+        eventWordItemUpdated.pub({dataObj: wordItem, params: {segment: 'common'}})
+      }
       this.items[key]  = wordItem
     }
     return this.items[key]

@@ -1,4 +1,3 @@
-import WordlistController from '@/controllers/wordlist-controller'
 import WordItem from '@/lib/word-item'
 
 export default class WordList {
@@ -74,12 +73,13 @@ export default class WordList {
    * @param {Boolean} create true to create the item if it doesn't exist
    * @return {WordItem} the retrieved item
    */
-  getWordItem(targetWord, create=true) {
+  getWordItem(targetWord, create = true, eventWordItemUpdated = null) {
     let key = this._makeItemKey(this.languageCode,targetWord)
     if (create && !this.items[key]) {
       let wordItem = new WordItem({targetWord: targetWord, languageCode: this.languageCode})
-      WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'common'}})
-
+      if (eventWordItemUpdated) {
+        eventWordItemUpdated.pub({dataObj: wordItem, params: {segment: 'common'}})
+      }
       this.items[key]  = wordItem
     }
     return this.items[key]

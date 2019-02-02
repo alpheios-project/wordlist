@@ -91,7 +91,7 @@ export default class WordlistController {
     let wordList = this.getWordList(languageCode, create)
     let worditem
     if (wordList) {
-      worditem = wordList.getWordItem(targetWord, create)
+      worditem = wordList.getWordItem(targetWord, create, WordlistController.evt.WORDITEM_UPDATED)
     }
     // TODO error handling for no item?
     return worditem

@@ -1,5 +1,4 @@
-import WordItem from '@/lib/word-item'
-import { Homonym } from 'alpheios-data-models'
+import { Homonym, WordItem } from 'alpheios-data-models'
 
 export default class WordItemIndexedDbDriver {
 

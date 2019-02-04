@@ -13101,10 +13101,6 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return WordlistController; });
 /* harmony import */ var alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alpheios-data-models */ "alpheios-data-models");
 /* harmony import */ var alpheios_data_models__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _lib_word_list__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/lib/word-list */ "./lib/word-list.js");
-/* harmony import */ var _lib_word_item__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/lib/word-item */ "./lib/word-item.js");
-
-
 
 
 class WordlistController {
@@ -13133,7 +13129,7 @@ class WordlistController {
     for (let languageCode of this.availableLangs) {
       let wordItems = await dataManager.query({dataType: 'WordItem', params: {languageCode: languageCode}})
       if (wordItems.length > 0) {
-        this.wordLists[languageCode] = new _lib_word_list__WEBPACK_IMPORTED_MODULE_1__["default"](languageCode,wordItems)
+        this.wordLists[languageCode] = new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["WordList"](languageCode,wordItems)
       }
     }
     WordlistController.evt.WORDLIST_UPDATED.pub(this.wordLists)
@@ -13148,7 +13144,7 @@ class WordlistController {
    */
   getWordList (languageCode, create=true) {
     if (create && ! this._wordListExist(languageCode)) {
-      let wordList = new _lib_word_list__WEBPACK_IMPORTED_MODULE_1__["default"](languageCode,[])
+      let wordList = new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["WordList"](languageCode,[])
       this.wordLists[languageCode] = wordList
       WordlistController.evt.WORDLIST_CREATED.pub(wordList)
     }
@@ -13754,260 +13750,6 @@ class Message {
 
 /***/ }),
 
-/***/ "./lib/word-item.js":
-/*!**************************!*\
-  !*** ./lib/word-item.js ***!
-  \**************************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return WordItem; });
-/* harmony import */ var alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alpheios-data-models */ "alpheios-data-models");
-/* harmony import */ var alpheios_data_models__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__);
-
-class WordItem {
-  /**
-   * @constructor
-   * @param {Object} constructorArgs
-   *   {String} targetWord
-   *   {String} languageCode
-   *   {Boolean} important
-   *   {Boolean} currentSession
-   *   {TextQuoteSelector[]} context
-   *   {Homonym} homonym
-   *
-   */
-  constructor (data = { targetWord: null, languageCode: null, important: false, currentSession: true, context: [], homonym: {} }) {
-    // TODO handling of version
-    this.version = 1
-    this.targetWord = data.targetWord
-    this.languageCode = data.languageCode
-    if (!this.targetWord || !this.languageCode) {
-      throw new Error("Unable to construct a worditem without at least a targetWord and a languageCode")
-    }
-    this.important = data.important === undefined ? false : data.important
-    this.currentSession = data.currentSession == undefined ? true : data.currentSession
-    this.context = data.context || []
-    this.homonym = data.homonym || {}
-  }
-
-  /**
-   * Construct a WordItem from JSON
-   */
-  static readObject(jsonObject) {
-    let homonym = {}
-    let context = []
-    if (jsonObject.homonym) {
-        homonym = WordItem.readHomonym(jsonObject)
-    }
-    if (jsonObject.context) {
-        context = WordItem.readContext(jsonObject)
-    }
-    let worditem = new WordItem({
-      targetWord: jsonObject.targetWord,
-      languageCode: jsonObject.languageCode,
-      important: jsonObject.important,
-      currentSession: jsonObject.currentSession,
-      context: context,
-      homonym: homonym
-    })
-    return worditem
-  }
-
-  /**
-   * Construct the homonym portion of a WordItem from JSON
-   */
-  static readHomonym(jsonObject) {
-    return alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["Homonym"].readObject(jsonObject.homonym)
-  }
-
-  get hasTextQuoteSelectors () {
-    return this.context.length > 0
-  }
-
-  /**
-   * Construct the context portion of a WordItem from JSON
-   */
-  static readContext(jsonObject) {
-    let tqs = []
-    for (let jsonObj of jsonObject) {
-      let tq = alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["TextQuoteSelector"].readObject(jsonObj)
-      tqs.push(tq)
-    }
-    return tqs
-  }
-
-  /**
-   * add one or more context selectors
-   * @param {TextQuoteSelector[]} selectors
-   */
-  addContext(selectors) {
-    for (let s of selectors) {
-      let found = this.context.filter(tqs => tqs.isEqual(s))
-      if (found.length == 0) {
-        this.context.push(s)
-      }
-    }
-  }
-
-  /**
-   * getter for the lemmas in this WordItem
-   */
-  get lemmasList () {
-    if (this.homonym && this.homonym.lexemes) {
-      return this.homonym.lexemes.map(lexeme => lexeme.lemma.word).filter( (value, index, self) => {
-        return self.indexOf(value) === index
-      }).join(', ')
-    }
-    return ''
-  }
-
-
-  // TODO NOT SURE HOW THE MERGE FUNCTIONALITY IS USED
-  merge (prevWordItem) {
-    let checkProps = ['homonym', 'important', 'currentSession']
-    for(let prop of checkProps) {
-      if (this._emptyProp(prop) && !prevWordItem._emptyProp(prop)) {
-        this[prop] = prevWordItem[prop]
-      }
-    }
-  }
-
-  /**
-   * private method to detect an empty property
-   */
-  _emptyProp (propName) {
-    return !this[propName] || (typeof this[propName] === 'object' && Object.keys(this[propName]).length === 0)
-  }
-
-  get formattedContext () {
-    let res = {}
-    for (let tq of this.context) {
-      if (!res[tq.source]) {
-        res[tq.source] = []
-      }
-      res[tq.source].push(tq)
-    }
-    return res
-  }
-}
-
-
-/***/ }),
-
-/***/ "./lib/word-list.js":
-/*!**************************!*\
-  !*** ./lib/word-list.js ***!
-  \**************************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return WordList; });
-/* harmony import */ var _lib_word_item__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/lib/word-item */ "./lib/word-item.js");
-
-
-class WordList {
-  /**
-  * @constructor
-  * @param {String} languageCode the language code of the list
-  * @param {WordItem[]} worditems an optional array of WordItems with which to initialize the list
-  */
-  constructor (languageCode,worditems=[]) {
-    if (!languageCode) {
-      throw new Error("Unable to construct a wordlist without a languagecode")
-    }
-    this.languageCode = languageCode
-    this.items = {}
-    worditems.forEach(item => {
-      this.addWordItem(item)
-    })
-  }
-
-  /**
-   * get the items of the list
-   */
-  get values () {
-    return Object.values(this.items)
-  }
-
-  /**
-   * checks to see if the list is empty
-   * @return {Boolean}
-   */
-  get isEmpty() {
-    return Object.values(this.items).length === 0
-  }
-
-
-  addWordItem (item) {
-    if (item.languageCode !== this.languageCode) {
-      throw new Error(`Language Code mismatch ${item.languageCode} !=== ${this.languageCode}`)
-    }
-    let existingItem = this.getWordItem(item.targetWord,false)
-    if (existingItem) {
-      item = item.merge(existingItem)
-    }
-    let key = this._makeItemKey(this.languageCode,item.targetWord)
-    this.items[key]  = item
-  }
-
-  /**
-  * delete an individual word item from the list
-  * @param {String} targetWord the word to delete
-  * @return {WordItem} the deleted item
-  */
-  deleteWordItem (targetWord) {
-    let key = this._makeItemKey(this.languageCode,targetWord)
-    let toDelete = this.items[key]
-    if (toDelete) {
-      delete this.items[key]
-    }
-    return toDelete
-  }
-
-  /**
-  * delete all items from a list
-  */
-  removeAllWordItems () {
-    this.items = {}
-  }
-
-
-  /**
-   * get an item from a list
-   * @param targetWord the word to get
-   * @param {Boolean} create true to create the item if it doesn't exist
-   * @return {WordItem} the retrieved item
-   */
-  getWordItem(targetWord, create = true, eventWordItemUpdated = null) {
-    let key = this._makeItemKey(this.languageCode,targetWord)
-    if (create && !this.items[key]) {
-      let wordItem = new _lib_word_item__WEBPACK_IMPORTED_MODULE_0__["default"]({targetWord: targetWord, languageCode: this.languageCode})
-      if (eventWordItemUpdated) {
-        eventWordItemUpdated.pub({dataObj: wordItem, params: {segment: 'common'}})
-      }
-      this.items[key]  = wordItem
-    }
-    return this.items[key]
-  }
-
-   /**
-    * make a key for a word item
-    * @param {String} languageCode
-    * @param {String} targetWord
-    */
-  _makeItemKey(languageCode,targetWord) {
-    return `${languageCode}:${targetWord}`
-  }
-}
-
-
-/***/ }),
-
 /***/ "./locales/en-gb/messages.json":
 /*!*************************************!*\
   !*** ./locales/en-gb/messages.json ***!
@@ -14522,10 +14264,8 @@ class RemoteDBAdapter {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return WordItemIndexedDbDriver; });
-/* harmony import */ var _lib_word_item__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/lib/word-item */ "./lib/word-item.js");
-/* harmony import */ var alpheios_data_models__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! alpheios-data-models */ "alpheios-data-models");
-/* harmony import */ var alpheios_data_models__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(alpheios_data_models__WEBPACK_IMPORTED_MODULE_1__);
-
+/* harmony import */ var alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alpheios-data-models */ "alpheios-data-models");
+/* harmony import */ var alpheios_data_models__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__);
 
 
 class WordItemIndexedDbDriver {
@@ -14632,7 +14372,7 @@ class WordItemIndexedDbDriver {
     // make sure when we create from the database
     // that the currentSession flag is set to false
     data.currentSession = false
-    return new _lib_word_item__WEBPACK_IMPORTED_MODULE_0__["default"](data)
+    return new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["WordItem"](data)
   }
 
   /**
@@ -14727,7 +14467,7 @@ class WordItemIndexedDbDriver {
    * private method to load the Homonym property of a WordItem
    */
   _loadHomonym (worditem,jsonObj) {
-    worditem.homonym = _lib_word_item__WEBPACK_IMPORTED_MODULE_0__["default"].readHomonym(jsonObj[0])
+    worditem.homonym = alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["WordItem"].readHomonym(jsonObj[0])
   }
 
   /**
@@ -14737,7 +14477,7 @@ class WordItemIndexedDbDriver {
     if (! Array.isArray(jsonObjs)) {
       jsonObjs = [jsonObjs]  
     }
-    worditem.context = _lib_word_item__WEBPACK_IMPORTED_MODULE_0__["default"].readContext(jsonObjs)
+    worditem.context = alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["WordItem"].readContext(jsonObjs)
   }
 
   /**
@@ -14794,7 +14534,7 @@ class WordItemIndexedDbDriver {
    * @param {WordItem}
    */
   _serializeHomonym (worditem,addMeaning = false) {
-    let resultHomonym = worditem.homonym && (worditem.homonym instanceof alpheios_data_models__WEBPACK_IMPORTED_MODULE_1__["Homonym"]) ? worditem.homonym.convertToJSONObject(addMeaning) : {}
+    let resultHomonym = worditem.homonym && (worditem.homonym instanceof alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["Homonym"]) ? worditem.homonym.convertToJSONObject(addMeaning) : {}
     return {
       ID: this._makeStorageID(worditem),
       listID: this.userId + '-' + worditem.languageCode,

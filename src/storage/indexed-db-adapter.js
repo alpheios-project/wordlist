@@ -19,15 +19,12 @@ export default class IndexedDBAdapter {
    */
   async create(data) {
     let segments = this.dbDriver.segments
-    // console.info('*****************create segments', segments)
     let updated
     // iterate through the declared segmentation of the object
     // and store accordingly
     // TODO we need transaction handling here
     for (let segment of segments) {
-      // console.info('*****************create this.update', data, segment)
       updated = await this.update(data, {segment: segment})
-      // console.info('*****************create updated', updated)
       if (! updated) {
         break
         // TODO rollback?
@@ -44,11 +41,14 @@ export default class IndexedDBAdapter {
    *
    */
   async deleteMany(params) {
+    let deletedResult = {}
     for (let segment of this.dbDriver.segments) {
       let q = this.dbDriver.segmentDeleteManyQuery(segment,params)
-      await this._deleteFromStore(q)
+      let deletedItems = await this._deleteFromStore(q)
+      deletedResult[segment] = deletedItems
     }
     // TODO error handling
+    return deletedResult
   }
 
   /**
@@ -311,6 +311,7 @@ export default class IndexedDBAdapter {
         const keyRange = this.IDBKeyRange[data.condition.type](data.condition.value)
 
         let requestOpenCursor = index.openCursor(keyRange)
+        let deletedItems = 0
         requestOpenCursor.onsuccess = (event) => {
           const cursor = event.target.result
           if (cursor) {
@@ -318,10 +319,13 @@ export default class IndexedDBAdapter {
             requestDelete.onerror = (event) => {
               reject()
             }
+            requestDelete.onsuccess = (event) => {
+              deletedItems = deletedItems + 1
+            }
             cursor.continue()
           } else {
             // TODO I want to return the number of items deleted here
-            resolve()
+            resolve(deletedItems)
           }
         }
       }

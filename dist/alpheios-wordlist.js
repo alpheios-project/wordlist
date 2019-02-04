@@ -12949,14 +12949,18 @@ class UserDataManager {
    * @return {Boolean} true if update succeeded false if not
    */
   async update(data) {
-    let finalConstrName = this.defineConstructorName(data.dataObj.constructor.name)
+    try {
+      let finalConstrName = this.defineConstructorName(data.dataObj.constructor.name)
 
-    let ls = this._localStorageAdapter(finalConstrName)
-    let rs = this._remoteStorageAdapter(finalConstrName)
-    let updatedLocal = await ls.update(data.dataObj,data.params)
-    let updatedRemote = await rs.update(data.dataObj,data.params)
-    // TODO error handling upon update failure
-    return updatedLocal && updatedRemote
+      let ls = this._localStorageAdapter(finalConstrName)
+      let rs = this._remoteStorageAdapter(finalConstrName)
+      let updatedLocal = await ls.update(data.dataObj,data.params)
+      let updatedRemote = await rs.update(data.dataObj,data.params)
+      // TODO error handling upon update failure
+      return updatedLocal && updatedRemote
+    } catch (error) {
+      console.error('Some errors happen on updating data in IndexedDB', error.message)
+    }
   }
 
   /**
@@ -12966,14 +12970,18 @@ class UserDataManager {
    * @return {Boolean} true if delete succeeded false if not
    */
   async delete(data) {
-    let finalConstrName = this.defineConstructorName(data.dataObj.constructor.name)
+    try {
+      let finalConstrName = this.defineConstructorName(data.dataObj.constructor.name)
 
-    let ls = this._localStorageAdapter(finalConstrName)
-    let rs = this._remoteStorageAdapter(finalConstrName)
-    let deletedLocal = await ls.deleteOne(data.dataObj)
-    let deletedRemote = await rs.deleteOne(data.dataObj)
-    // TODO error handling upon delete failure
-    return deletedLocal && deletedRemote
+      let ls = this._localStorageAdapter(finalConstrName)
+      let rs = this._remoteStorageAdapter(finalConstrName)
+      let deletedLocal = await ls.deleteOne(data.dataObj)
+      let deletedRemote = await rs.deleteOne(data.dataObj)
+      // TODO error handling upon delete failure
+      return deletedLocal && deletedRemote
+    } catch (error) {
+      console.error('Some errors happen on deleting data from IndexedDB', error.message)
+    }
   }
 
   /**
@@ -12984,10 +12992,18 @@ class UserDataManager {
    *                      }
    */
   async deleteMany(data) {
-    let remoteAdapter =  this._remoteStorageAdapter(data.dataType)
-    let localAdapter = this._localStorageAdapter(data.dataType)
-    localAdapter.deleteMany(data.params)
-    remoteAdapter.deleteMany(data.params)
+    try {
+      let remoteAdapter =  this._remoteStorageAdapter(data.dataType)
+      let localAdapter = this._localStorageAdapter(data.dataType)
+      let deletedLocalResult = localAdapter.deleteMany(data.params)
+      let deletedRemoteResult = remoteAdapter.deleteMany(data.params)
+      const finalResult = [await deletedLocalResult, await deletedRemoteResult]
+
+      console.info('Result of deleted many from IndexedDB', finalResult)
+      
+    } catch (error) {
+      console.error('Some errors happen on deleting data from IndexedDB', error.message)
+    }
   }
 
   /**
@@ -14057,15 +14073,12 @@ class IndexedDBAdapter {
    */
   async create(data) {
     let segments = this.dbDriver.segments
-    // console.info('*****************create segments', segments)
     let updated
     // iterate through the declared segmentation of the object
     // and store accordingly
     // TODO we need transaction handling here
     for (let segment of segments) {
-      // console.info('*****************create this.update', data, segment)
       updated = await this.update(data, {segment: segment})
-      // console.info('*****************create updated', updated)
       if (! updated) {
         break
         // TODO rollback?
@@ -14082,11 +14095,14 @@ class IndexedDBAdapter {
    *
    */
   async deleteMany(params) {
+    let deletedResult = {}
     for (let segment of this.dbDriver.segments) {
       let q = this.dbDriver.segmentDeleteManyQuery(segment,params)
-      await this._deleteFromStore(q)
+      let deletedItems = await this._deleteFromStore(q)
+      deletedResult[segment] = deletedItems
     }
     // TODO error handling
+    return deletedResult
   }
 
   /**
@@ -14349,6 +14365,7 @@ class IndexedDBAdapter {
         const keyRange = this.IDBKeyRange[data.condition.type](data.condition.value)
 
         let requestOpenCursor = index.openCursor(keyRange)
+        let deletedItems = 0
         requestOpenCursor.onsuccess = (event) => {
           const cursor = event.target.result
           if (cursor) {
@@ -14356,10 +14373,13 @@ class IndexedDBAdapter {
             requestDelete.onerror = (event) => {
               reject()
             }
+            requestDelete.onsuccess = (event) => {
+              deletedItems = deletedItems + 1
+            }
             cursor.continue()
           } else {
             // TODO I want to return the number of items deleted here
-            resolve()
+            resolve(deletedItems)
           }
         }
       }

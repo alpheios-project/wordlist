@@ -55,6 +55,8 @@ export default class UserDataManager {
 
       let ls = this._localStorageAdapter(finalConstrName)
       let rs = this._remoteStorageAdapter(finalConstrName)
+      console.info('*********************update', data.dataObj, data.params)
+
       let updatedLocal = await ls.update(data.dataObj,data.params)
       let updatedRemote = await rs.update(data.dataObj,data.params)
       // TODO error handling upon update failure
@@ -120,6 +122,7 @@ export default class UserDataManager {
     // the results
     let remoteAdapter =  this._remoteStorageAdapter(data.dataType)
     let localAdapter = this._localStorageAdapter(data.dataType)
+    console.info('******************query', data.params)
     let remoteDataItems = await remoteAdapter.query(data.params)
     let localDataItems = await localAdapter.query(data.params)
 

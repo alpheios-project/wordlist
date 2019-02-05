@@ -6,9 +6,13 @@ export default class UserDataManager {
 
   constructor (userID,events) {
     this.userID = userID
-    events.WORDITEM_UPDATED.sub(this.update.bind(this))
-    events.WORDITEM_DELETED.sub(this.delete.bind(this))
-    events.WORDLIST_DELETED.sub(this.deleteMany.bind(this))
+    if (events) {
+      events.WORDITEM_UPDATED.sub(this.update.bind(this))
+      events.WORDITEM_DELETED.sub(this.delete.bind(this))
+      events.WORDLIST_DELETED.sub(this.deleteMany.bind(this))
+    }
+    this.blocked = false
+    this.requestsQueue = []
   }
 
   _localStorageAdapter(dataType) {
@@ -50,16 +54,26 @@ export default class UserDataManager {
    * @return {Boolean} true if update succeeded false if not
    */
   async update(data) {
+    if (this.blocked) {
+      this.requestsQueue.push({
+        method: 'update',
+        data: data
+      })
+    }
     try {
+      this.blocked = true
       let finalConstrName = this.defineConstructorName(data.dataObj.constructor.name)
 
       let ls = this._localStorageAdapter(finalConstrName)
       let rs = this._remoteStorageAdapter(finalConstrName)
-      console.info('*********************update', data.dataObj, data.params)
 
       let updatedLocal = await ls.update(data.dataObj,data.params)
       let updatedRemote = await rs.update(data.dataObj,data.params)
-      // TODO error handling upon update failure
+      
+      this.blocked = false
+
+      this.checkRequestQueue()
+
       return updatedLocal && updatedRemote
     } catch (error) {
       console.error('Some errors happen on updating data in IndexedDB', error.message)
@@ -73,14 +87,24 @@ export default class UserDataManager {
    * @return {Boolean} true if delete succeeded false if not
    */
   async delete(data) {
+    if (this.blocked) {
+      this.requestsQueue.push({
+        method: 'delete',
+        data: data
+      })
+    }
     try {
+      this.blocked = true
       let finalConstrName = this.defineConstructorName(data.dataObj.constructor.name)
 
       let ls = this._localStorageAdapter(finalConstrName)
       let rs = this._remoteStorageAdapter(finalConstrName)
       let deletedLocal = await ls.deleteOne(data.dataObj)
       let deletedRemote = await rs.deleteOne(data.dataObj)
-      // TODO error handling upon delete failure
+      this.blocked = false
+
+      this.checkRequestQueue()
+      
       return deletedLocal && deletedRemote
     } catch (error) {
       console.error('Some errors happen on deleting data from IndexedDB', error.message)
@@ -95,14 +119,24 @@ export default class UserDataManager {
    *                      }
    */
   async deleteMany(data) {
+    if (this.blocked) {
+      this.requestsQueue.push({
+        method: 'deleteMany',
+        data: data
+      })
+    }
     try {
+      this.blocked = true
+
       let remoteAdapter =  this._remoteStorageAdapter(data.dataType)
       let localAdapter = this._localStorageAdapter(data.dataType)
       let deletedLocalResult = localAdapter.deleteMany(data.params)
       let deletedRemoteResult = remoteAdapter.deleteMany(data.params)
       const finalResult = [await deletedLocalResult, await deletedRemoteResult]
-
+      this.blocked = false
       console.info('Result of deleted many from IndexedDB', finalResult)
+
+      this.checkRequestQueue()
       
     } catch (error) {
       console.error('Some errors happen on deleting data from IndexedDB', error.message)
@@ -122,7 +156,7 @@ export default class UserDataManager {
     // the results
     let remoteAdapter =  this._remoteStorageAdapter(data.dataType)
     let localAdapter = this._localStorageAdapter(data.dataType)
-    console.info('******************query', data.params)
+
     let remoteDataItems = await remoteAdapter.query(data.params)
     let localDataItems = await localAdapter.query(data.params)
 
@@ -163,6 +197,13 @@ export default class UserDataManager {
       localAdapter.create(item)
     })
     return [...remoteDataItems,...addToRemote]
+  }
+
+  checkRequestQueue () {
+    if (this.requestsQueue.length > 0) {
+      let curRequest = this.requestsQueue.shift()
+      this[curRequest.method](curRequest.data)
+    }
   }
 }
 

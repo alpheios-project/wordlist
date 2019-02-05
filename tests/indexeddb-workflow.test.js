@@ -2,6 +2,8 @@
 /* eslint-disable no-unused-vars */
 import axios from 'axios'
 import { Constants, WordItem } from 'alpheios-data-models'
+import UserDataManager from '@/controllers/user-data-manager'
+
 import IndexedDBAdapter from '@/storage/indexed-db-adapter'
 import WordItemIndexedDbDriver from '@/storage/worditem-indexeddb-driver'
 import IndexedDB from 'fake-indexeddb'
@@ -50,8 +52,12 @@ describe('indexeddb-workflow.test.js', () => {
       important: wordItem.important,
       createdDT: WordItemIndexedDbDriver.currentDate
     }
-  
   }
+
+  function timeout (ms) {
+    return new Promise(resolve => setTimeout(resolve, ms))
+  }
+
   beforeAll( () => {
     window.indexedDB = IndexedDB
     window.IDBKeyRange = IDBKeyRange
@@ -119,7 +125,7 @@ describe('indexeddb-workflow.test.js', () => {
     }
   })
 
-  it('5 IndexedDBWorkflow - query one remotely', async () => {
+  it.skip('5 IndexedDBWorkflow - query one remotely', async () => {
     let getUrl = encodeURI('/words/' + makeID(testWordItem3))
     
     try {
@@ -142,5 +148,4 @@ describe('indexeddb-workflow.test.js', () => {
       // console.error('Full axios', error)
     }
   })
-
 })

@@ -8,7 +8,7 @@ import IndexedDB from 'fake-indexeddb'
 import IDBKeyRange from 'fake-indexeddb/lib/FDBKeyRange'
 
 describe('indexeddb-workflow.test.js', () => {
-  console.error = function () {}
+  // console.error = function () {}
   console.log = function () {}
   console.warn = function () {}
 
@@ -68,7 +68,6 @@ describe('indexeddb-workflow.test.js', () => {
     
     expect(localDataItems.filter(item => item.targetWord === testWordItem1.targetWord).length).toEqual(0)
     expect(localDataItems.filter(item => item.targetWord === testWordItem2.targetWord).length).toEqual(0)
-
     expect(localDataItems.filter(item => item.targetWord === testWordItem3.targetWord).length).toEqual(1)
   }, 50000)
 })

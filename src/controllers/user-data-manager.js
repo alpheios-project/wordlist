@@ -64,14 +64,14 @@ export default class UserDataManager {
       this.blocked = true
       let finalConstrName = this.defineConstructorName(data.dataObj.constructor.name)
 
-      let ls = this._localStorageAdapter(finalConstrName)
-      let rs = this._remoteStorageAdapter(finalConstrName)
+      let localAdapter = this._localStorageAdapter(finalConstrName)
+      let remoteAdapter = this._remoteStorageAdapter(finalConstrName)
 
-      let updatedLocal = await ls.update(data.dataObj,data.params)
-      let updatedRemote = await rs.update(data.dataObj,data.params)
+      let updatedLocal = await localAdapter.update(data.dataObj,data.params)
+      let updatedRemote = await remoteAdapter.update(data.dataObj,data.params)
+      this.printErrors(localAdapter)
       
       this.blocked = false
-
       this.checkRequestQueue()
 
       return updatedLocal && updatedRemote
@@ -97,10 +97,12 @@ export default class UserDataManager {
       this.blocked = true
       let finalConstrName = this.defineConstructorName(data.dataObj.constructor.name)
 
-      let ls = this._localStorageAdapter(finalConstrName)
-      let rs = this._remoteStorageAdapter(finalConstrName)
-      let deletedLocal = await ls.deleteOne(data.dataObj)
-      let deletedRemote = await rs.deleteOne(data.dataObj)
+      let localAdapter = this._localStorageAdapter(finalConstrName)
+      let remoteAdapter = this._remoteStorageAdapter(finalConstrName)
+      let deletedLocal = await localAdapter.deleteOne(data.dataObj)
+      let deletedRemote = await remoteAdapter.deleteOne(data.dataObj)
+      this.printErrors(localAdapter)
+      
       this.blocked = false
 
       this.checkRequestQueue()
@@ -133,6 +135,8 @@ export default class UserDataManager {
       let deletedLocalResult = localAdapter.deleteMany(data.params)
       let deletedRemoteResult = remoteAdapter.deleteMany(data.params)
       const finalResult = [await deletedLocalResult, await deletedRemoteResult]
+      
+      this.printErrors(localAdapter)      
       this.blocked = false
       console.info('Result of deleted many from IndexedDB', finalResult)
 
@@ -160,6 +164,8 @@ export default class UserDataManager {
     let remoteDataItems = await remoteAdapter.query(data.params)
     let localDataItems = await localAdapter.query(data.params)
 
+    this.printErrors(localAdapter)
+
     // if we have any remoteData items then we are going to
     // reset the local store from the remoteData, adding back in any
     // items that appeared only in the local
@@ -168,6 +174,7 @@ export default class UserDataManager {
     }
     let addToRemote = []
     let updateInRemote = []
+    
     localDataItems.forEach(item => {
       let inRemote = false
       for (let i=0; i<remoteDataItems.length; i++ ) {
@@ -203,6 +210,12 @@ export default class UserDataManager {
     if (this.requestsQueue.length > 0) {
       let curRequest = this.requestsQueue.shift()
       this[curRequest.method](curRequest.data)
+    }
+  }
+
+  printErrors (localAdapter) {
+    if (localAdapter.errors && localAdapter.errors.length > 0) {
+      localAdapter.errors.forEach(error => console.error(`Print error - ${error.message}`))
     }
   }
 }

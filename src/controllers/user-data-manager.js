@@ -67,10 +67,22 @@ export default class UserDataManager {
       let localAdapter = this._localStorageAdapter(finalConstrName)
       let remoteAdapter = this._remoteStorageAdapter(finalConstrName)
 
-      let updatedLocal = await localAdapter.update(data.dataObj,data.params)
-      let updatedRemote = await remoteAdapter.update(data.dataObj,data.params)
-      this.printErrors(localAdapter)
-      
+      let updatedLocal = false
+      let updatedRemote = false
+
+      if (localAdapter.available) {
+        updatedLocal = await localAdapter.update(data.dataObj, data.params)
+        this.printErrors(localAdapter)
+      } else {
+        console.error('LocalAdapter is not available for usage')
+      }
+
+      if (localAdapter.available) {
+        updatedRemote = await remoteAdapter.update(data.dataObj)     
+      } else {
+        console.error('RemoteAdapter is not available for usage')
+      }
+
       this.blocked = false
       this.checkRequestQueue()
 

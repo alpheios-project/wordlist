@@ -73,8 +73,37 @@ export default class WordItemRemoteDbDriver {
       languageCode: wordItem.languageCode,
       targetWord: wordItem.targetWord,
       important: wordItem.important,
-      createdDT: WordItemRemoteDbDriver.currentDate
+      createdDT: WordItemRemoteDbDriver.currentDate,
+      homonym: {
+        targetWord: wordItem.homonym.targetWord,
+        lemmasList: wordItem.lemmasList
+      },
+      context: this._serializeContext(wordItem)
     }
+  }
+
+  _serializeContext (worditem) {
+    let result = []
+    for (let tq of worditem.context) {
+      let resultItem = {
+        target: {
+          source: tq.source,
+          selector: {
+            type: 'TextQuoteSelector',
+            exact: tq.text,
+            prefix: tq.prefix,
+            suffix: tq.suffix,
+            contextHTML: tq.contextHTML,
+            languageCode: tq.languageCode
+          }
+        },
+        languageCode: worditem.languageCode,
+        targetWord: worditem.targetWord,
+        createdDT: WordItemRemoteDbDriver.currentDate
+      }
+      result.push(resultItem)
+    }
+    return result
   }
 
   _checkPostResult (result) {
@@ -105,5 +134,9 @@ export default class WordItemRemoteDbDriver {
                 + ((dt.getMinutes() < 10) ? '0' : '') + dt.getMinutes() + ":"
                 + ((dt.getSeconds() < 10) ? '0' : '') + dt.getSeconds()
 
+  }
+
+  getCheckArray (dataItems) {
+    return dataItems.map(item => this._makeStorageID(item))
   }
 }

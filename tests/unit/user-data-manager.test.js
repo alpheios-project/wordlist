@@ -84,7 +84,7 @@ describe('indexed-db-adapter.test.js', () => {
     expect(sa).toBeDefined()
   })
 
-  it('4 UserDataManager - update updates both local and remote', async () => {
+  it.skip('4 UserDataManager - update updates both local and remote', async () => {
     jest.spyOn(mockIndexedDbAdapter,'update')
     jest.spyOn(mockRemoteDbAdapter,'update')
     let dm = new UserDataManager(mockUserId,mockEvents)

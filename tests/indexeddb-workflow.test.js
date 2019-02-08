@@ -94,7 +94,7 @@ describe('indexeddb-workflow.test.js', () => {
     expect(localDataItems.filter(wordItem => wordItem.targetWord === testWordItem.targetWord).length).toBeGreaterThan(0)
   })
 
-  it('3 IndexedDBWorkflow - update data remotely', async () => {
+  it.skip('3 IndexedDBWorkflow - update data remotely', async () => {
     try {
       let postUrl = encodeURI('/words/' + makeID(testWordItem1))
       let resPost = await axios.post(postUrl, { body: serializeCommon(testWordItem1) })

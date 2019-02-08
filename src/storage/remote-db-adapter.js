@@ -12,15 +12,19 @@ export default class RemoteDBAdapter {
   }
 
   async create(data) {
+    console.info('*******************remote create start')
     try {
       let url = this.dbDriver.storageMap.post.url(data)
       let content = this.dbDriver.storageMap.post.serialize(data)
+
+      console.info('*******************remote create', url, content)
 
       let result = await axios.post(url, content, this.dbDriver.requestsParams)
       let updated = this.dbDriver.storageMap.post.checkResult(result)
       
       return updated
     } catch (error) {
+      console.error(error)
       if (error) {
         this.errors.push(error)
       }

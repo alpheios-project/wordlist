@@ -1,4 +1,4 @@
-import { Homonym, WordItem } from 'alpheios-data-models'
+import { Homonym, WordItem, Lexeme, Lemma, LanguageModelFactory as LMF } from 'alpheios-data-models'
 
 export default class WordItemIndexedDbDriver {
 
@@ -190,6 +190,12 @@ export default class WordItemIndexedDbDriver {
         objectStoreName: this.storageMap.common.objectStoreName,
         condition: {indexName: 'listID', value: listID, type: 'only' }
       }
+    } else if (params.wordItem) {
+      let id = this.userId + '-' + params.wordItem.languageCode + '-' + params.wordItem.targetWord
+      return {
+        objectStoreName: this.storageMap.common.objectStoreName,
+        condition: {indexName: 'ID', value: id, type: 'only' }
+      }
     } else {
       throw new Error("Invalid query parameters - missing languageCode")
     }
@@ -198,8 +204,20 @@ export default class WordItemIndexedDbDriver {
   /**
    * private method to load the Homonym property of a WordItem
    */
-  _loadHomonym (worditem,jsonObj) {
-    worditem.homonym = WordItem.readHomonym(jsonObj[0])
+  _loadHomonym (worditem, jsonObj) {
+    console.info('*********_loadHomonym', jsonObj)
+    let jsonHomonym = jsonObj[0].homonym
+    if (jsonHomonym.lexemes && Array.isArray(jsonHomonym.lexemes) && jsonHomonym.lexemes.length >0) {
+      worditem.homonym = WordItem.readHomonym(jsonObj[0])
+    } else {
+      let languageID = LMF.getLanguageIdFromCode(jsonObj[0].languageCode)
+      let lexemesForms = jsonHomonym.lemmasList.split(', ')
+      let lexemes = []
+      for (let lexForm of lexemesForms) {
+        lexemes.push(new Lexeme(new Lemma(lexForm, languageID), []))
+      }
+      worditem.homonym = new Homonym(lexemes, jsonHomonym.targetWord)
+    }
   }
 
   /**
@@ -319,4 +337,18 @@ export default class WordItemIndexedDbDriver {
 
   }
 
+  makeIDCompareWithRemote (item) {
+    return item.languageCode + '-' + item.targetWord
+  }
+
+  getCheckArray (dataItems) {
+    return dataItems.map(item => this.makeIDCompareWithRemote(item))
+  }
+
+  createFromRemoteData (remoteDataItem) {
+    let wordItem = this.load(remoteDataItem)
+    this._loadContext(wordItem, remoteDataItem.context)
+    this._loadHomonym(wordItem, [ remoteDataItem ])
+    return wordItem
+  }
 }

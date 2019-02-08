@@ -20,19 +20,22 @@ export default class IndexedDBAdapter {
    */
   async create(data) {
     try {
+      // console.info('***************create', data)
       let segments = this.dbDriver.segments
       let updated
       // iterate through the declared segmentation of the object
       // and store accordingly
       // TODO we need transaction handling here
       for (let segment of segments) {
+        // console.info('***************create segment', segment, data)
         updated = await this.update(data, {segment: segment})
-        if (! updated) {
+        if (!updated) {
           throw new Error(`Unknown problems with updating segment ${segment}`)
         }
       }
       return updated > 0
     } catch (error) {
+      console.error(error)
       if (error) {
         this.errors.push(error)
       }
@@ -92,6 +95,7 @@ export default class IndexedDBAdapter {
    * @return {Boolean} true if update succeeded false if not
    */
   async update (data, params) {
+    // console.info('***************update start', data, params)
     try {
       let segments = [params.segment]
       let result
@@ -99,12 +103,19 @@ export default class IndexedDBAdapter {
       if (segments.length === 0)  {
         segments = this.dbDriver.segments
       }
-      for (let s of segments) {
-        let q = this.dbDriver.updateSegmentQuery(s,data)
-        result = await this._set(q)
+      for (let segment of segments) {
+        let query = this.dbDriver.updateSegmentQuery(segment, data)
+        // console.info('***************update q', segment, query, query.dataItems.length)
+        if (query.dataItems.length > 0) {
+         result = await this._set(query)
+         // console.info('***************update end', segment, result)
+        } else {
+          result = true
+        }
       }
       return result
     } catch (error) {
+      console.error('***************update', error)
       if (error) {
         this.errors.push(error)
       }
@@ -119,6 +130,7 @@ export default class IndexedDBAdapter {
    */
   async query(params) {
     try {
+      // console.info('*********************IndexedDB query', params)
       let listQuery = this.dbDriver.listQuery(params)
       let queryResult = await this._getFromStore(listQuery)
       
@@ -257,6 +269,7 @@ export default class IndexedDBAdapter {
         resolve(rv)
       }
       request.onerror = (event) => {
+        // console.info('***************_set', event.target)
         idba.errors.push(event.target)
         reject()
       }
@@ -280,6 +293,7 @@ export default class IndexedDBAdapter {
         const transaction = db.transaction([data.objectStoreName], 'readwrite')
         transaction.onerror = (event) => {
           idba.errors.push(event.target)
+          // console.info('***************_putItem 1', event.target)
           reject()
         }
         const objectStore = transaction.objectStore(data.objectStoreName)
@@ -293,11 +307,16 @@ export default class IndexedDBAdapter {
             }
           }
           requestPut.onerror = () => {
+            // console.info('***************_putItem 2', event.target)
             idba.errors.push(event.target)
             reject()
           }
         }
+        if (objectsDone === 0) {
+          resolve(true)
+        }
       } catch (error) {
+        // console.info('***************_putItem 3', error)
         if (error) {
           idba.errors.push(error)
           return

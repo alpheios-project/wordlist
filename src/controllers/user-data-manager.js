@@ -45,6 +45,47 @@ export default class UserDataManager {
     return finalConstrName
   }
 
+  async create(data, params) {
+    if (this.blocked) {
+      this.requestsQueue.push({
+        method: 'create',
+        data: data
+      })
+    }
+    try {
+      this.blocked = true
+      let finalConstrName = this.defineConstructorName(data.dataObj.constructor.name)
+
+      let localAdapter = this._localStorageAdapter(finalConstrName)
+      let remoteAdapter = this._remoteStorageAdapter(finalConstrName)
+
+      let createdLocal = false
+      let createdRemote = false
+
+      if (localAdapter.available && !params.onlyRemote) {
+        createdLocal = await localAdapter.create(data.dataObj)
+        this.printErrors(localAdapter)
+      } else if (params.onlyRemote) {
+        createdLocal = true
+      } else {
+        console.error('LocalAdapter is not available for the usage')
+      }
+
+      if (remoteAdapter.available) {
+        createdRemote = await remoteAdapter.create(data.dataObj)     
+      } else {
+        console.error('RemoteAdapter is not available for usage')
+      }
+
+      this.blocked = false
+      this.checkRequestQueue()
+
+      return createdLocal && createdRemote
+    } catch (error) {
+      console.error('Some errors happen on creating data in IndexedDB or RemoteDBAdapter', error.message)
+    }
+  }
+
   /**
    * Update data in the user data stores
    * @param {Object} data object adhering to
@@ -77,7 +118,7 @@ export default class UserDataManager {
         console.error('LocalAdapter is not available for usage')
       }
 
-      if (localAdapter.available) {
+      if (remoteAdapter.available) {
         updatedRemote = await remoteAdapter.update(data.dataObj)     
       } else {
         console.error('RemoteAdapter is not available for usage')
@@ -159,6 +200,57 @@ export default class UserDataManager {
     }
   }
 
+  async query (data, type = 'merged') {
+    let remoteAdapter =  this._remoteStorageAdapter(data.dataType)
+    let localAdapter = this._localStorageAdapter(data.dataType)
+
+    let remoteDataItems = await remoteAdapter.query(data.params)
+    let localDataItems = await localAdapter.query(data.params)
+
+    // console.info('*****************UDM query remoteDataItems', remoteDataItems)
+    // console.info('*****************UDM query localDataItems', localDataItems)
+    this.printErrors(localAdapter)
+
+    // let mergedLocalRemoteItems = this.mergeLocalRemote(localAdapter.dbDriver, remoteAdapter.dbDriver, localDataItems, remoteDataItems)
+    if (type === 'local') {
+      return localDataItems
+    } else if (type === 'remote') {
+      return remoteDataItems
+    } else {
+      return localDataItems
+    }
+  }
+
+  async mergeLocalRemote (localDBDriver, remoteDBDriver, localDataItems, remoteDataItems) {
+    await this.createAbsentRemoteItems(localDBDriver, remoteDBDriver, localDataItems, remoteDataItems)
+    await this.createAbsentLocalItems(localDBDriver, remoteDBDriver, localDataItems, remoteDataItems)
+  }
+
+  async createAbsentRemoteItems (localDBDriver, remoteDBDriver, localDataItems, remoteDataItems) {
+    let remoteCheckAray = remoteDBDriver.getCheckArray(remoteDataItems)
+
+    let notInRemote = localDataItems.filter(item => !remoteCheckAray.includes(localDBDriver.makeIDCompareWithRemote(item)))
+    for (let item of notInRemote) {
+      await this.create({ dataObj: item }, { onlyRemote: true })
+    }
+    return notInRemote
+  }
+
+  createAbsentLocalItems (localDBDriver, remoteDBDriver, localDataItems, remoteDataItems) {
+    let localCheckAray = localDBDriver.getCheckArray(localDataItems)
+
+    let notInLocal = remoteDataItems.filter(item => !localCheckAray.includes(remoteDBDriver._makeStorageID(item)))
+
+    console.info('***************localTargetWords', localCheckAray)
+
+    console.info('***************notInLocal', notInLocal)
+    for (let item of notInLocal) {
+      let dataItemsForLocal = localDBDriver.createFromRemoteData(item)
+      console.info('**************createAbsentLocalItems item', item)
+      console.info('**************createAbsentLocalItems dataItemsForLocal', dataItemsForLocal)
+    }
+  }
+
   /**
    * Query the user data stores
    * @param {Object} data object adhering to
@@ -167,7 +259,7 @@ export default class UserDataManager {
    *                      }
    * @return {Object[]} an array of data items
    */
-  async query(data) {
+  async query_backup(data) {
     // query queries both the remote and local stores and merges
     // the results
     let remoteAdapter =  this._remoteStorageAdapter(data.dataType)
@@ -181,9 +273,11 @@ export default class UserDataManager {
     // if we have any remoteData items then we are going to
     // reset the local store from the remoteData, adding back in any
     // items that appeared only in the local
+    /*
     if (remoteDataItems.length > 0) {
         localAdapter.deleteMany(params)
     }
+    */
     let addToRemote = []
     let updateInRemote = []
     
@@ -215,7 +309,9 @@ export default class UserDataManager {
     mergedList.forEach(item=> {
       localAdapter.create(item)
     })
-    return [...remoteDataItems,...addToRemote]
+    
+    // return [...remoteDataItems,...addToRemote]
+    return localDataItems
   }
 
   checkRequestQueue () {

@@ -1,13 +1,13 @@
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
-		module.exports = factory(require("alpheios-data-models"), require("intl-messageformat"));
+		module.exports = factory(require("alpheios-data-models"));
 	else if(typeof define === 'function' && define.amd)
-		define(["alpheios-data-models", "intl-messageformat"], factory);
+		define(["alpheios-data-models"], factory);
 	else {
-		var a = typeof exports === 'object' ? factory(require("alpheios-data-models"), require("intl-messageformat")) : factory(root["alpheios-data-models"], root["intl-messageformat"]);
+		var a = typeof exports === 'object' ? factory(require("alpheios-data-models")) : factory(root["alpheios-data-models"]);
 		for(var i in a) (typeof exports === 'object' ? exports : root)[i] = a[i];
 	}
-})(window, function(__WEBPACK_EXTERNAL_MODULE_alpheios_data_models__, __WEBPACK_EXTERNAL_MODULE_intl_messageformat__) {
+})(window, function(__WEBPACK_EXTERNAL_MODULE_alpheios_data_models__) {
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -2418,7 +2418,6 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
-//
 
 
 
@@ -2431,12 +2430,9 @@ __webpack_require__.r(__webpack_exports__);
     alphTooltip: _vue_components_common_components_tooltip_wrap_vue__WEBPACK_IMPORTED_MODULE_1__["default"],
     wordTqSource: _vue_components_word_tq_source_block_vue__WEBPACK_IMPORTED_MODULE_2__["default"]
   },
+  inject: ['l10n'],
   props: {
     worditem: {
-      type: Object,
-      required: true
-    },
-    messages: {
       type: Object,
       required: true
     }
@@ -2514,6 +2510,7 @@ __webpack_require__.r(__webpack_exports__);
 
 /* harmony default export */ __webpack_exports__["default"] = ({
   name: 'WordItemBlock',
+  inject: ['l10n'],
   components: {
     checkIcon: _icons_check_svg__WEBPACK_IMPORTED_MODULE_0___default.a,
     deleteIcon: _icons_delete_svg__WEBPACK_IMPORTED_MODULE_1___default.a,
@@ -2526,10 +2523,6 @@ __webpack_require__.r(__webpack_exports__);
      required: true
    },
     worditem: {
-      type: Object,
-      required: true
-    },
-    messages: {
       type: Object,
       required: true
     },
@@ -2635,7 +2628,6 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
-//
 
 
 
@@ -2652,6 +2644,7 @@ __webpack_require__.r(__webpack_exports__);
     wordItem: _vue_components_word_item_panel_vue__WEBPACK_IMPORTED_MODULE_4__["default"],
     alphTooltip: _vue_components_common_components_tooltip_wrap_vue__WEBPACK_IMPORTED_MODULE_0__["default"]
   },
+  inject: ['l10n'],
   props: {
     controller: {
       type: Object,
@@ -2659,10 +2652,6 @@ __webpack_require__.r(__webpack_exports__);
     },
     languageCode: {
       type: String,
-      required: true
-    },
-    messages: {
-      type: Object,
       required: true
     },
     updated: {
@@ -2726,14 +2715,8 @@ __webpack_require__.r(__webpack_exports__);
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _lib_l10n_l10n_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/lib/l10n/l10n.js */ "./lib/l10n/l10n.js");
-/* harmony import */ var _locales_locales_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/locales/locales.js */ "./locales/locales.js");
-/* harmony import */ var _locales_en_us_messages_json__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/locales/en-us/messages.json */ "./locales/en-us/messages.json");
-var _locales_en_us_messages_json__WEBPACK_IMPORTED_MODULE_2___namespace = /*#__PURE__*/__webpack_require__.t(/*! @/locales/en-us/messages.json */ "./locales/en-us/messages.json", 1);
-/* harmony import */ var _locales_en_gb_messages_json__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @/locales/en-gb/messages.json */ "./locales/en-gb/messages.json");
-var _locales_en_gb_messages_json__WEBPACK_IMPORTED_MODULE_3___namespace = /*#__PURE__*/__webpack_require__.t(/*! @/locales/en-gb/messages.json */ "./locales/en-gb/messages.json", 1);
-/* harmony import */ var _vue_components_word_language_panel_vue__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @/vue-components/word-language-panel.vue */ "./vue-components/word-language-panel.vue");
-/* harmony import */ var _vue_components_word_context_panel_vue__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @/vue-components/word-context-panel.vue */ "./vue-components/word-context-panel.vue");
+/* harmony import */ var _vue_components_word_language_panel_vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/vue-components/word-language-panel.vue */ "./vue-components/word-language-panel.vue");
+/* harmony import */ var _vue_components_word_context_panel_vue__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/vue-components/word-context-panel.vue */ "./vue-components/word-context-panel.vue");
 //
 //
 //
@@ -2754,13 +2737,6 @@ var _locales_en_gb_messages_json__WEBPACK_IMPORTED_MODULE_3___namespace = /*#__P
 //
 //
 //
-//
-//
-
-
-
-
-
 
 
 
@@ -2768,8 +2744,8 @@ var _locales_en_gb_messages_json__WEBPACK_IMPORTED_MODULE_3___namespace = /*#__P
 /* harmony default export */ __webpack_exports__["default"] = ({
   name: 'WordListPanel',
   components: {
-    wordLanguage: _vue_components_word_language_panel_vue__WEBPACK_IMPORTED_MODULE_4__["default"],
-    wordContext: _vue_components_word_context_panel_vue__WEBPACK_IMPORTED_MODULE_5__["default"]
+    wordLanguage: _vue_components_word_language_panel_vue__WEBPACK_IMPORTED_MODULE_0__["default"],
+    wordContext: _vue_components_word_context_panel_vue__WEBPACK_IMPORTED_MODULE_1__["default"]
   },
   props: {
     wordlistC: {
@@ -2790,12 +2766,6 @@ var _locales_en_gb_messages_json__WEBPACK_IMPORTED_MODULE_3___namespace = /*#__P
     languagesList () {
       this.showContextWordItem = null
       return this.updated && Object.keys(this.wordLists).length > 0 ? Object.keys(this.wordLists) : []
-    },
-    l10n () {
-      return new _lib_l10n_l10n_js__WEBPACK_IMPORTED_MODULE_0__["default"]()
-        .addMessages(_locales_en_us_messages_json__WEBPACK_IMPORTED_MODULE_2__, _locales_locales_js__WEBPACK_IMPORTED_MODULE_1__["default"].en_US)
-        .addMessages(_locales_en_gb_messages_json__WEBPACK_IMPORTED_MODULE_3__, _locales_locales_js__WEBPACK_IMPORTED_MODULE_1__["default"].en_GB)
-        .setLocale(_locales_locales_js__WEBPACK_IMPORTED_MODULE_1__["default"].en_US)
     },
     wordLists () {
       return this.updated ? this.wordlistC.wordLists : []
@@ -2846,10 +2816,6 @@ __webpack_require__.r(__webpack_exports__);
     },
     tqSelectors: {
       type: Array,
-      required: true
-    },
-    messages: {
-      type: Object,
       required: true
     }
   },
@@ -2931,7 +2897,7 @@ var render = function() {
             {
               attrs: {
                 tooltipDirection: "top-left",
-                tooltipText: _vm.messages.TOOLTIP_BACK
+                tooltipText: _vm.l10n.getMsg("TOOLTIP_BACK")
               }
             },
             [
@@ -2968,8 +2934,7 @@ var render = function() {
             _c("word-tq-source", {
               attrs: {
                 source: source,
-                tqSelectors: _vm.formattedContext[source],
-                messages: _vm.messages
+                tqSelectors: _vm.formattedContext[source]
               }
             })
           ],
@@ -3014,7 +2979,7 @@ var render = function() {
         {
           attrs: {
             tooltipDirection: "top-left",
-            tooltipText: _vm.messages.TOOLTIP_CHANGE_IMPORTANT
+            tooltipText: _vm.l10n.getMsg("TOOLTIP_CHANGE_IMPORTANT")
           }
         },
         [
@@ -3039,7 +3004,7 @@ var render = function() {
         {
           attrs: {
             tooltipDirection: "top-left",
-            tooltipText: _vm.messages.TOOLTIP_REMOVE
+            tooltipText: _vm.l10n.getMsg("TOOLTIP_REMOVE")
           }
         },
         [
@@ -3066,7 +3031,7 @@ var render = function() {
           class: { "alpheios_no_tq ": !_vm.worditem.hasTextQuoteSelectors },
           attrs: {
             tooltipDirection: "top-left",
-            tooltipText: _vm.messages.TOOLTIP_TEXT_CONTEXT
+            tooltipText: _vm.l10n.getMsg("TOOLTIP_TEXT_CONTEXT")
           }
         },
         [
@@ -3149,7 +3114,7 @@ var render = function() {
             {
               attrs: {
                 tooltipDirection: "top-left",
-                tooltipText: _vm.messages.TOOLTIP_ALL_IMPORTANT
+                tooltipText: _vm.l10n.getMsg("TOOLTIP_ALL_IMPORTANT")
               }
             },
             [
@@ -3175,7 +3140,7 @@ var render = function() {
             {
               attrs: {
                 tooltipDirection: "top-left",
-                tooltipText: _vm.messages.TOOLTIP_NO_IMPORTANT
+                tooltipText: _vm.l10n.getMsg("TOOLTIP_NO_IMPORTANT")
               }
             },
             [
@@ -3201,7 +3166,7 @@ var render = function() {
             {
               attrs: {
                 tooltipDirection: "top-left",
-                tooltipText: _vm.messages.TOOLTIP_REMOVE_ALL
+                tooltipText: _vm.l10n.getMsg("TOOLTIP_REMOVE_ALL")
               }
             },
             [
@@ -3234,7 +3199,6 @@ var render = function() {
               attrs: {
                 controller: _vm.controller,
                 worditem: wordItem,
-                messages: _vm.messages,
                 updated: _vm.updated
               },
               on: {
@@ -3287,7 +3251,6 @@ var render = function() {
                   attrs: {
                     controller: _vm.wordlistC,
                     languageCode: languageCode,
-                    messages: _vm.l10n.messages,
                     updated: _vm.updated
                   },
                   on: { showContexts: _vm.showContexts }
@@ -3306,10 +3269,7 @@ var render = function() {
           { staticClass: "alpheios-wordlist-contexts" },
           [
             _c("word-context", {
-              attrs: {
-                worditem: _vm.showContextWordItem,
-                messages: _vm.l10n.messages
-              },
+              attrs: { worditem: _vm.showContextWordItem },
               on: { backToWordList: _vm.backToWordList }
             })
           ],
@@ -15987,349 +15947,6 @@ __webpack_require__.r(__webpack_exports__);
 
 /***/ }),
 
-/***/ "./lib/l10n/l10n.js":
-/*!**************************!*\
-  !*** ./lib/l10n/l10n.js ***!
-  \**************************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return L10n; });
-/* harmony import */ var _message_bundle__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./message-bundle */ "./lib/l10n/message-bundle.js");
-
-
-/**
- * Combines several message bundles of different locales.
- */
-class L10n {
-  constructor () {
-    this.selectedLocale = undefined // A locale that currently selected
-    this.bundles = new Map() // Maps message bundles to their locales
-    return this
-  }
-
-  /**
-   * Adds, or appends, one or several messages for a locale specified.
-   * This method is chainable.
-   * @param {string} messageJSON - Messages in a JSON string
-   * @param {string} locale - A locale of the messages
-   * @return {L10n} - Self reference (for chaining)
-   */
-  addMessages (messageJSON, locale) {
-    let messageBundle
-    if (this.bundles.has(locale)) {
-      messageBundle = this.bundles.get(locale)
-      messageBundle.appendFromJSON(messageJSON)
-    } else {
-      messageBundle = new _message_bundle__WEBPACK_IMPORTED_MODULE_0__["default"](messageJSON, locale)
-      this.addMessageBundle(messageBundle)
-    }
-    return this
-  }
-
-  /**
-   * Adds a message bundle to a L10n object. If selected locale is not set, sets it to the locale of the message bundle.
-   * This function is chainable.
-   * @param {MessageBundle} messageBundle - A message bundle that will be stored within an L10n object.
-   * @return {L10n} - Returns self for chaining.
-   */
-  addMessageBundle (messageBundle) {
-    this.bundles.set(messageBundle.locale, messageBundle)
-    if (!this.selectedLocale) {
-      this.setLocale(messageBundle.locale)
-    }
-    return this
-  }
-
-  /**
-   * Returns an array of locales supported by the L10n object.
-   * @return {string[]}
-   */
-  get locales () {
-    return Array.from(this.bundles.keys())
-  }
-
-  /**
-   * Returns a message bundle for a currently selected locale
-   * @return {MessageBundle | undefined} A message bundle object or undefined if selectedLocale is not set
-   */
-  get bundle () {
-    return this.bundles.get(this.selectedLocale)
-  }
-
-  /**
-   *
-   * @return {Object} - An object containing message objects as property values.
-   * The name of the property is a message key.
-   */
-  get messages () {
-    return this.bundles.has(this.selectedLocale) ? this.bundles.get(this.selectedLocale).messages : {}
-  }
-
-  /**
-   * Sets, or switches a locale that is currently selected. If message bundle for such locale
-   * does not exist, does nothing.
-   * This method is chainable.
-   * @param {string} locale - A locale to be set as currently selected.
-   * @return {L10n} Reference to self for chaining
-   */
-  setLocale (locale) {
-    if (this.bundles.has(locale)) {
-      this.selectedLocale = locale
-    } else {
-      console.error(`Cannot set locale to "${locale}" because there is no message bundle for it`)
-    }
-    return this
-  }
-}
-
-
-/***/ }),
-
-/***/ "./lib/l10n/message-bundle.js":
-/*!************************************!*\
-  !*** ./lib/l10n/message-bundle.js ***!
-  \************************************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return MessageBundle; });
-/* harmony import */ var _message_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./message.js */ "./lib/l10n/message.js");
-
-// TODO: Deal with situations when message is not available, but is requested
-
-/**
- * Combines messages with the same locale code into a single message bundle.
- */
-class MessageBundle {
-  /**
-   * Creates a message bundle (a list of messages) for a locale.
-   * @param {String} messagesJSON - Messages for a locale as a JSON string or as an object.
-   * @param {string} locale - A locale code for a message group. IETF language tag format is recommended.
-   */
-  constructor (messagesJSON, locale) {
-    if (!locale) {
-      throw new Error('Locale data is missing')
-    }
-    if (!messagesJSON) {
-      throw new Error('Message data is missing')
-    }
-
-    this._locale = locale
-    /**
-     * An object whose properties are messages. Each message has a get() method and,
-     * if a message has any parameters, a format() method.
-     * @type {{get: Function, [format]: Function}}
-     */
-    this.messages = {}
-
-    let messages = (typeof messagesJSON === 'string') ? JSON.parse(messagesJSON) : messagesJSON
-    this.append(messages)
-  }
-
-  /**
-   * Appends a series of messages from a JSON string
-   * @param {string} messagesJSON - A JSON string
-   */
-  appendFromJSON (messagesJSON) {
-    let messages = JSON.parse(messagesJSON)
-    this.append(messages)
-  }
-
-  /**
-   * Appends a series of messages from an object. Object properties are message names, and
-   * values are message objects.
-   * @param {object} messages - An object containing messages.
-   */
-  append (messages) {
-    for (const [key, messageObj] of Object.entries(messages)) {
-      if (!this.hasOwnProperty(key)) {
-        let message = new _message_js__WEBPACK_IMPORTED_MODULE_0__["default"](messageObj, this._locale)
-        this[key] = message
-        message.defineProperties(this.messages, key)
-      } else {
-        console.warn(`A key name "${key}" is reserved or already used. A message will be ignored"`)
-      }
-    }
-  }
-
-  /**
-   * Returns a (formatted) message for a message ID provided.
-   * @param messageID - An ID of a message.
-   * @param options - Options that can be used for message formatting in the following format:
-   * {
-   *     paramOneName: paramOneValue,
-   *     paramTwoName: paramTwoValue
-   * }.
-   * @returns {string} A formatted message. If message not found, returns a message that contains an error text.
-   */
-  get (messageID, options = undefined) {
-    if (this[messageID]) {
-      if (typeof this[messageID].format === 'function') {
-        return this[messageID].format(options)
-      } else {
-        return this[messageID]
-      }
-    } else {
-      // If message with the ID provided is not in translation data, generate a warning.
-      return `Not in translation data: "${messageID}"`
-    }
-  }
-
-  /**
-   * Returns a locale of a current message bundle.
-   * @return {string} A locale of this message bundle.
-   */
-  get locale () {
-    return this._locale
-  }
-}
-
-
-/***/ }),
-
-/***/ "./lib/l10n/message.js":
-/*!*****************************!*\
-  !*** ./lib/l10n/message.js ***!
-  \*****************************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return Message; });
-/* harmony import */ var intl_messageformat__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! intl-messageformat */ "intl-messageformat");
-/* harmony import */ var intl_messageformat__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(intl_messageformat__WEBPACK_IMPORTED_MODULE_0__);
-
-
-/**
- * Represents a single message object
- */
-class Message {
-  /**
-   * Creates a new Message object.
-   * @param {object} message - A message object as read from JSON file.
-   * @param {string} locale - A message's locale.
-   */
-  constructor (message, locale) {
-    if (!locale) {
-      throw new Error('Locale data is missing')
-    }
-    if (!message) {
-      throw new Error('Message data is missing')
-    }
-
-    this.locale = locale
-    for (const key of Object.keys(message)) {
-      this[key] = message[key]
-    }
-
-    this.formatFunc = new intl_messageformat__WEBPACK_IMPORTED_MODULE_0___default.a(message.message, this.locale)
-  }
-
-  /**
-   * Whether this message has any parameters or not.
-   * @return {boolean} True if message has any parameters, false otherwise.
-   */
-  get hasParameters () {
-    return !!(this.params && Array.isArray(this.params) && this.params.length > 0)
-  }
-
-  /**
-   * Defines getter methods on an object of messages.
-   * @param {object} messages - On object where messages will be stored. Each property corresponds to a message key.
-   *        Each property will have a getter function defined (will return a formatted message), and,
-   *        for messages with parameters, a format(function).
-   *        `messages` object usually comes from a MessageBundle object.
-   * @param {string} key - A message key, a name of a message.
-   * @return {undefined} Has no return value.
-   */
-  defineProperties (messages, key) {
-    let self = this
-
-    if (this.hasParameters) {
-      messages[key] = {
-        format (options) {
-          return self.formatFunc.format(options)
-        },
-        get (...options) {
-          let params = {}
-          // TODO: Add checks
-          for (let [index, param] of self.params.entries()) {
-            params[param] = options[index]
-          }
-          return self.formatFunc.format(params)
-        }
-      }
-    } else {
-      Object.defineProperty(messages, key, {
-        get () {
-          return self.formatFunc.format()
-        },
-        enumerable: true,
-        configurable: true // So it can be deleted
-      })
-    }
-  }
-}
-
-
-/***/ }),
-
-/***/ "./locales/en-gb/messages.json":
-/*!*************************************!*\
-  !*** ./locales/en-gb/messages.json ***!
-  \*************************************/
-/*! exports provided: COOKIE_TEST_MESSAGE, NUM_LINES_TEST_MESSAGE, default */
-/***/ (function(module) {
-
-module.exports = {"COOKIE_TEST_MESSAGE":{"message":"This is a test message about a biscuit.","description":"A test message that is shown in a panel","component":"Panel"},"NUM_LINES_TEST_MESSAGE":{"message":"There {numLines, plural, =0 {are no queues} =1 {is one queue} other {are # queues}}.","description":"A test message that is shown in a panel","component":"Panel","params":["numLines"]}};
-
-/***/ }),
-
-/***/ "./locales/en-us/messages.json":
-/*!*************************************!*\
-  !*** ./locales/en-us/messages.json ***!
-  \*************************************/
-/*! exports provided: TOOLTIP_ALL_IMPORTANT, TOOLTIP_NO_IMPORTANT, TOOLTIP_REMOVE_ALL, TOOLTIP_CHANGE_IMPORTANT, TOOLTIP_REMOVE, TOOLTIP_TEXT_CONTEXT, TOOLTIP_BACK, default */
-/***/ (function(module) {
-
-module.exports = {"TOOLTIP_ALL_IMPORTANT":{"message":"Make all important ","description":"Make all words inside language block important","component":"WordLanguagePanel"},"TOOLTIP_NO_IMPORTANT":{"message":"Remove all important ","description":"Remove important mark from all words inside language block","component":"WordLanguagePanel"},"TOOLTIP_REMOVE_ALL":{"message":"Remove all word items","description":"Remove all words inside language block","component":"WordLanguagePanel"},"TOOLTIP_CHANGE_IMPORTANT":{"message":"Change important status","description":"Change important status for the WordItem","component":"WordItemPanel"},"TOOLTIP_REMOVE":{"message":"Remove worditem","description":"Remove the WordItem form the list","component":"WordItemPanel"},"TOOLTIP_TEXT_CONTEXT":{"message":"Show contexts","description":"Show panle with contexts for the wordItem","component":"WordItemPanel"},"TOOLTIP_BACK":{"message":"Back to WordList","description":"Back to the WordList Tab","component":"WordContextPanel"}};
-
-/***/ }),
-
-/***/ "./locales/locales.js":
-/*!****************************!*\
-  !*** ./locales/locales.js ***!
-  \****************************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _en_us_messages_json__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./en-us/messages.json */ "./locales/en-us/messages.json");
-var _en_us_messages_json__WEBPACK_IMPORTED_MODULE_0___namespace = /*#__PURE__*/__webpack_require__.t(/*! ./en-us/messages.json */ "./locales/en-us/messages.json", 1);
-/* harmony import */ var _en_gb_messages_json__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./en-gb/messages.json */ "./locales/en-gb/messages.json");
-var _en_gb_messages_json__WEBPACK_IMPORTED_MODULE_1___namespace = /*#__PURE__*/__webpack_require__.t(/*! ./en-gb/messages.json */ "./locales/en-gb/messages.json", 1);
-
-
-
-/* harmony default export */ __webpack_exports__["default"] = ({
-  en_US: 'en-US',
-  en_GB: 'en-GB',
-  messages: {
-    en_US: _en_us_messages_json__WEBPACK_IMPORTED_MODULE_0__,
-    en_GB: _en_gb_messages_json__WEBPACK_IMPORTED_MODULE_1__
-  }
-});
-
-
-/***/ }),
-
 /***/ "./storage/indexed-db-adapter.js":
 /*!***************************************!*\
   !*** ./storage/indexed-db-adapter.js ***!
@@ -17941,17 +17558,6 @@ __webpack_require__.r(__webpack_exports__);
 /***/ (function(module, exports) {
 
 module.exports = __WEBPACK_EXTERNAL_MODULE_alpheios_data_models__;
-
-/***/ }),
-
-/***/ "intl-messageformat":
-/*!*************************************!*\
-  !*** external "intl-messageformat" ***!
-  \*************************************/
-/*! no static exports found */
-/***/ (function(module, exports) {
-
-module.exports = __WEBPACK_EXTERNAL_MODULE_intl_messageformat__;
 
 /***/ })
 

@@ -15919,7 +15919,7 @@ var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._sel
 /*!******************!*\
   !*** ./index.js ***!
   \******************/
-/*! exports provided: Style, WordlistController, WordListPanel, UserDataManager */
+/*! exports provided: Style, WordlistController, WordListPanel, UserDataManager, EnUs */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -15936,6 +15936,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _controllers_user_data_manager_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @/controllers/user-data-manager.js */ "./controllers/user-data-manager.js");
 /* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "UserDataManager", function() { return _controllers_user_data_manager_js__WEBPACK_IMPORTED_MODULE_3__["default"]; });
 
+/* harmony import */ var _locales_en_us_messages_json__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @/locales/en-us/messages.json */ "./locales/en-us/messages.json");
+var _locales_en_us_messages_json__WEBPACK_IMPORTED_MODULE_4___namespace = /*#__PURE__*/__webpack_require__.t(/*! @/locales/en-us/messages.json */ "./locales/en-us/messages.json", 1);
+/* harmony reexport (default from named exports) */ __webpack_require__.d(__webpack_exports__, "EnUs", function() { return _locales_en_us_messages_json__WEBPACK_IMPORTED_MODULE_4__; });
 
 
 
@@ -15944,6 +15947,19 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
+
+
+
+/***/ }),
+
+/***/ "./locales/en-us/messages.json":
+/*!*************************************!*\
+  !*** ./locales/en-us/messages.json ***!
+  \*************************************/
+/*! exports provided: TOOLTIP_ALL_IMPORTANT, TOOLTIP_NO_IMPORTANT, TOOLTIP_REMOVE_ALL, TOOLTIP_CHANGE_IMPORTANT, TOOLTIP_REMOVE, TOOLTIP_TEXT_CONTEXT, TOOLTIP_BACK, default */
+/***/ (function(module) {
+
+module.exports = {"TOOLTIP_ALL_IMPORTANT":{"message":"Make all important ","description":"Make all words inside language block important","component":"WordLanguagePanel"},"TOOLTIP_NO_IMPORTANT":{"message":"Remove all important ","description":"Remove important mark from all words inside language block","component":"WordLanguagePanel"},"TOOLTIP_REMOVE_ALL":{"message":"Remove all word items","description":"Remove all words inside language block","component":"WordLanguagePanel"},"TOOLTIP_CHANGE_IMPORTANT":{"message":"Change important status","description":"Change important status for the WordItem","component":"WordItemPanel"},"TOOLTIP_REMOVE":{"message":"Remove worditem","description":"Remove the WordItem form the list","component":"WordItemPanel"},"TOOLTIP_TEXT_CONTEXT":{"message":"Show contexts","description":"Show panle with contexts for the wordItem","component":"WordItemPanel"},"TOOLTIP_BACK":{"message":"Back to WordList","description":"Back to the WordList Tab","component":"WordContextPanel"}};
 
 /***/ }),
 

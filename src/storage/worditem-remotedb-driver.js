@@ -4,6 +4,7 @@ export default class WordItemRemoteDbDriver {
   constructor (userId) {
     this.config = RemoteConfig
     this.userId = userId || this.config.testUserID
+    // this.userId = this.config.testUserID
     
     let testAuthID = 'alpheiosMockUserIdlP0DWnmNxe'
 
@@ -91,9 +92,8 @@ export default class WordItemRemoteDbDriver {
           selector: {
             type: 'TextQuoteSelector',
             exact: tq.text,
-            prefix: tq.prefix,
-            suffix: tq.suffix,
-            contextHTML: tq.contextHTML,
+            prefix: tq.prefix.length > 0 ? tq.prefix : ' ',
+            suffix: tq.suffix > 0 ? tq.suffix : ' ',
             languageCode: tq.languageCode
           }
         },

@@ -1,6 +1,7 @@
 /* eslint-env jest */
 /* eslint-disable no-unused-vars */
 import 'whatwg-fetch'
+import axios from 'axios'
 import { Constants, WordItem, TextQuoteSelector } from 'alpheios-data-models'
 import { ClientAdapters } from 'alpheios-client-adapters'
 
@@ -44,7 +45,7 @@ describe('local-remote-merge-workflow.test.js', () => {
         }
       }
     })
-    console.info('**************tqselector', tqselector)
+    // console.info('**************tqselector', tqselector)
     context.push(tqselector)
 
     return new WordItem({
@@ -144,11 +145,10 @@ describe('local-remote-merge-workflow.test.js', () => {
     let result = await udm.createAbsentRemoteItems(dbDriverLocal, dbDriverRemote, localDataItems, remoteDataItems)
 
     let resultQuery = await udm.query({ dataType: 'WordItem', params: { languageCode: Constants.STR_LANG_CODE_LAT }}, 'remote')
-    console.info('******************result remote query', resultQuery[0].context)
-    console.info('******************result remote query', resultQuery[0].context[0].target.selector)
+    console.info('******************result remote query', resultQuery)
   })
 
-  it('4 LocalRemoteMergeWorkflow - createAbsentLocalItems creates in local absent wordItems', async () => {
+  it.skip('4 LocalRemoteMergeWorkflow - createAbsentLocalItems creates in local absent wordItems', async () => {
     let udm = new UserDataManager()
     let resultRemoteQuery = await udm.query({ dataType: 'WordItem', params: { languageCode: Constants.STR_LANG_CODE_LAT }}, 'remote')
     // console.info('****************resultRemoteQuery', resultRemoteQuery)
@@ -156,9 +156,83 @@ describe('local-remote-merge-workflow.test.js', () => {
     let localDataItems = []
     let remoteDataItems = resultRemoteQuery.slice(0, 1)
     console.info('********************remoteDataItems', remoteDataItems)
-
+    
     let dbDriverLocal = new WordItemIndexedDbDriver()
     let dbDriverRemote = new WordItemRemoteDbDriver()
     let mergedResult = udm.createAbsentLocalItems(dbDriverLocal, dbDriverRemote, localDataItems, remoteDataItems)
+    
+    let resultLocalQuery = await udm.query({ dataType: 'WordItem', params: { languageCode: Constants.STR_LANG_CODE_LAT }}, 'local')
+    console.info('****************resultRemoteQuery', resultLocalQuery)
+  })
+
+  it.skip('5 LocalRemoteMergeWorkflow - query with local absent wordItems', async () => {
+    let udm = new UserDataManager()
+
+    let resultRemoteQuery = await udm.query({ dataType: 'WordItem', params: { languageCode: Constants.STR_LANG_CODE_LAT }}, 'remote')
+    console.info('***************resultRemoteQuery', resultRemoteQuery)
+
+    let resultLocalQuery = await udm.query({ dataType: 'WordItem', params: { languageCode: Constants.STR_LANG_CODE_LAT }}, 'local')
+    console.info('****************resultLocalQuery', resultLocalQuery)
+
+    let resultQuery = await udm.query({ dataType: 'WordItem', params: { languageCode: Constants.STR_LANG_CODE_LAT }})
+    console.info('***************resultQuery', resultQuery)
+
+    let resultLocalQueryFinal = await udm.query({ dataType: 'WordItem', params: { languageCode: Constants.STR_LANG_CODE_LAT }}, 'local')
+    console.info('****************resultLocalQueryFinal', resultLocalQueryFinal)
+  })
+
+  it.skip('6 LocalRemoteMergeWorkflow - query with remote absent', async () => {
+    /*
+    let testLocalItem = await prepareWordItem('placito')
+    let udm = new UserDataManager()
+    let result = await udm.create({ dataObj: testLocalItem }, { onlyRemote: true })
+    console.info('*****************result create remote', result)
+    */
+    let dbDriverRemote = new WordItemRemoteDbDriver()
+    let remoteAdapter = new RemoteDBAdapter(dbDriverRemote)
+/*
+    let url = dbDriverRemote.storageMap.post.url(data)
+    let content = dbDriverRemote.storageMap.post.serialize(data)
+*/
+    let url = 'https://w2tfh159s2.execute-api.us-east-2.amazonaws.com/prod/words/lat-placito'
+
+    let content = {
+      "ID":"lat-uestem",
+      "listID":"alpheiosMockUser-lat",
+      "userID":"alpheiosMockUser",
+      "languageCode":"lat",
+      "targetWord":"uestem",
+      "important": false,
+      "createdDT":"2019/02/11 @ 16:28:18",
+      "homonym":{"targetWord":"uestem","lemmasList":"uestem"},
+      "context":[
+        {
+          "target":{
+          "source":"http://localhost:8888/demo/",
+          "selector": {
+            "type":"TextQuoteSelector",
+            "exact":"uestem",
+            "prefix":"a bene ",
+            "languageCode":"lat",
+            "suffix":" "
+          },
+          /*"selector":
+            {"type":"TextQuoteSelector","exact":"uestem","prefix":"a bene ","suffix":"","languageCode":"lat"}*/
+          },
+          "languageCode":"lat",
+          "targetWord":"uestem",
+          "createdDT":"2019/02/11 @ 16:28:18"
+        }
+      ]
+    }
+
+    let result = await axios.post(url, content, dbDriverRemote.requestsParams)
+    console.info('*******************LocalRemoteMergeWorkflow result', result.status, result.statusText)
+
+  })
+
+  it('7 LocalRemoteMergeWorkflow - delete all in remote', async () => {
+    let udm = new UserDataManager()
+    await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }})
   })
 })

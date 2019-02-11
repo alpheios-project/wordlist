@@ -15334,8 +15334,10 @@ class UserDataManager {
       let createdLocal = false
       let createdRemote = false
 
+      console.info('*****************createdLocal 1', localAdapter.available, !params.onlyRemote)
       if (localAdapter.available && !params.onlyRemote) {
         createdLocal = await localAdapter.create(data.dataObj)
+        console.info('*****************createdLocal 2', createdLocal)
         this.printErrors(localAdapter)
       } else if (params.onlyRemote) {
         createdLocal = true
@@ -15343,8 +15345,10 @@ class UserDataManager {
         console.error('LocalAdapter is not available for the usage')
       }
 
-      if (remoteAdapter.available) {
+      if (remoteAdapter.available && !params.onlyLocal) {
         createdRemote = await remoteAdapter.create(data.dataObj)     
+      } else if (params.onlyLocal) {
+        createdRemote = true
       } else {
         console.error('RemoteAdapter is not available for usage')
       }
@@ -15472,24 +15476,34 @@ class UserDataManager {
     }
   }
 
-  async query (data) {
+  async query (data, type = 'merged') {
     let remoteAdapter =  this._remoteStorageAdapter(data.dataType)
     let localAdapter = this._localStorageAdapter(data.dataType)
 
     let remoteDataItems = await remoteAdapter.query(data.params)
     let localDataItems = await localAdapter.query(data.params)
 
-    console.info('*****************UDM query remoteDataItems', remoteDataItems)
-    console.info('*****************UDM query localDataItems', localDataItems)
     this.printErrors(localAdapter)
 
-    // let mergedLocalRemoteItems = this.mergeLocalRemote(localAdapter.dbDriver, remoteAdapter.dbDriver, localDataItems, remoteDataItems)
-    return localDataItems
+    console.info('********************UDM query', data, type)
+    if (type === 'local') {
+      console.info('********************UDM query local', localDataItems)
+      return localDataItems
+    } else if (type === 'remote') {
+      console.info('********************UDM query remote', remoteDataItems)
+      return remoteDataItems
+    } else {
+      let notInLocalWI = await this.mergeLocalRemote(localAdapter.dbDriver, remoteAdapter.dbDriver, localDataItems, remoteDataItems)
+      console.info('********************UDM query merged 1', notInLocalWI)
+      console.info('********************UDM query merged final', [...localDataItems,...notInLocalWI])
+      return [...localDataItems,...notInLocalWI]
+    }
   }
 
   async mergeLocalRemote (localDBDriver, remoteDBDriver, localDataItems, remoteDataItems) {
     await this.createAbsentRemoteItems(localDBDriver, remoteDBDriver, localDataItems, remoteDataItems)
-    await this.createAbsentLocalItems(localDBDriver, remoteDBDriver, localDataItems, remoteDataItems)
+    let notInLocalWI = await this.createAbsentLocalItems(localDBDriver, remoteDBDriver, localDataItems, remoteDataItems)
+    return notInLocalWI
   }
 
   async createAbsentRemoteItems (localDBDriver, remoteDBDriver, localDataItems, remoteDataItems) {
@@ -15497,6 +15511,7 @@ class UserDataManager {
 
     let notInRemote = localDataItems.filter(item => !remoteCheckAray.includes(localDBDriver.makeIDCompareWithRemote(item)))
     for (let item of notInRemote) {
+      console.info('*******************this.create item', item)
       await this.create({ dataObj: item }, { onlyRemote: true })
     }
     return notInRemote
@@ -15507,13 +15522,13 @@ class UserDataManager {
 
     let notInLocal = remoteDataItems.filter(item => !localCheckAray.includes(remoteDBDriver._makeStorageID(item)))
 
-    console.info('***************localTargetWords', localCheckAray)
-
-    console.info('***************notInLocal', notInLocal)
+    let notInLocalWI = []
     for (let item of notInLocal) {
-      let dataItemsForLocal = localDBDriver.createFromRemoteData(item)
-      console.info('**************dataItemsForLocal', item)
+      let dataItemForLocal = localDBDriver.createFromRemoteData(item)
+      await this.create({ dataObj: dataItemForLocal }, { onlyLocal: true })
+      notInLocalWI.push(dataItemForLocal)
     }
+    return notInLocalWI
   }
 
   /**
@@ -16778,12 +16793,12 @@ class RemoteDBAdapter {
   }
 
   async create(data) {
-    console.info('*******************remote create start')
+    console.info('*******************RDA remote create start')
     try {
       let url = this.dbDriver.storageMap.post.url(data)
       let content = this.dbDriver.storageMap.post.serialize(data)
 
-      console.info('*******************remote create', url, content)
+      console.info('******************* RDA remote create url, content', url, content)
 
       let result = await axios__WEBPACK_IMPORTED_MODULE_0___default.a.post(url, content, this.dbDriver.requestsParams)
       let updated = this.dbDriver.storageMap.post.checkResult(result)
@@ -17093,9 +17108,20 @@ class WordItemIndexedDbDriver {
   /**
    * private method to load the Homonym property of a WordItem
    */
-  _loadHomonym (worditem,jsonObj) {
-    console.info('**************_loadHomonym', jsonObj)
-    worditem.homonym = alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["WordItem"].readHomonym(jsonObj[0])
+  _loadHomonym (worditem, jsonObj) {
+    // console.info('*********_loadHomonym', jsonObj)
+    let jsonHomonym = jsonObj[0].homonym
+    if (jsonHomonym.lexemes && Array.isArray(jsonHomonym.lexemes) && jsonHomonym.lexemes.length >0) {
+      worditem.homonym = alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["WordItem"].readHomonym(jsonObj[0])
+    } else {
+      let languageID = alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["LanguageModelFactory"].getLanguageIdFromCode(jsonObj[0].languageCode)
+      let lexemesForms = jsonHomonym.lemmasList.split(', ')
+      let lexemes = []
+      for (let lexForm of lexemesForms) {
+        lexemes.push(new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["Lexeme"](new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["Lemma"](lexForm, languageID), []))
+      }
+      worditem.homonym = new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["Homonym"](lexemes, jsonHomonym.targetWord)
+    }
   }
 
   /**
@@ -17226,7 +17252,8 @@ class WordItemIndexedDbDriver {
   createFromRemoteData (remoteDataItem) {
     let wordItem = this.load(remoteDataItem)
     this._loadContext(wordItem, remoteDataItem.context)
-    this._loadHomonym(wordItem, remoteDataItem.homonym)
+    this._loadHomonym(wordItem, [ remoteDataItem ])
+    return wordItem
   }
 }
 
@@ -17251,6 +17278,7 @@ class WordItemRemoteDbDriver {
   constructor (userId) {
     this.config = _storage_remote_db_config_json__WEBPACK_IMPORTED_MODULE_0__
     this.userId = userId || this.config.testUserID
+    // this.userId = this.config.testUserID
     
     let testAuthID = 'alpheiosMockUserIdlP0DWnmNxe'
 
@@ -17338,12 +17366,13 @@ class WordItemRemoteDbDriver {
           selector: {
             type: 'TextQuoteSelector',
             exact: tq.text,
-            prefix: tq.prefix,
-            suffix: tq.suffix,
-            contextHTML: tq.contextHTML,
+            prefix: tq.prefix.length > 0 ? tq.prefix : ' ',
+            suffix: tq.suffix > 0 ? tq.suffix : ' ',
             languageCode: tq.languageCode
           }
         },
+        languageCode: worditem.languageCode,
+        targetWord: worditem.targetWord,
         createdDT: WordItemRemoteDbDriver.currentDate
       }
       result.push(resultItem)

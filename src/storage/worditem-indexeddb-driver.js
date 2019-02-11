@@ -205,7 +205,7 @@ export default class WordItemIndexedDbDriver {
    * private method to load the Homonym property of a WordItem
    */
   _loadHomonym (worditem, jsonObj) {
-    console.info('*********_loadHomonym', jsonObj)
+    // console.info('*********_loadHomonym', jsonObj)
     let jsonHomonym = jsonObj[0].homonym
     if (jsonHomonym.lexemes && Array.isArray(jsonHomonym.lexemes) && jsonHomonym.lexemes.length >0) {
       worditem.homonym = WordItem.readHomonym(jsonObj[0])

@@ -62,8 +62,10 @@ export default class UserDataManager {
       let createdLocal = false
       let createdRemote = false
 
+      console.info('*****************createdLocal 1', localAdapter.available, !params.onlyRemote)
       if (localAdapter.available && !params.onlyRemote) {
         createdLocal = await localAdapter.create(data.dataObj)
+        console.info('*****************createdLocal 2', createdLocal)
         this.printErrors(localAdapter)
       } else if (params.onlyRemote) {
         createdLocal = true
@@ -71,8 +73,10 @@ export default class UserDataManager {
         console.error('LocalAdapter is not available for the usage')
       }
 
-      if (remoteAdapter.available) {
+      if (remoteAdapter.available && !params.onlyLocal) {
         createdRemote = await remoteAdapter.create(data.dataObj)     
+      } else if (params.onlyLocal) {
+        createdRemote = true
       } else {
         console.error('RemoteAdapter is not available for usage')
       }
@@ -207,23 +211,27 @@ export default class UserDataManager {
     let remoteDataItems = await remoteAdapter.query(data.params)
     let localDataItems = await localAdapter.query(data.params)
 
-    // console.info('*****************UDM query remoteDataItems', remoteDataItems)
-    // console.info('*****************UDM query localDataItems', localDataItems)
     this.printErrors(localAdapter)
 
-    // let mergedLocalRemoteItems = this.mergeLocalRemote(localAdapter.dbDriver, remoteAdapter.dbDriver, localDataItems, remoteDataItems)
+    console.info('********************UDM query', data, type)
     if (type === 'local') {
+      console.info('********************UDM query local', localDataItems)
       return localDataItems
     } else if (type === 'remote') {
+      console.info('********************UDM query remote', remoteDataItems)
       return remoteDataItems
     } else {
-      return localDataItems
+      let notInLocalWI = await this.mergeLocalRemote(localAdapter.dbDriver, remoteAdapter.dbDriver, localDataItems, remoteDataItems)
+      console.info('********************UDM query merged 1', notInLocalWI)
+      console.info('********************UDM query merged final', [...localDataItems,...notInLocalWI])
+      return [...localDataItems,...notInLocalWI]
     }
   }
 
   async mergeLocalRemote (localDBDriver, remoteDBDriver, localDataItems, remoteDataItems) {
     await this.createAbsentRemoteItems(localDBDriver, remoteDBDriver, localDataItems, remoteDataItems)
-    await this.createAbsentLocalItems(localDBDriver, remoteDBDriver, localDataItems, remoteDataItems)
+    let notInLocalWI = await this.createAbsentLocalItems(localDBDriver, remoteDBDriver, localDataItems, remoteDataItems)
+    return notInLocalWI
   }
 
   async createAbsentRemoteItems (localDBDriver, remoteDBDriver, localDataItems, remoteDataItems) {
@@ -231,24 +239,24 @@ export default class UserDataManager {
 
     let notInRemote = localDataItems.filter(item => !remoteCheckAray.includes(localDBDriver.makeIDCompareWithRemote(item)))
     for (let item of notInRemote) {
+      console.info('*******************this.create item', item)
       await this.create({ dataObj: item }, { onlyRemote: true })
     }
     return notInRemote
   }
 
-  createAbsentLocalItems (localDBDriver, remoteDBDriver, localDataItems, remoteDataItems) {
+  async createAbsentLocalItems (localDBDriver, remoteDBDriver, localDataItems, remoteDataItems) {
     let localCheckAray = localDBDriver.getCheckArray(localDataItems)
 
     let notInLocal = remoteDataItems.filter(item => !localCheckAray.includes(remoteDBDriver._makeStorageID(item)))
 
-    console.info('***************localTargetWords', localCheckAray)
-
-    console.info('***************notInLocal', notInLocal)
+    let notInLocalWI = []
     for (let item of notInLocal) {
-      let dataItemsForLocal = localDBDriver.createFromRemoteData(item)
-      console.info('**************createAbsentLocalItems item', item)
-      console.info('**************createAbsentLocalItems dataItemsForLocal', dataItemsForLocal)
+      let dataItemForLocal = localDBDriver.createFromRemoteData(item)
+      await this.create({ dataObj: dataItemForLocal }, { onlyLocal: true })
+      notInLocalWI.push(dataItemForLocal)
     }
+    return notInLocalWI
   }
 
   /**

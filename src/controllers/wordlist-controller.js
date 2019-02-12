@@ -27,9 +27,9 @@ export default class WordlistController {
       let wordItems = await dataManager.query({dataType: 'WordItem', params: {languageCode: languageCode}})
       if (wordItems.length > 0) {
         this.wordLists[languageCode] = new WordList(languageCode,wordItems)
+        WordlistController.evt.WORDLIST_UPDATED.pub(this.wordLists)
       }
     }
-    WordlistController.evt.WORDLIST_UPDATED.pub(this.wordLists)
   }
 
   /**

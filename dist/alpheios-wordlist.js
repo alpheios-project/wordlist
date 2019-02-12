@@ -15445,24 +15445,19 @@ class UserDataManager {
 
     this.printErrors(localAdapter)
 
-    console.info('********************UDM query', data, type)
     if (type === 'local') {
-      console.info('********************UDM query local', localDataItems)
       return localDataItems
     } else if (type === 'remote') {
-      console.info('********************UDM query remote', remoteDataItems)
       return remoteDataItems
     } else {
       let notInLocalWI = await this.mergeLocalRemote(localAdapter.dbDriver, remoteAdapter.dbDriver, localDataItems, remoteDataItems)
-      console.info('********************UDM query merged 1', notInLocalWI)
-      console.info('********************UDM query merged final', [...localDataItems,...notInLocalWI])
       return [...localDataItems,...notInLocalWI]
     }
   }
 
   async mergeLocalRemote (localDBDriver, remoteDBDriver, localDataItems, remoteDataItems) {
-    await this.createAbsentRemoteItems(localDBDriver, remoteDBDriver, localDataItems, remoteDataItems)
     let notInLocalWI = await this.createAbsentLocalItems(localDBDriver, remoteDBDriver, localDataItems, remoteDataItems)
+    this.createAbsentRemoteItems(localDBDriver, remoteDBDriver, localDataItems, remoteDataItems)
     return notInLocalWI
   }
 
@@ -15471,7 +15466,6 @@ class UserDataManager {
 
     let notInRemote = localDataItems.filter(item => !remoteCheckAray.includes(localDBDriver.makeIDCompareWithRemote(item)))
     for (let item of notInRemote) {
-      console.info('*******************this.create item', item)
       await this.create({ dataObj: item }, { onlyRemote: true })
     }
     return notInRemote
@@ -15620,9 +15614,9 @@ class WordlistController {
       let wordItems = await dataManager.query({dataType: 'WordItem', params: {languageCode: languageCode}})
       if (wordItems.length > 0) {
         this.wordLists[languageCode] = new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["WordList"](languageCode,wordItems)
+        WordlistController.evt.WORDLIST_UPDATED.pub(this.wordLists)
       }
     }
-    WordlistController.evt.WORDLIST_UPDATED.pub(this.wordLists)
   }
 
   /**

@@ -61,7 +61,23 @@ export default class WordItemIndexedDbDriver {
    * @return {Object} the IndexedDb objectStores for the WordItems
    */
   get objectStores () {
-    return Object.keys(this.storageMap).map(k => this.storageMap[k].objectStoreName)
+    return this.segments.map(segment => this.storageMap[segment].objectStoreName)
+  }
+
+  /**
+   * private method - creates a template for a new Object Store
+   */
+  _objectStoreTemplate () {
+    return {
+      keyPath: 'ID',
+      indexes: [
+        { indexName: 'ID', keyPath: 'ID', unique: true},
+        { indexName: 'listID', keyPath: 'listID', unique: false},
+        { indexName: 'userID', keyPath: 'userID', unique: false},
+        { indexName: 'languageCode', keyPath: 'languageCode', unique: false},
+        { indexName: 'targetWord', keyPath: 'targetWord', unique: false}
+      ]
+    }
   }
 
   /**
@@ -110,9 +126,9 @@ export default class WordItemIndexedDbDriver {
   /**
    * load a segment of a data model object from the database
    */
-  loadSegment(segment,dataObj,data) {
+  loadSegment(segment, dataObj, data) {
     if (this.storageMap[segment].load) {
-      this.storageMap[segment].load(dataObj,data)
+      this.storageMap[segment].load(dataObj, data)
     }
   }
 
@@ -122,7 +138,7 @@ export default class WordItemIndexedDbDriver {
    * @param {WordItem} worditem the worditem object
    * @return {Object} IndexedDBQuery object
    */
-  segmentQuery(segment,worditem) {
+  segmentQuery(segment, worditem) {
     let id = this._makeStorageID(worditem)
     let index = segment === 'context' ? 'wordItemID' : 'ID'
     return {
@@ -131,11 +147,11 @@ export default class WordItemIndexedDbDriver {
     }
   }
 
-  segmentDeleteQuery (segment,worditem) {
+  segmentDeleteQuery (segment, worditem) {
     return this.storageMap[segment].delete(segment,worditem)
   }
 
-  _segmentDeleteQueryByID(segment,worditem) {
+  _segmentDeleteQueryByID(segment, worditem) {
     let ID = this._makeStorageID(worditem)
     return {
       objectStoreName: this.storageMap[segment].objectStoreName,
@@ -205,7 +221,6 @@ export default class WordItemIndexedDbDriver {
    * private method to load the Homonym property of a WordItem
    */
   _loadHomonym (worditem, jsonObj) {
-    // console.info('*********_loadHomonym', jsonObj)
     let jsonHomonym = jsonObj[0].homonym
     if (jsonHomonym.lexemes && Array.isArray(jsonHomonym.lexemes) && jsonHomonym.lexemes.length >0) {
       worditem.homonym = WordItem.readHomonym(jsonObj[0])
@@ -308,22 +323,6 @@ export default class WordItemIndexedDbDriver {
   */
   _makeStorageID(item) {
     return this.userId + '-' + item.languageCode + '-' + item.targetWord
-  }
-
-  /**
-   * private method - creates a template for a new Object Store
-   */
-  _objectStoreTemplate () {
-    return {
-      keyPath: 'ID',
-      indexes: [
-        { indexName: 'ID', keyPath: 'ID', unique: true},
-        { indexName: 'listID', keyPath: 'listID', unique: false},
-        { indexName: 'userID', keyPath: 'userID', unique: false},
-        { indexName: 'languageCode', keyPath: 'languageCode', unique: false},
-        { indexName: 'targetWord', keyPath: 'targetWord', unique: false}
-      ]
-    }
   }
 
   static get currentDate () {

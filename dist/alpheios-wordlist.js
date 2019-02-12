@@ -15294,10 +15294,8 @@ class UserDataManager {
       let createdLocal = false
       let createdRemote = false
 
-      console.info('*****************createdLocal 1', localAdapter.available, !params.onlyRemote)
       if (localAdapter.available && !params.onlyRemote) {
         createdLocal = await localAdapter.create(data.dataObj)
-        console.info('*****************createdLocal 2', createdLocal)
         this.printErrors(localAdapter)
       } else if (params.onlyRemote) {
         createdLocal = true
@@ -15436,6 +15434,14 @@ class UserDataManager {
     }
   }
 
+  /**
+   * Query the user data stores
+   * @param {Object} data object adhering to
+   *                      { dataType: the name of the datatype to query
+   *                        params: query parameters to
+   *                      }
+   * @return {Object[]} an array of data items
+   */
   async query (data, type = 'merged') {
     let remoteAdapter =  this._remoteStorageAdapter(data.dataType)
     let localAdapter = this._localStorageAdapter(data.dataType)
@@ -15483,69 +15489,6 @@ class UserDataManager {
       notInLocalWI.push(dataItemForLocal)
     }
     return notInLocalWI
-  }
-
-  /**
-   * Query the user data stores
-   * @param {Object} data object adhering to
-   *                      { dataType: the name of the datatype to query
-   *                        params: query parameters to
-   *                      }
-   * @return {Object[]} an array of data items
-   */
-  async query_backup(data) {
-    // query queries both the remote and local stores and merges
-    // the results
-    let remoteAdapter =  this._remoteStorageAdapter(data.dataType)
-    let localAdapter = this._localStorageAdapter(data.dataType)
-
-    let remoteDataItems = await remoteAdapter.query(data.params)
-    let localDataItems = await localAdapter.query(data.params)
-
-    this.printErrors(localAdapter)
-
-    // if we have any remoteData items then we are going to
-    // reset the local store from the remoteData, adding back in any
-    // items that appeared only in the local
-    /*
-    if (remoteDataItems.length > 0) {
-        localAdapter.deleteMany(params)
-    }
-    */
-    let addToRemote = []
-    let updateInRemote = []
-    
-    localDataItems.forEach(item => {
-      let inRemote = false
-      for (let i=0; i<remoteDataItems.length; i++ ) {
-        if (remoteDataItems[i].isSameItem(item)) {
-          inRemote = true
-          // if the item exists in the remote db, check to see if they differ
-          // and if so merge and update
-          if (remoteDataItems[i].isNotEqual(item)) {
-            let merged = remoteDataItems[i].merge(item)
-            remoteDataItems[i] = merged
-            updateInRemote.push(remoteDataItems[i].merge(item))
-          }
-        }
-      }
-      if (!inRemote) {
-        addToRemote.push(item)
-      }
-    })
-    addToRemote.forEach(item => {
-      remoteAdapter.create(item)
-    })
-    updateInRemote.forEach(item => {
-      remoteAdapter.update(item)
-    })
-    let mergedList = [...remoteDataItems, ...addToRemote]
-    mergedList.forEach(item=> {
-      localAdapter.create(item)
-    })
-    
-    // return [...remoteDataItems,...addToRemote]
-    return localDataItems
   }
 
   checkRequestQueue () {
@@ -16418,12 +16361,9 @@ class RemoteDBAdapter {
   }
 
   async create(data) {
-    console.info('*******************RDA remote create start')
     try {
       let url = this.dbDriver.storageMap.post.url(data)
       let content = this.dbDriver.storageMap.post.serialize(data)
-
-      console.info('******************* RDA remote create url, content', url, content)
 
       let result = await axios__WEBPACK_IMPORTED_MODULE_0___default.a.post(url, content, this.dbDriver.requestsParams)
       let updated = this.dbDriver.storageMap.post.checkResult(result)
@@ -16590,7 +16530,7 @@ class WordItemIndexedDbDriver {
    * @return {Object} the IndexedDb objectStores for the WordItems
    */
   get objectStores () {
-    return Object.keys(this.storageMap).map(k => this.storageMap[k].objectStoreName)
+    return this.segments.map(segment => this.storageMap[segment].objectStoreName)
   }
 
   /**
@@ -16632,6 +16572,7 @@ class WordItemIndexedDbDriver {
   load(data) {
     // make sure when we create from the database
     // that the currentSession flag is set to false
+    console.info('**********************load data', data)
     data.currentSession = false
     return new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["WordItem"](data)
   }
@@ -16734,7 +16675,6 @@ class WordItemIndexedDbDriver {
    * private method to load the Homonym property of a WordItem
    */
   _loadHomonym (worditem, jsonObj) {
-    // console.info('*********_loadHomonym', jsonObj)
     let jsonHomonym = jsonObj[0].homonym
     if (jsonHomonym.lexemes && Array.isArray(jsonHomonym.lexemes) && jsonHomonym.lexemes.length >0) {
       worditem.homonym = alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["WordItem"].readHomonym(jsonObj[0])

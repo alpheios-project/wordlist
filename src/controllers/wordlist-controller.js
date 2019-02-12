@@ -205,8 +205,6 @@ export default class WordlistController {
   */
   selectWordItem (languageCode, targetWord) {
     let wordItem = this.getWordListItem(languageCode, targetWord,false)
-    // console.info('*********************selectWordItem 1', languageCode, targetWord)
-    // console.info('*********************selectWordItem 2', wordItem)
     WordlistController.evt.WORDITEM_SELECTED.pub(wordItem.homonym)
   }
 

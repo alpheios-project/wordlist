@@ -16047,7 +16047,7 @@ class IndexedDBAdapter {
 
           let result = await this._getFromStore(query)
           if (result.length > 0) {
-            this.dbDriver.loadSegment(segment, resultObject, result)
+            this.dbDriver.loadSegment(segment, result, resultObject)
           }
         }
         items.push(resultObject)
@@ -16341,17 +16341,17 @@ class IndexedDBLoadProcess {
   /**
    * load a data model object from the database
    */
-  static loadBaseObject(data) {
+  static loadBaseObject(jsonObj) {
     // make sure when we create from the database
     // that the currentSession flag is set to false
-    data.currentSession = false
-    return new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["WordItem"](data)
+    jsonObj.currentSession = false
+    return new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["WordItem"](jsonObj)
   }
 
   /**
   * private method to load the Context property of a WordItem
   */
-  static loadContext (worditem, jsonObjs) {
+  static loadContext (jsonObjs, worditem) {
     if (! Array.isArray(jsonObjs)) {
       jsonObjs = [jsonObjs]  
     }
@@ -16361,7 +16361,7 @@ class IndexedDBLoadProcess {
   /**
    * private method to load the Homonym property of a WordItem
    */
-  static loadHomonym (worditem, jsonObj) {
+  static loadHomonym (jsonObj, worditem) {
     let jsonHomonym = jsonObj[0].homonym
     if (jsonHomonym.lexemes && Array.isArray(jsonHomonym.lexemes) && jsonHomonym.lexemes.length >0) {
       worditem.homonym = alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["WordItem"].readHomonym(jsonObj[0])
@@ -16595,40 +16595,48 @@ class WordItemIndexedDbDriver {
     this.storageMap = {
       _loadFirst: 'common',
       common: {
+        type: 'segment',
         objectStoreData: {
           name: 'WordListsCommon',
           structure: _storage_indexeddbDriver_indexed_db_object_stores_structure__WEBPACK_IMPORTED_MODULE_1__["default"].WordListsCommon
         },
         load: _storage_indexeddbDriver_indexed_db_load_process__WEBPACK_IMPORTED_MODULE_2__["default"].loadBaseObject,
         serialize: this._serializeCommon.bind(this),
-        delete: this._segmentDeleteQueryByID.bind(this)
+        delete: this._segmentDeleteQueryByID.bind(this),
+        select: this._segmentSelectQueryByID.bind(this)
       },
       context: {
+        type: 'segment',
         objectStoreData: {
           name: 'WordListsContext',
           structure: _storage_indexeddbDriver_indexed_db_object_stores_structure__WEBPACK_IMPORTED_MODULE_1__["default"].WordListsContext
         },
         serialize: this._serializeContext.bind(this),
         load: _storage_indexeddbDriver_indexed_db_load_process__WEBPACK_IMPORTED_MODULE_2__["default"].loadContext,
-        delete: this._segmentDeleteQueryByWordItemID.bind(this)
+        delete: this._segmentDeleteQueryByWordItemID.bind(this),
+        select: this._segmentSelectQueryByWordItemID.bind(this)
       },
       shortHomonym: {
+        type: 'segment',
         objectStoreData: {
           name: 'WordListsHomonym',
           structure: _storage_indexeddbDriver_indexed_db_object_stores_structure__WEBPACK_IMPORTED_MODULE_1__["default"].WordListsHomonym
         },
         serialize: this._serializeHomonym.bind(this),
         load: _storage_indexeddbDriver_indexed_db_load_process__WEBPACK_IMPORTED_MODULE_2__["default"].loadHomonym,
-        delete: this._segmentDeleteQueryByID.bind(this)
+        delete: this._segmentDeleteQueryByID.bind(this),
+        select: this._segmentSelectQueryByID.bind(this)
       },
       fullHomonym: {
+        type: 'segment',
         objectStoreData: {
           name: 'WordListsFullHomonym',
           structure: _storage_indexeddbDriver_indexed_db_object_stores_structure__WEBPACK_IMPORTED_MODULE_1__["default"].WordListsFullHomonym
         },
         serialize: this._serializeHomonymWithFullDefs.bind(this),
         load: _storage_indexeddbDriver_indexed_db_load_process__WEBPACK_IMPORTED_MODULE_2__["default"].loadHomonym,
-        delete: this._segmentDeleteQueryByID.bind(this)
+        delete: this._segmentDeleteQueryByID.bind(this),
+        select: this._segmentSelectQueryByID.bind(this)
       }
     }
   }
@@ -16651,7 +16659,7 @@ class WordItemIndexedDbDriver {
    * db segments getter
    */
   get segments() {
-    return Object.keys(this.storageMap).filter(key => key.substr(0,1) !== '_')
+    return Object.keys(this.storageMap).filter(key => this.storageMap[key].type === 'segment')
   }
 
   get segmentsNotFirst () {
@@ -16672,28 +16680,47 @@ class WordItemIndexedDbDriver {
   _objectStoreData (segment) {
     return this.storageMap[segment].objectStoreData
   }
-
-  _objectStoreName (segment) {
-    return this._objectStoreData(segment).name
-  }
   
-  _formatQuery (segment, indexName, indexValue, indexType = 'only') {
+  /****  indexData = { indexName = null, value = null, type = 'only' } */
+  _formatQuery (segment, indexData) {
     return {
-      objectStoreName: this._objectStoreName(segment),
-      condition: {indexName: indexName, value: indexValue, type: indexType }
+      objectStoreName: this._objectStoreData(segment).name,
+      condition: { indexName: indexData.name, value: indexData.value, type: indexData.type||'only' }
     }
   }
 
-  loadFirst (data) {
-    return this.storageMap[this.storageMap._loadFirst].load(data)
+  _selectByID(wordItem) {
+    return {
+      name: 'ID',
+      value: this._makeStorageID(wordItem)
+    }
+  }
+
+  _selectByWordItemID(wordItem) {
+    return {
+      name: 'wordItemID',
+      value: this._makeStorageID(wordItem)
+    }
+  }
+
+  _selectByListID(languageCode) {
+    return {
+      name: 'listID',
+      value: this._makeStorageListID(languageCode)
+    }
+  }
+
+  loadFirst (jsonObj) {
+    return this.loadSegment(this.storageMap._loadFirst, jsonObj)
   }
 
   /**
    * load a segment of a data model object from the database
    */
-  loadSegment(segment, worditem, jsonObj) {
+  loadSegment(segment, jsonObj, worditem) {
     if (this.storageMap[segment].load) {
-      this.storageMap[segment].load(worditem, jsonObj)
+
+      return this.storageMap[segment].load(jsonObj, worditem)
     }
   }
 
@@ -16704,9 +16731,9 @@ class WordItemIndexedDbDriver {
    */
   listItemsQuery(params) {
     if (params.languageCode) {
-      return this._formatQuery('common', 'listID', this._makeStorageListID(params.languageCode))
+      return this._formatQuery('common', this._selectByListID(params.languageCode))
     } else if (params.wordItem) {
-      return this.segmentSelectQuery('common', params.wordItem)
+      return this._formatQuery('common', this._selectByID(worditem))
     } else {
       throw new Error("Invalid query parameters - missing languageCode")
     }
@@ -16719,30 +16746,37 @@ class WordItemIndexedDbDriver {
    * @return {Object} IndexedDBQuery object
    */
   segmentSelectQuery(segment, worditem) {
-    let ID = this._makeStorageID(worditem)
-    let index = (segment === 'context') ? 'wordItemID' : 'ID'
-    return this._formatQuery(segment, index, ID)
+    if (this.storageMap[segment].select) {
+      return this.storageMap[segment].select(segment, worditem)
+    }
+  }
+
+  _segmentSelectQueryByWordItemID (segment, worditem) {
+    return this._formatQuery(segment, this._selectByWordItemID(worditem))
+  }
+
+  _segmentSelectQueryByID (segment, worditem) {
+    return this._formatQuery(segment, this._selectByID(worditem))
   }
 
   segmentDeleteQuery (segment, worditem) {
-    return this.storageMap[segment].delete(segment,worditem)
+    if (this.storageMap[segment].delete) {
+      return this.storageMap[segment].delete(segment, worditem)
+    }
   }
 
   _segmentDeleteQueryByID(segment, worditem) {
-    let ID = this._makeStorageID(worditem)
-    return this._formatQuery(segment, 'ID', ID)
+    return this._formatQuery(segment, this._selectByID(worditem))
   }
 
   _segmentDeleteQueryByWordItemID(segment, worditem) {
-    let ID = this._makeStorageID(worditem)
-    return this._formatQuery(segment, 'wordItemID', ID)
+    return this._formatQuery(segment, this._selectByWordItemID(worditem))
   }
 
 
   segmentDeleteManyQuery(segment, params) {
     if (params.languageCode) {
-      let listID = this.userId + '-' + params.languageCode
-      return this._formatQuery(segment, 'listID', listID)
+      return this._formatQuery(segment, this._selectByListID(params.languageCode))
     } else {
       throw new Error("Invalid query parameters - missing languageCode")
     }
@@ -16757,7 +16791,7 @@ class WordItemIndexedDbDriver {
       dataItems = dataItems.concat(resDataItem)
     }
     return {
-      objectStoreName: this._objectStoreName(segment),
+      objectStoreName: this._objectStoreData(segment).name,
       dataItems: dataItems
     }
   }
@@ -16872,8 +16906,8 @@ static get currentDate () {
   createFromRemoteData (remoteDataItem) {
     let wordItem = this.loadFirst(remoteDataItem)
     
-    this.loadSegment('context', wordItem, remoteDataItem.context)
-    this.loadSegment('shortHomonym', wordItem, [ remoteDataItem ])
+    this.loadSegment('context', remoteDataItem.context, wordItem)
+    this.loadSegment('shortHomonym', [ remoteDataItem ], wordItem)
     return wordItem
   }
 }

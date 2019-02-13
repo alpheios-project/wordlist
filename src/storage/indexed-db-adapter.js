@@ -137,7 +137,7 @@ export default class IndexedDBAdapter {
 
           let result = await this._getFromStore(query)
           if (result.length > 0) {
-            this.dbDriver.loadSegment(segment, resultObject, result)
+            this.dbDriver.loadSegment(segment, result, resultObject)
           }
         }
         items.push(resultObject)

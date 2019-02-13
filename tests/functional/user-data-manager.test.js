@@ -70,4 +70,13 @@ describe('user-data-manager.test.js', () => {
     expect(localDataItems.filter(item => item.targetWord === testWordItem2.targetWord).length).toEqual(0)
     expect(localDataItems.filter(item => item.targetWord === testWordItem3.targetWord).length).toEqual(1)
   }, 50000)
+
+  it.skip('test', async () => {
+    let udm = new UserDataManager(testUserID)
+    let res1 = await udm.update({ dataObj: testWordItem1, params: { segment: 'common' }})
+    
+    let res4 = await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }})
+    let localDataItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'lat' }})
+    console.info('localDataItems', localDataItems)
+  })
 })

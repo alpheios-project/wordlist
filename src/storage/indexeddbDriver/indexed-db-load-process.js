@@ -4,17 +4,17 @@ export default class IndexedDBLoadProcess {
   /**
    * load a data model object from the database
    */
-  static loadBaseObject(data) {
+  static loadBaseObject(jsonObj) {
     // make sure when we create from the database
     // that the currentSession flag is set to false
-    data.currentSession = false
-    return new WordItem(data)
+    jsonObj.currentSession = false
+    return new WordItem(jsonObj)
   }
 
   /**
   * private method to load the Context property of a WordItem
   */
-  static loadContext (worditem, jsonObjs) {
+  static loadContext (jsonObjs, worditem) {
     if (! Array.isArray(jsonObjs)) {
       jsonObjs = [jsonObjs]  
     }
@@ -24,7 +24,7 @@ export default class IndexedDBLoadProcess {
   /**
    * private method to load the Homonym property of a WordItem
    */
-  static loadHomonym (worditem, jsonObj) {
+  static loadHomonym (jsonObj, worditem) {
     let jsonHomonym = jsonObj[0].homonym
     if (jsonHomonym.lexemes && Array.isArray(jsonHomonym.lexemes) && jsonHomonym.lexemes.length >0) {
       worditem.homonym = WordItem.readHomonym(jsonObj[0])

@@ -52,27 +52,17 @@ describe('worditem-indexeddb-driver.test.js', () => {
   it('3 WordItemIndexedDbDriver - segments method should return all segments from storageMap', () => {
     let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
     
-    let checkSegments = Object.keys(dbDriverLocal.storageMap)
+    let checkSegments = ['common', 'context', 'shortHomonym', 'fullHomonym']
     expect(dbDriverLocal.segments).toEqual(checkSegments)
   })
 
   it('4 WordItemIndexedDbDriver - objectStores method should return all objectStores from storageMap', () => {
     let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
-    let checkObjectStores = Object.keys(dbDriverLocal.storageMap).map(segment => dbDriverLocal.storageMap[segment].objectStoreName)
+    let checkObjectStores = ['WordListsCommon', 'WordListsContext', 'WordListsHomonym', 'WordListsFullHomonym']
     expect(dbDriverLocal.objectStores).toEqual(checkObjectStores)
   })
 
-  it.skip('5 WordItemIndexedDbDriver - _objectStoreTemplate defines key and index fields of the objectStore', () => {
-    let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
-
-    expect(typeof dbDriverLocal._objectStoreTemplate()).toEqual('object')
-    expect(dbDriverLocal._objectStoreTemplate().keyPath).toBeDefined()
-    expect(dbDriverLocal._objectStoreTemplate().indexes).toBeDefined()
-    expect(Array.isArray(dbDriverLocal._objectStoreTemplate().indexes)).toBeTruthy()
-    expect(dbDriverLocal._objectStoreTemplate().indexes.length).toBeGreaterThan(0)
-  })
-
-  it('6 WordItemIndexedDbDriver - WordListsCommon defines key and index fields of the objectStore', () => {
+  it('5 WordItemIndexedDbDriver - WordListsCommon defines key and index fields of the objectStore', () => {
     let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
     let checkStructure = dbDriverLocal.storageMap.common.objectStoreData.structure
     expect(typeof checkStructure).toEqual('object')
@@ -82,7 +72,7 @@ describe('worditem-indexeddb-driver.test.js', () => {
     expect(checkStructure.indexes.length).toBeGreaterThan(0)
   })
 
-  it('7 WordItemIndexedDbDriver - WordListsContext defines key and index fields of the objectStore', () => {
+  it('6 WordItemIndexedDbDriver - WordListsContext defines key and index fields of the objectStore', () => {
     let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
 
     let checkStructure = dbDriverLocal.storageMap.context.objectStoreData.structure
@@ -93,7 +83,7 @@ describe('worditem-indexeddb-driver.test.js', () => {
     expect(checkStructure.indexes.length).toBeGreaterThan(0)
   })
 
-  it('8 WordItemIndexedDbDriver - WordListsHomonym defines key and index fields of the objectStore', () => {
+  it('7 WordItemIndexedDbDriver - WordListsHomonym defines key and index fields of the objectStore', () => {
     let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
 
     let checkStructure = dbDriverLocal.storageMap.shortHomonym.objectStoreData.structure
@@ -104,7 +94,7 @@ describe('worditem-indexeddb-driver.test.js', () => {
     expect(checkStructure.indexes.length).toBeGreaterThan(0)
   })
 
-  it('9 WordItemIndexedDbDriver - WordListsFullHomonym defines key and index fields of the objectStore', () => {
+  it('8 WordItemIndexedDbDriver - WordListsFullHomonym defines key and index fields of the objectStore', () => {
     let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
 
     let checkStructure = dbDriverLocal.storageMap.fullHomonym.objectStoreData.structure
@@ -115,7 +105,7 @@ describe('worditem-indexeddb-driver.test.js', () => {
     expect(checkStructure.indexes.length).toBeGreaterThan(0)
   })
 
-  it('10 WordItemIndexedDbDriver - load method returns a WordItem with currentSession = false', () => {
+  it('9 WordItemIndexedDbDriver - loadFirst method returns a WordItem with currentSession = false', () => {
     let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
 
     let testData = {
@@ -128,12 +118,12 @@ describe('worditem-indexeddb-driver.test.js', () => {
       userID: 'testUserID'
     }
 
-    let loadResult = dbDriverLocal.load(testData)
+    let loadResult = dbDriverLocal.loadFirst(testData)
     expect(loadResult).toBeInstanceOf(WordItem)
     expect(loadResult.currentSession).toBeFalsy()
   })
 
-  it('11 WordItemIndexedDbDriver - loadSegment method executes loadMethod specific for the segment from storageMap', () => {
+  it('10 WordItemIndexedDbDriver - loadSegment method executes loadMethod specific for the segment from storageMap', () => {
     let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
 
     dbDriverLocal.storageMap.context.load = jest.fn()
@@ -152,7 +142,7 @@ describe('worditem-indexeddb-driver.test.js', () => {
     expect(dbDriverLocal.storageMap.fullHomonym.load).toHaveBeenCalledWith('fooDataObject', 'foodata')
   })
 
-  it('12 WordItemIndexedDbDriver - segmentSelectQuery method returns settings for getting data for an objectStore', () => {
+  it('11 WordItemIndexedDbDriver - segmentSelectQuery method returns settings for getting data for an objectStore', () => {
     let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
     let testWordItem = new WordItem({
       targetWord: 'caeli', 
@@ -180,7 +170,7 @@ describe('worditem-indexeddb-driver.test.js', () => {
     expect(result.condition.indexName).toEqual('ID')
   })
 
-  it('13 WordItemIndexedDbDriver - segmentDeleteQuery method returns settings for getting data for an objectStore', () => {
+  it('12 WordItemIndexedDbDriver - segmentDeleteQuery method returns settings for getting data for an objectStore', () => {
 
   })
 })

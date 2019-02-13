@@ -7,7 +7,7 @@ import UserDataManager from '@/controllers/user-data-manager'
 import IndexedDB from 'fake-indexeddb'
 import IDBKeyRange from 'fake-indexeddb/lib/FDBKeyRange'
 
-describe('indexeddb-workflow.test.js', () => {
+describe('user-data-manager.test.js', () => {
   // console.error = function () {}
   console.log = function () {}
   console.warn = function () {}
@@ -51,7 +51,7 @@ describe('indexeddb-workflow.test.js', () => {
     jest.clearAllMocks()
   })
 
-  it('1 IndexedDBWorkflow - delete many and update method, checking blocking', async () => {
+  it('1 UserDataManager - delete many and update method, checking blocking', async () => {
     let udm = new UserDataManager(testUserID)
 
     let res1 = udm.update({ dataObj: testWordItem1, params: { segment: 'common' }})

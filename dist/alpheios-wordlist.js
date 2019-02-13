@@ -16034,26 +16034,25 @@ class IndexedDBAdapter {
    */
   async query(params) {
     try {
-      let listQuery = this.dbDriver.listQuery(params)
-      let queryResult = await this._getFromStore(listQuery)
+      let listItemsQuery = this.dbDriver.listItemsQuery(params)
+      let listItemsQueryResult = await this._getFromStore(listItemsQuery)
       
       let items = []
-      if (queryResult.length > 0) {
-        for (let item of queryResult) {
-          let modelObj = this.dbDriver.load(item)
-  
-          let segments = this.dbDriver.segments
-          for (let segment of segments) {
-            let query = this.dbDriver.segmentSelectQuery(segment, modelObj)
-  
-            let res = await this._getFromStore(query)
-            if (res.length > 0) {
-              this.dbDriver.loadSegment(segment, modelObj, res)
-            }
+
+      for (let itemQuery of listItemsQueryResult) {
+        let resultObject = this.dbDriver.loadFirst(itemQuery)
+
+        for (let segment of this.dbDriver.segmentsNotFirst) {
+          let query = this.dbDriver.segmentSelectQuery(segment, resultObject)
+
+          let result = await this._getFromStore(query)
+          if (result.length > 0) {
+            this.dbDriver.loadSegment(segment, resultObject, result)
           }
-          items.push(modelObj)
         }
+        items.push(resultObject)
       }
+
       return items
     } catch (error) {
       if (error) {
@@ -16133,10 +16132,9 @@ class IndexedDBAdapter {
    */
   _createObjectStores (db, upgradeTransaction) {
     try {
-      let segments = this.dbDriver.segments
-      for (let segment of segments) {
-        let objectStoreData = this.dbDriver.storageMap[segment].objectStoreData
+      for (let objectStoreData of this.dbDriver.allObjectStoreData) {
         let objectStore
+
         if (!db.objectStoreNames.contains(objectStoreData.name)) {
           objectStore = db.createObjectStore(objectStoreData.name, { keyPath: objectStoreData.structure.keyPath })
         } else {
@@ -16149,6 +16147,7 @@ class IndexedDBAdapter {
           }
         })
       }
+    
     } catch (error) {
       this.errors.push(error)
     }
@@ -16319,6 +16318,65 @@ class IndexedDBAdapter {
 
     return promiseOpenDB
   }
+
+}
+
+/***/ }),
+
+/***/ "./storage/indexeddbDriver/indexed-db-load-process.js":
+/*!************************************************************!*\
+  !*** ./storage/indexeddbDriver/indexed-db-load-process.js ***!
+  \************************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return IndexedDBLoadProcess; });
+/* harmony import */ var alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alpheios-data-models */ "alpheios-data-models");
+/* harmony import */ var alpheios_data_models__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__);
+
+
+class IndexedDBLoadProcess {
+  /**
+   * load a data model object from the database
+   */
+  static loadBaseObject(data) {
+    // make sure when we create from the database
+    // that the currentSession flag is set to false
+    data.currentSession = false
+    return new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["WordItem"](data)
+  }
+
+  /**
+  * private method to load the Context property of a WordItem
+  */
+  static loadContext (worditem, jsonObjs) {
+    if (! Array.isArray(jsonObjs)) {
+      jsonObjs = [jsonObjs]  
+    }
+    worditem.context = alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["WordItem"].readContext(jsonObjs)
+  }
+
+  /**
+   * private method to load the Homonym property of a WordItem
+   */
+  static loadHomonym (worditem, jsonObj) {
+    let jsonHomonym = jsonObj[0].homonym
+    if (jsonHomonym.lexemes && Array.isArray(jsonHomonym.lexemes) && jsonHomonym.lexemes.length >0) {
+      worditem.homonym = alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["WordItem"].readHomonym(jsonObj[0])
+    } else {
+      let languageID = alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["LanguageModelFactory"].getLanguageIdFromCode(jsonObj[0].languageCode)
+      let lexemesForms = jsonHomonym.lemmasList.split(', ')
+      let lexemes = []
+      for (let lexForm of lexemesForms) {
+        lexemes.push(new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["Lexeme"](new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["Lemma"](lexForm, languageID), []))
+      }
+      worditem.homonym = new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["Homonym"](lexemes, jsonHomonym.targetWord)
+    }
+  }
+
+  
 
 }
 
@@ -16520,6 +16578,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alpheios-data-models */ "alpheios-data-models");
 /* harmony import */ var alpheios_data_models__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var _storage_indexeddbDriver_indexed_db_object_stores_structure__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/storage/indexeddbDriver/indexed-db-object-stores-structure */ "./storage/indexeddbDriver/indexed-db-object-stores-structure.js");
+/* harmony import */ var _storage_indexeddbDriver_indexed_db_load_process__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @/storage/indexeddbDriver/indexed-db-load-process */ "./storage/indexeddbDriver/indexed-db-load-process.js");
+
 
 
 
@@ -16533,11 +16593,13 @@ class WordItemIndexedDbDriver {
   constructor(userId) {
     this.userId = userId
     this.storageMap = {
+      _loadFirst: 'common',
       common: {
         objectStoreData: {
           name: 'WordListsCommon',
           structure: _storage_indexeddbDriver_indexed_db_object_stores_structure__WEBPACK_IMPORTED_MODULE_1__["default"].WordListsCommon
         },
+        load: _storage_indexeddbDriver_indexed_db_load_process__WEBPACK_IMPORTED_MODULE_2__["default"].loadBaseObject,
         serialize: this._serializeCommon.bind(this),
         delete: this._segmentDeleteQueryByID.bind(this)
       },
@@ -16547,7 +16609,7 @@ class WordItemIndexedDbDriver {
           structure: _storage_indexeddbDriver_indexed_db_object_stores_structure__WEBPACK_IMPORTED_MODULE_1__["default"].WordListsContext
         },
         serialize: this._serializeContext.bind(this),
-        load: this._loadContext,
+        load: _storage_indexeddbDriver_indexed_db_load_process__WEBPACK_IMPORTED_MODULE_2__["default"].loadContext,
         delete: this._segmentDeleteQueryByWordItemID.bind(this)
       },
       shortHomonym: {
@@ -16556,7 +16618,7 @@ class WordItemIndexedDbDriver {
           structure: _storage_indexeddbDriver_indexed_db_object_stores_structure__WEBPACK_IMPORTED_MODULE_1__["default"].WordListsHomonym
         },
         serialize: this._serializeHomonym.bind(this),
-        load: this._loadHomonym,
+        load: _storage_indexeddbDriver_indexed_db_load_process__WEBPACK_IMPORTED_MODULE_2__["default"].loadHomonym,
         delete: this._segmentDeleteQueryByID.bind(this)
       },
       fullHomonym: {
@@ -16565,7 +16627,7 @@ class WordItemIndexedDbDriver {
           structure: _storage_indexeddbDriver_indexed_db_object_stores_structure__WEBPACK_IMPORTED_MODULE_1__["default"].WordListsFullHomonym
         },
         serialize: this._serializeHomonymWithFullDefs.bind(this),
-        load: this._loadHomonym,
+        load: _storage_indexeddbDriver_indexed_db_load_process__WEBPACK_IMPORTED_MODULE_2__["default"].loadHomonym,
         delete: this._segmentDeleteQueryByID.bind(this)
       }
     }
@@ -16589,9 +16651,12 @@ class WordItemIndexedDbDriver {
    * db segments getter
    */
   get segments() {
-    return Object.keys(this.storageMap)
+    return Object.keys(this.storageMap).filter(key => key.substr(0,1) !== '_')
   }
 
+  get segmentsNotFirst () {
+    return this.segments.filter(segment => segment !== this.storageMap._loadFirst)
+  }
   /**
    * objectStores getter
    * @return {Object} the IndexedDb objectStores for the WordItems
@@ -16600,30 +16665,50 @@ class WordItemIndexedDbDriver {
     return this.segments.map(segment => this.storageMap[segment].objectStoreName)
   }
 
-  objectStoreData (segment) {
+  get allObjectStoreData () {
+    return this.segments.map(segment => this.storageMap[segment].objectStoreData)
+  }
+
+  _objectStoreData (segment) {
     return this.storageMap[segment].objectStoreData
   }
 
   _objectStoreName (segment) {
-    return this.objectStoreData(segment).name
+    return this._objectStoreData(segment).name
   }
   
-  /**
-   * load a data model object from the database
-   */
-  load(data) {
-    // make sure when we create from the database
-    // that the currentSession flag is set to false
-    data.currentSession = false
-    return new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["WordItem"](data)
+  _formatQuery (segment, indexName, indexValue, indexType = 'only') {
+    return {
+      objectStoreName: this._objectStoreName(segment),
+      condition: {indexName: indexName, value: indexValue, type: indexType }
+    }
+  }
+
+  loadFirst (data) {
+    return this.storageMap[this.storageMap._loadFirst].load(data)
   }
 
   /**
    * load a segment of a data model object from the database
    */
-  loadSegment(segment, dataObj, data) {
+  loadSegment(segment, worditem, jsonObj) {
     if (this.storageMap[segment].load) {
-      this.storageMap[segment].load(dataObj, data)
+      this.storageMap[segment].load(worditem, jsonObj)
+    }
+  }
+
+  /**
+   * get a query object which retrieves a list of WordItems
+   * @param {Object} params query parameters
+   * @return {Object} IndexedDBQuery object
+   */
+  listItemsQuery(params) {
+    if (params.languageCode) {
+      return this._formatQuery('common', 'listID', this._makeStorageListID(params.languageCode))
+    } else if (params.wordItem) {
+      return this.segmentSelectQuery('common', params.wordItem)
+    } else {
+      throw new Error("Invalid query parameters - missing languageCode")
     }
   }
 
@@ -16634,12 +16719,9 @@ class WordItemIndexedDbDriver {
    * @return {Object} IndexedDBQuery object
    */
   segmentSelectQuery(segment, worditem) {
-    let id = this._makeStorageID(worditem)
-    let index = segment === 'context' ? 'wordItemID' : 'ID'
-    return {
-      objectStoreName: this._objectStoreName(segment),
-      condition: {indexName: index, value: id, type: 'only' }
-    }
+    let ID = this._makeStorageID(worditem)
+    let index = (segment === 'context') ? 'wordItemID' : 'ID'
+    return this._formatQuery(segment, index, ID)
   }
 
   segmentDeleteQuery (segment, worditem) {
@@ -16648,28 +16730,19 @@ class WordItemIndexedDbDriver {
 
   _segmentDeleteQueryByID(segment, worditem) {
     let ID = this._makeStorageID(worditem)
-    return {
-      objectStoreName: this._objectStoreName(segment),
-      condition: { indexName: 'ID', value: ID, type: 'only' }
-    }
+    return this._formatQuery(segment, 'ID', ID)
   }
 
   _segmentDeleteQueryByWordItemID(segment, worditem) {
     let ID = this._makeStorageID(worditem)
-    return {
-      objectStoreName: this._objectStoreName(segment),
-      condition: { indexName: 'wordItemID', value: ID, type: 'only' }
-    }
+    return this._formatQuery(segment, 'wordItemID', ID)
   }
 
 
   segmentDeleteManyQuery(segment, params) {
     if (params.languageCode) {
       let listID = this.userId + '-' + params.languageCode
-      return  {
-        objectStoreName: this._objectStoreName(segment),
-        condition: { indexName: 'listID', value: listID, type: 'only' }
-      }
+      return this._formatQuery(segment, 'listID', listID)
     } else {
       throw new Error("Invalid query parameters - missing languageCode")
     }
@@ -16690,59 +16763,8 @@ class WordItemIndexedDbDriver {
   }
 
   /**
-   * get a query object which retrieves a list of WordItems
-   * @param {Object} params query parameters
-   * @return {Object} IndexedDBQuery object
-   */
-  listQuery(params) {
-    if (params.languageCode) {
-      let listID = this.userId + '-' + params.languageCode
-      return {
-        objectStoreName: this._objectStoreName('common'),
-        condition: {indexName: 'listID', value: listID, type: 'only' }
-      }
-    } else if (params.wordItem) {
-      let id = this.userId + '-' + params.wordItem.languageCode + '-' + params.wordItem.targetWord
-      return {
-        objectStoreName: this._objectStoreName('common'),
-        condition: {indexName: 'ID', value: id, type: 'only' }
-      }
-    } else {
-      throw new Error("Invalid query parameters - missing languageCode")
-    }
-  }
-
-  /**
-   * private method to load the Homonym property of a WordItem
-   */
-  _loadHomonym (worditem, jsonObj) {
-    let jsonHomonym = jsonObj[0].homonym
-    if (jsonHomonym.lexemes && Array.isArray(jsonHomonym.lexemes) && jsonHomonym.lexemes.length >0) {
-      worditem.homonym = alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["WordItem"].readHomonym(jsonObj[0])
-    } else {
-      let languageID = alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["LanguageModelFactory"].getLanguageIdFromCode(jsonObj[0].languageCode)
-      let lexemesForms = jsonHomonym.lemmasList.split(', ')
-      let lexemes = []
-      for (let lexForm of lexemesForms) {
-        lexemes.push(new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["Lexeme"](new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["Lemma"](lexForm, languageID), []))
-      }
-      worditem.homonym = new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["Homonym"](lexemes, jsonHomonym.targetWord)
-    }
-  }
-
-  /**
-   * private method to load the Context property of a WordItem
-   */
-  _loadContext (worditem, jsonObjs) {
-    if (! Array.isArray(jsonObjs)) {
-      jsonObjs = [jsonObjs]  
-    }
-    worditem.context = alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["WordItem"].readContext(jsonObjs)
-  }
-
-  /**
    * private method to convert the common segment to storage
-   */
+  */
   _serializeCommon (worditem) {
     return {
       ID: this._makeStorageID(worditem),
@@ -16793,7 +16815,7 @@ class WordItemIndexedDbDriver {
    * private method to convert the homonym segment to storage
    * @param {WordItem}
    */
-  _serializeHomonym (worditem,addMeaning = false) {
+  _serializeHomonym (worditem, addMeaning = false) {
     let resultHomonym = worditem.homonym && (worditem.homonym instanceof alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["Homonym"]) ? worditem.homonym.convertToJSONObject(addMeaning) : {}
     return {
       ID: this._makeStorageID(worditem),
@@ -16805,13 +16827,25 @@ class WordItemIndexedDbDriver {
     }
   }
 
-  /**
-   * private method to serialize homonymns with full defs
-   * @param {WordItem}
-   */
-  _serializeHomonymWithFullDefs (worditem) {
-    return this._serializeHomonym(worditem,true)
-  }
+
+/**
+ * private method to serialize homonymns with full defs
+ * @param {WordItem}
+ */
+_serializeHomonymWithFullDefs (worditem) {
+  return this._serializeHomonym(worditem,true)
+}
+
+static get currentDate () {
+  let dt = new Date()
+  return dt.getFullYear() + '/'
+      + ((dt.getMonth()+1) < 10 ? '0' : '') + (dt.getMonth()+1)  + '/'
+      + ((dt.getDate() < 10) ? '0' : '') + dt.getDate() + ' @ '
+              + ((dt.getHours() < 10) ? '0' : '') + dt.getHours() + ":"
+              + ((dt.getMinutes() < 10) ? '0' : '') + dt.getMinutes() + ":"
+              + ((dt.getSeconds() < 10) ? '0' : '') + dt.getSeconds()
+
+}
 
   /**
   * private method to create the storage ID for a WordItem
@@ -16820,15 +16854,11 @@ class WordItemIndexedDbDriver {
     return this.userId + '-' + item.languageCode + '-' + item.targetWord
   }
 
-  static get currentDate () {
-    let dt = new Date()
-    return dt.getFullYear() + '/'
-        + ((dt.getMonth()+1) < 10 ? '0' : '') + (dt.getMonth()+1)  + '/'
-        + ((dt.getDate() < 10) ? '0' : '') + dt.getDate() + ' @ '
-                + ((dt.getHours() < 10) ? '0' : '') + dt.getHours() + ":"
-                + ((dt.getMinutes() < 10) ? '0' : '') + dt.getMinutes() + ":"
-                + ((dt.getSeconds() < 10) ? '0' : '') + dt.getSeconds()
-
+  /**
+  * private method to create the storage ID for a WordItem
+  */
+  _makeStorageListID(languageCode) {
+    return this.userId + '-' + languageCode
   }
 
   makeIDCompareWithRemote (item) {
@@ -16840,9 +16870,10 @@ class WordItemIndexedDbDriver {
   }
 
   createFromRemoteData (remoteDataItem) {
-    let wordItem = this.load(remoteDataItem)
-    this._loadContext(wordItem, remoteDataItem.context)
-    this._loadHomonym(wordItem, [ remoteDataItem ])
+    let wordItem = this.loadFirst(remoteDataItem)
+    
+    this.loadSegment('context', wordItem, remoteDataItem.context)
+    this.loadSegment('shortHomonym', wordItem, [ remoteDataItem ])
     return wordItem
   }
 }

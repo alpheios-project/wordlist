@@ -124,26 +124,25 @@ export default class IndexedDBAdapter {
    */
   async query(params) {
     try {
-      let listQuery = this.dbDriver.listQuery(params)
-      let queryResult = await this._getFromStore(listQuery)
+      let listItemsQuery = this.dbDriver.listItemsQuery(params)
+      let listItemsQueryResult = await this._getFromStore(listItemsQuery)
       
       let items = []
-      if (queryResult.length > 0) {
-        for (let item of queryResult) {
-          let modelObj = this.dbDriver.load(item)
-  
-          let segments = this.dbDriver.segments
-          for (let segment of segments) {
-            let query = this.dbDriver.segmentSelectQuery(segment, modelObj)
-  
-            let res = await this._getFromStore(query)
-            if (res.length > 0) {
-              this.dbDriver.loadSegment(segment, modelObj, res)
-            }
+
+      for (let itemQuery of listItemsQueryResult) {
+        let resultObject = this.dbDriver.loadFirst(itemQuery)
+
+        for (let segment of this.dbDriver.segmentsNotFirst) {
+          let query = this.dbDriver.segmentSelectQuery(segment, resultObject)
+
+          let result = await this._getFromStore(query)
+          if (result.length > 0) {
+            this.dbDriver.loadSegment(segment, resultObject, result)
           }
-          items.push(modelObj)
         }
+        items.push(resultObject)
       }
+
       return items
     } catch (error) {
       if (error) {
@@ -223,10 +222,9 @@ export default class IndexedDBAdapter {
    */
   _createObjectStores (db, upgradeTransaction) {
     try {
-      let segments = this.dbDriver.segments
-      for (let segment of segments) {
-        let objectStoreData = this.dbDriver.storageMap[segment].objectStoreData
+      for (let objectStoreData of this.dbDriver.allObjectStoreData) {
         let objectStore
+
         if (!db.objectStoreNames.contains(objectStoreData.name)) {
           objectStore = db.createObjectStore(objectStoreData.name, { keyPath: objectStoreData.structure.keyPath })
         } else {
@@ -239,6 +237,7 @@ export default class IndexedDBAdapter {
           }
         })
       }
+    
     } catch (error) {
       this.errors.push(error)
     }

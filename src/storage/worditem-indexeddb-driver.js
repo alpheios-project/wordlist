@@ -1,5 +1,7 @@
 import { Homonym, WordItem, Lexeme, Lemma, LanguageModelFactory as LMF } from 'alpheios-data-models'
 
+import IndexedDBObjectStoresStructure from '@/storage/indexeddbDriver/indexed-db-object-stores-structure'
+
 export default class WordItemIndexedDbDriver {
 
   /**
@@ -10,24 +12,36 @@ export default class WordItemIndexedDbDriver {
     this.userId = userId
     this.storageMap = {
       common: {
-        objectStoreName: 'WordListsCommon',
+        objectStoreData: {
+          name: 'WordListsCommon',
+          structure: IndexedDBObjectStoresStructure.WordListsCommon
+        },
         serialize: this._serializeCommon.bind(this),
         delete: this._segmentDeleteQueryByID.bind(this)
       },
       context: {
-        objectStoreName: 'WordListsContext',
+        objectStoreData: {
+          name: 'WordListsContext',
+          structure: IndexedDBObjectStoresStructure.WordListsContext
+        },
         serialize: this._serializeContext.bind(this),
         load: this._loadContext,
         delete: this._segmentDeleteQueryByWordItemID.bind(this)
       },
       shortHomonym: {
-        objectStoreName: 'WordListsHomonym',
+        objectStoreData: {
+          name: 'WordListsHomonym',
+          structure: IndexedDBObjectStoresStructure.WordListsHomonym
+        },
         serialize: this._serializeHomonym.bind(this),
         load: this._loadHomonym,
         delete: this._segmentDeleteQueryByID.bind(this)
       },
       fullHomonym: {
-        objectStoreName: 'WordListsFullHomonym',
+        objectStoreData: {
+          name: 'WordListsFullHomonym',
+          structure: IndexedDBObjectStoresStructure.WordListsFullHomonym
+        },
         serialize: this._serializeHomonymWithFullDefs.bind(this),
         load: this._loadHomonym,
         delete: this._segmentDeleteQueryByID.bind(this)
@@ -64,55 +78,14 @@ export default class WordItemIndexedDbDriver {
     return this.segments.map(segment => this.storageMap[segment].objectStoreName)
   }
 
-  /**
-   * private method - creates a template for a new Object Store
-   */
-  _objectStoreTemplate () {
-    return {
-      keyPath: 'ID',
-      indexes: [
-        { indexName: 'ID', keyPath: 'ID', unique: true},
-        { indexName: 'listID', keyPath: 'listID', unique: false},
-        { indexName: 'userID', keyPath: 'userID', unique: false},
-        { indexName: 'languageCode', keyPath: 'languageCode', unique: false},
-        { indexName: 'targetWord', keyPath: 'targetWord', unique: false}
-      ]
-    }
+  objectStoreData (segment) {
+    return this.storageMap[segment].objectStoreData
   }
 
-  /**
-   * getter for the Common segment store
-   */
-  get WordListsCommon () {
-    return this._objectStoreTemplate()
+  _objectStoreName (segment) {
+    return this.objectStoreData(segment).name
   }
-
-  /**
-   * getter for the Context segment store
-   */
-  get WordListsContext () {
-    let structure = this._objectStoreTemplate()
-    structure.indexes.push(
-      { indexName: 'wordItemID', keyPath: 'wordItemID', unique: false}
-    )
-    return structure
-  }
-
-  /**
-   * getter for the Homonym segment store
-   */
-  get WordListsHomonym () {
-    return this._objectStoreTemplate()
-  }
-
-  /**
-   * getter for the Full Homonym segment store
-   */
-  get WordListsFullHomonym () {
-    return this._objectStoreTemplate()
-  }
-
-
+  
   /**
    * load a data model object from the database
    */
@@ -138,11 +111,11 @@ export default class WordItemIndexedDbDriver {
    * @param {WordItem} worditem the worditem object
    * @return {Object} IndexedDBQuery object
    */
-  segmentQuery(segment, worditem) {
+  segmentSelectQuery(segment, worditem) {
     let id = this._makeStorageID(worditem)
     let index = segment === 'context' ? 'wordItemID' : 'ID'
     return {
-      objectStoreName: this.storageMap[segment].objectStoreName,
+      objectStoreName: this._objectStoreName(segment),
       condition: {indexName: index, value: id, type: 'only' }
     }
   }
@@ -154,7 +127,7 @@ export default class WordItemIndexedDbDriver {
   _segmentDeleteQueryByID(segment, worditem) {
     let ID = this._makeStorageID(worditem)
     return {
-      objectStoreName: this.storageMap[segment].objectStoreName,
+      objectStoreName: this._objectStoreName(segment),
       condition: { indexName: 'ID', value: ID, type: 'only' }
     }
   }
@@ -162,7 +135,7 @@ export default class WordItemIndexedDbDriver {
   _segmentDeleteQueryByWordItemID(segment, worditem) {
     let ID = this._makeStorageID(worditem)
     return {
-      objectStoreName: this.storageMap[segment].objectStoreName,
+      objectStoreName: this._objectStoreName(segment),
       condition: { indexName: 'wordItemID', value: ID, type: 'only' }
     }
   }
@@ -172,7 +145,7 @@ export default class WordItemIndexedDbDriver {
     if (params.languageCode) {
       let listID = this.userId + '-' + params.languageCode
       return  {
-        objectStoreName: this.storageMap[segment].objectStoreName,
+        objectStoreName: this._objectStoreName(segment),
         condition: { indexName: 'listID', value: listID, type: 'only' }
       }
     } else {
@@ -189,7 +162,7 @@ export default class WordItemIndexedDbDriver {
       dataItems = dataItems.concat(resDataItem)
     }
     return {
-      objectStoreName: this.storageMap[segment].objectStoreName,
+      objectStoreName: this._objectStoreName(segment),
       dataItems: dataItems
     }
   }
@@ -203,13 +176,13 @@ export default class WordItemIndexedDbDriver {
     if (params.languageCode) {
       let listID = this.userId + '-' + params.languageCode
       return {
-        objectStoreName: this.storageMap.common.objectStoreName,
+        objectStoreName: this._objectStoreName('common'),
         condition: {indexName: 'listID', value: listID, type: 'only' }
       }
     } else if (params.wordItem) {
       let id = this.userId + '-' + params.wordItem.languageCode + '-' + params.wordItem.targetWord
       return {
-        objectStoreName: this.storageMap.common.objectStoreName,
+        objectStoreName: this._objectStoreName('common'),
         condition: {indexName: 'ID', value: id, type: 'only' }
       }
     } else {

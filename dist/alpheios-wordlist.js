@@ -15930,14 +15930,12 @@ class IndexedDBAdapter {
    */
   async create(data) {
     try {
-      // console.info('***************create', data)
       let segments = this.dbDriver.segments
       let updated
       // iterate through the declared segmentation of the object
       // and store accordingly
       // TODO we need transaction handling here
       for (let segment of segments) {
-        // console.info('***************create segment', segment, data)
         updated = await this.update(data, {segment: segment})
         if (!updated) {
           throw new Error(`Unknown problems with updating segment ${segment}`)
@@ -16005,7 +16003,6 @@ class IndexedDBAdapter {
    * @return {Boolean} true if update succeeded false if not
    */
   async update (data, params) {
-    // console.info('***************update start', data, params)
     try {
       let segments = [params.segment]
       let result
@@ -16015,17 +16012,14 @@ class IndexedDBAdapter {
       }
       for (let segment of segments) {
         let query = this.dbDriver.updateSegmentQuery(segment, data)
-        // console.info('***************update q', segment, query, query.dataItems.length)
         if (query.dataItems.length > 0) {
          result = await this._set(query)
-         // console.info('***************update end', segment, result)
         } else {
           result = true
         }
       }
       return result
     } catch (error) {
-      console.error('***************update', error)
       if (error) {
         this.errors.push(error)
       }
@@ -16040,7 +16034,6 @@ class IndexedDBAdapter {
    */
   async query(params) {
     try {
-      // console.info('*********************IndexedDB query', params)
       let listQuery = this.dbDriver.listQuery(params)
       let queryResult = await this._getFromStore(listQuery)
       
@@ -16051,7 +16044,7 @@ class IndexedDBAdapter {
   
           let segments = this.dbDriver.segments
           for (let segment of segments) {
-            let query = this.dbDriver.segmentQuery(segment, modelObj)
+            let query = this.dbDriver.segmentSelectQuery(segment, modelObj)
   
             let res = await this._getFromStore(query)
             if (res.length > 0) {
@@ -16140,22 +16133,22 @@ class IndexedDBAdapter {
    */
   _createObjectStores (db, upgradeTransaction) {
     try {
-      let objectStores = this.dbDriver.objectStores
-      objectStores.forEach(objectStoreName => {
-        const objectStoreStructure = this.dbDriver[objectStoreName]
-
+      let segments = this.dbDriver.segments
+      for (let segment of segments) {
+        let objectStoreData = this.dbDriver.storageMap[segment].objectStoreData
         let objectStore
-        if (!db.objectStoreNames.contains(objectStoreName)) {
-          objectStore = db.createObjectStore(objectStoreName, { keyPath: objectStoreStructure.keyPath })
+        if (!db.objectStoreNames.contains(objectStoreData.name)) {
+          objectStore = db.createObjectStore(objectStoreData.name, { keyPath: objectStoreData.structure.keyPath })
         } else {
-          objectStore = upgradeTransaction.objectStore(objectStoreName)
+          objectStore = upgradeTransaction.objectStore(objectStoreData.name)
         }
-        objectStoreStructure.indexes.forEach(index => {
+
+        objectStoreData.structure.indexes.forEach(index => {
           if (!objectStore.indexNames.contains(index.indexName)) {
             objectStore.createIndex(index.indexName, index.keyPath, { unique: index.unique })
           }
         })
-      })
+      }
     } catch (error) {
       this.errors.push(error)
     }
@@ -16179,7 +16172,6 @@ class IndexedDBAdapter {
         resolve(rv)
       }
       request.onerror = (event) => {
-        // console.info('***************_set', event.target)
         idba.errors.push(event.target)
         reject()
       }
@@ -16203,7 +16195,6 @@ class IndexedDBAdapter {
         const transaction = db.transaction([data.objectStoreName], 'readwrite')
         transaction.onerror = (event) => {
           idba.errors.push(event.target)
-          // console.info('***************_putItem 1', event.target)
           reject()
         }
         const objectStore = transaction.objectStore(data.objectStoreName)
@@ -16217,7 +16208,6 @@ class IndexedDBAdapter {
             }
           }
           requestPut.onerror = () => {
-            // console.info('***************_putItem 2', event.target)
             idba.errors.push(event.target)
             reject()
           }
@@ -16226,7 +16216,6 @@ class IndexedDBAdapter {
           resolve(true)
         }
       } catch (error) {
-        // console.info('***************_putItem 3', error)
         if (error) {
           idba.errors.push(error)
           return
@@ -16329,6 +16318,69 @@ class IndexedDBAdapter {
     })
 
     return promiseOpenDB
+  }
+
+}
+
+/***/ }),
+
+/***/ "./storage/indexeddbDriver/indexed-db-object-stores-structure.js":
+/*!***********************************************************************!*\
+  !*** ./storage/indexeddbDriver/indexed-db-object-stores-structure.js ***!
+  \***********************************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return IndexedDBObjectStoresStructure; });
+class IndexedDBObjectStoresStructure {
+  /**
+   * private method - creates a template for a new Object Store
+   */
+ static _objectStoreTemplate () {
+    return {
+      keyPath: 'ID',
+      indexes: [
+        { indexName: 'ID', keyPath: 'ID', unique: true},
+        { indexName: 'listID', keyPath: 'listID', unique: false},
+        { indexName: 'userID', keyPath: 'userID', unique: false},
+        { indexName: 'languageCode', keyPath: 'languageCode', unique: false},
+        { indexName: 'targetWord', keyPath: 'targetWord', unique: false}
+      ]
+    }
+  }
+
+   /**
+   * getter for the Common segment store
+   */
+  static get WordListsCommon () {
+    return IndexedDBObjectStoresStructure._objectStoreTemplate()
+  }
+
+  /**
+   * getter for the Context segment store
+   */
+  static get WordListsContext () {
+    let structure = IndexedDBObjectStoresStructure._objectStoreTemplate()
+    structure.indexes.push(
+      { indexName: 'wordItemID', keyPath: 'wordItemID', unique: false}
+    )
+    return structure
+  }
+
+  /**
+   * getter for the Homonym segment store
+   */
+  static get WordListsHomonym () {
+    return IndexedDBObjectStoresStructure._objectStoreTemplate()
+  }
+
+  /**
+   * getter for the Full Homonym segment store
+   */
+  static get WordListsFullHomonym () {
+    return IndexedDBObjectStoresStructure._objectStoreTemplate()
   }
 
 }
@@ -16467,6 +16519,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return WordItemIndexedDbDriver; });
 /* harmony import */ var alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alpheios-data-models */ "alpheios-data-models");
 /* harmony import */ var alpheios_data_models__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _storage_indexeddbDriver_indexed_db_object_stores_structure__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @/storage/indexeddbDriver/indexed-db-object-stores-structure */ "./storage/indexeddbDriver/indexed-db-object-stores-structure.js");
+
+
 
 
 class WordItemIndexedDbDriver {
@@ -16479,24 +16534,36 @@ class WordItemIndexedDbDriver {
     this.userId = userId
     this.storageMap = {
       common: {
-        objectStoreName: 'WordListsCommon',
+        objectStoreData: {
+          name: 'WordListsCommon',
+          structure: _storage_indexeddbDriver_indexed_db_object_stores_structure__WEBPACK_IMPORTED_MODULE_1__["default"].WordListsCommon
+        },
         serialize: this._serializeCommon.bind(this),
         delete: this._segmentDeleteQueryByID.bind(this)
       },
       context: {
-        objectStoreName: 'WordListsContext',
+        objectStoreData: {
+          name: 'WordListsContext',
+          structure: _storage_indexeddbDriver_indexed_db_object_stores_structure__WEBPACK_IMPORTED_MODULE_1__["default"].WordListsContext
+        },
         serialize: this._serializeContext.bind(this),
         load: this._loadContext,
         delete: this._segmentDeleteQueryByWordItemID.bind(this)
       },
       shortHomonym: {
-        objectStoreName: 'WordListsHomonym',
+        objectStoreData: {
+          name: 'WordListsHomonym',
+          structure: _storage_indexeddbDriver_indexed_db_object_stores_structure__WEBPACK_IMPORTED_MODULE_1__["default"].WordListsHomonym
+        },
         serialize: this._serializeHomonym.bind(this),
         load: this._loadHomonym,
         delete: this._segmentDeleteQueryByID.bind(this)
       },
       fullHomonym: {
-        objectStoreName: 'WordListsFullHomonym',
+        objectStoreData: {
+          name: 'WordListsFullHomonym',
+          structure: _storage_indexeddbDriver_indexed_db_object_stores_structure__WEBPACK_IMPORTED_MODULE_1__["default"].WordListsFullHomonym
+        },
         serialize: this._serializeHomonymWithFullDefs.bind(this),
         load: this._loadHomonym,
         delete: this._segmentDeleteQueryByID.bind(this)
@@ -16533,46 +16600,20 @@ class WordItemIndexedDbDriver {
     return this.segments.map(segment => this.storageMap[segment].objectStoreName)
   }
 
-  /**
-   * getter for the Common segment store
-   */
-  get WordListsCommon () {
-    return this._objectStoreTemplate()
+  objectStoreData (segment) {
+    return this.storageMap[segment].objectStoreData
   }
 
-  /**
-   * getter for the Context segment store
-   */
-  get WordListsContext () {
-    let structure = this._objectStoreTemplate()
-    structure.indexes.push(
-      { indexName: 'wordItemID', keyPath: 'wordItemID', unique: false}
-    )
-    return structure
+  _objectStoreName (segment) {
+    return this.objectStoreData(segment).name
   }
-
-  /**
-   * getter for the Homonym segment store
-   */
-  get WordListsHomonym () {
-    return this._objectStoreTemplate()
-  }
-
-  /**
-   * getter for the Full Homonym segment store
-   */
-  get WordListsFullHomonym () {
-    return this._objectStoreTemplate()
-  }
-
-
+  
   /**
    * load a data model object from the database
    */
   load(data) {
     // make sure when we create from the database
     // that the currentSession flag is set to false
-    console.info('**********************load data', data)
     data.currentSession = false
     return new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["WordItem"](data)
   }
@@ -16580,9 +16621,9 @@ class WordItemIndexedDbDriver {
   /**
    * load a segment of a data model object from the database
    */
-  loadSegment(segment,dataObj,data) {
+  loadSegment(segment, dataObj, data) {
     if (this.storageMap[segment].load) {
-      this.storageMap[segment].load(dataObj,data)
+      this.storageMap[segment].load(dataObj, data)
     }
   }
 
@@ -16592,23 +16633,23 @@ class WordItemIndexedDbDriver {
    * @param {WordItem} worditem the worditem object
    * @return {Object} IndexedDBQuery object
    */
-  segmentQuery(segment,worditem) {
+  segmentSelectQuery(segment, worditem) {
     let id = this._makeStorageID(worditem)
     let index = segment === 'context' ? 'wordItemID' : 'ID'
     return {
-      objectStoreName: this.storageMap[segment].objectStoreName,
+      objectStoreName: this._objectStoreName(segment),
       condition: {indexName: index, value: id, type: 'only' }
     }
   }
 
-  segmentDeleteQuery (segment,worditem) {
+  segmentDeleteQuery (segment, worditem) {
     return this.storageMap[segment].delete(segment,worditem)
   }
 
-  _segmentDeleteQueryByID(segment,worditem) {
+  _segmentDeleteQueryByID(segment, worditem) {
     let ID = this._makeStorageID(worditem)
     return {
-      objectStoreName: this.storageMap[segment].objectStoreName,
+      objectStoreName: this._objectStoreName(segment),
       condition: { indexName: 'ID', value: ID, type: 'only' }
     }
   }
@@ -16616,7 +16657,7 @@ class WordItemIndexedDbDriver {
   _segmentDeleteQueryByWordItemID(segment, worditem) {
     let ID = this._makeStorageID(worditem)
     return {
-      objectStoreName: this.storageMap[segment].objectStoreName,
+      objectStoreName: this._objectStoreName(segment),
       condition: { indexName: 'wordItemID', value: ID, type: 'only' }
     }
   }
@@ -16626,7 +16667,7 @@ class WordItemIndexedDbDriver {
     if (params.languageCode) {
       let listID = this.userId + '-' + params.languageCode
       return  {
-        objectStoreName: this.storageMap[segment].objectStoreName,
+        objectStoreName: this._objectStoreName(segment),
         condition: { indexName: 'listID', value: listID, type: 'only' }
       }
     } else {
@@ -16643,7 +16684,7 @@ class WordItemIndexedDbDriver {
       dataItems = dataItems.concat(resDataItem)
     }
     return {
-      objectStoreName: this.storageMap[segment].objectStoreName,
+      objectStoreName: this._objectStoreName(segment),
       dataItems: dataItems
     }
   }
@@ -16657,13 +16698,13 @@ class WordItemIndexedDbDriver {
     if (params.languageCode) {
       let listID = this.userId + '-' + params.languageCode
       return {
-        objectStoreName: this.storageMap.common.objectStoreName,
+        objectStoreName: this._objectStoreName('common'),
         condition: {indexName: 'listID', value: listID, type: 'only' }
       }
     } else if (params.wordItem) {
       let id = this.userId + '-' + params.wordItem.languageCode + '-' + params.wordItem.targetWord
       return {
-        objectStoreName: this.storageMap.common.objectStoreName,
+        objectStoreName: this._objectStoreName('common'),
         condition: {indexName: 'ID', value: id, type: 'only' }
       }
     } else {
@@ -16777,22 +16818,6 @@ class WordItemIndexedDbDriver {
   */
   _makeStorageID(item) {
     return this.userId + '-' + item.languageCode + '-' + item.targetWord
-  }
-
-  /**
-   * private method - creates a template for a new Object Store
-   */
-  _objectStoreTemplate () {
-    return {
-      keyPath: 'ID',
-      indexes: [
-        { indexName: 'ID', keyPath: 'ID', unique: true},
-        { indexName: 'listID', keyPath: 'listID', unique: false},
-        { indexName: 'userID', keyPath: 'userID', unique: false},
-        { indexName: 'languageCode', keyPath: 'languageCode', unique: false},
-        { indexName: 'targetWord', keyPath: 'targetWord', unique: false}
-      ]
-    }
   }
 
   static get currentDate () {

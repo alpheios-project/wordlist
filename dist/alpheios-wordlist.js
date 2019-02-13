@@ -16662,7 +16662,7 @@ class WordItemIndexedDbDriver {
    * @return {Object} the IndexedDb objectStores for the WordItems
    */
   get objectStores () {
-    return this.segments.map(segment => this.storageMap[segment].objectStoreName)
+    return this.allObjectStoreData.map(objectStoreData => objectStoreData.name)
   }
 
   get allObjectStoreData () {

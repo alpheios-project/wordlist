@@ -16795,7 +16795,7 @@ class WordItemIndexedDbDriver {
     if (params.languageCode) {
       return this._formatQuery('common', this._selectByListID(params.languageCode))
     } else if (params.wordItem) {
-      return this._formatQuery('common', this._selectByID(worditem))
+      return this._formatQuery('common', this._selectByID(params.wordItem))
     } else {
       throw new Error("Invalid query parameters - missing languageCode")
     }

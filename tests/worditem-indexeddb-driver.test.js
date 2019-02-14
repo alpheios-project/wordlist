@@ -2,8 +2,8 @@
 /* eslint-disable no-unused-vars */
 import IndexedDB from 'fake-indexeddb'
 import IDBKeyRange from 'fake-indexeddb/lib/FDBKeyRange'
-
-import { WordItem } from 'alpheios-data-models'
+import { ClientAdapters } from 'alpheios-client-adapters'
+import { WordItem, Constants } from 'alpheios-data-models'
 
 import WordItemIndexedDbDriver from '@/storage/worditem-indexeddb-driver'
 
@@ -55,14 +55,77 @@ describe('worditem-indexeddb-driver.test.js', () => {
     let checkSegments = ['common', 'context', 'shortHomonym', 'fullHomonym']
     expect(dbDriverLocal.segments).toEqual(checkSegments)
   })
+  
+  it('4 WordItemIndexedDbDriver - segmentsNotFirst method should return segments that add data to existed wordItem', () => {
+    let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
+    
+    let checkSegments = ['context', 'shortHomonym', 'fullHomonym']
+    expect(dbDriverLocal.segmentsNotFirst).toEqual(checkSegments)
+  })
 
-  it('4 WordItemIndexedDbDriver - objectStores method should return all objectStores from storageMap', () => {
+  it('5 WordItemIndexedDbDriver - objectStores method should return all objectStores from storageMap', () => {
     let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
     let checkObjectStores = ['WordListsCommon', 'WordListsContext', 'WordListsHomonym', 'WordListsFullHomonym']
     expect(dbDriverLocal.objectStores).toEqual(checkObjectStores)
   })
 
-  it('5 WordItemIndexedDbDriver - WordListsCommon defines key and index fields of the objectStore', () => {
+  it('6 WordItemIndexedDbDriver - allObjectStoreData method should return all objectStoresData from storageMap', () => {
+    let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
+    let checkObjectStoreData = Object.keys(dbDriverLocal.storageMap).filter(key => dbDriverLocal.storageMap[key].type === 'segment').map(key => dbDriverLocal.storageMap[key].objectStoreData)
+    expect(dbDriverLocal.allObjectStoreData).toEqual(checkObjectStoreData)
+  })
+
+  it('7 WordItemIndexedDbDriver - _objectStoreData returns objectStoreData for a segment argument', () => {
+    let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
+    let checkObjectStoreData = dbDriverLocal._objectStoreData('common')
+    expect(checkObjectStoreData.name).toEqual('WordListsCommon')
+    expect(checkObjectStoreData.structure).toBeDefined()
+  })
+
+  it('8 WordItemIndexedDbDriver - _formatQuery returns object for creating IndexedDB request', () => {
+    let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
+    let indexData = {
+      indexName: 'fooName',
+      value: 'fooValue',
+      type: 'fooType'
+    }
+    expect(dbDriverLocal._formatQuery('common', indexData)).toEqual({
+      objectStoreName: 'WordListsCommon',
+      condition: indexData
+    })
+  })
+  
+  it('9 WordItemIndexedDbDriver - _selectByID returns object for creating index condition by ID', () => {
+    let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
+    let testWordItem = { languageCode: 'lat', targetWord: 'foo' }
+    expect(dbDriverLocal._selectByID(testWordItem)).toEqual({
+      indexName: 'ID',
+      value: dbDriverLocal._makeStorageID(testWordItem),
+      type: 'only'
+    })
+  })
+
+  it('10 WordItemIndexedDbDriver - _selectByWordItemID returns object for creating index condition by wordItemID', () => {
+    let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
+    let testWordItem = { languageCode: 'lat', targetWord: 'foo' }
+    expect(dbDriverLocal._selectByWordItemID(testWordItem)).toEqual({
+      indexName: 'wordItemID',
+      value: dbDriverLocal._makeStorageID(testWordItem),
+      type: 'only'
+    })
+  })
+
+  it('11 WordItemIndexedDbDriver - _selectByListID returns object for creating index condition by listID', () => {
+    let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
+    let testWordItem = { languageCode: 'lat', targetWord: 'foo' }
+    expect(dbDriverLocal._selectByListID(testWordItem)).toEqual({
+      indexName: 'listID',
+      value: dbDriverLocal._makeStorageListID(testWordItem),
+      type: 'only'
+    })
+  })
+
+  it.skip('8 WordItemIndexedDbDriver - WordListsCommon defines key and index fields of the objectStore', () => {
     let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
     let checkStructure = dbDriverLocal.storageMap.common.objectStoreData.structure
     expect(typeof checkStructure).toEqual('object')
@@ -72,7 +135,7 @@ describe('worditem-indexeddb-driver.test.js', () => {
     expect(checkStructure.indexes.length).toBeGreaterThan(0)
   })
 
-  it('6 WordItemIndexedDbDriver - WordListsContext defines key and index fields of the objectStore', () => {
+  it.skip('6 WordItemIndexedDbDriver - WordListsContext defines key and index fields of the objectStore', () => {
     let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
 
     let checkStructure = dbDriverLocal.storageMap.context.objectStoreData.structure
@@ -83,7 +146,7 @@ describe('worditem-indexeddb-driver.test.js', () => {
     expect(checkStructure.indexes.length).toBeGreaterThan(0)
   })
 
-  it('7 WordItemIndexedDbDriver - WordListsHomonym defines key and index fields of the objectStore', () => {
+  it.skip('7 WordItemIndexedDbDriver - WordListsHomonym defines key and index fields of the objectStore', () => {
     let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
 
     let checkStructure = dbDriverLocal.storageMap.shortHomonym.objectStoreData.structure
@@ -94,7 +157,7 @@ describe('worditem-indexeddb-driver.test.js', () => {
     expect(checkStructure.indexes.length).toBeGreaterThan(0)
   })
 
-  it('8 WordItemIndexedDbDriver - WordListsFullHomonym defines key and index fields of the objectStore', () => {
+  it.skip('8 WordItemIndexedDbDriver - WordListsFullHomonym defines key and index fields of the objectStore', () => {
     let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
 
     let checkStructure = dbDriverLocal.storageMap.fullHomonym.objectStoreData.structure
@@ -105,7 +168,7 @@ describe('worditem-indexeddb-driver.test.js', () => {
     expect(checkStructure.indexes.length).toBeGreaterThan(0)
   })
 
-  it('9 WordItemIndexedDbDriver - loadFirst method returns a WordItem with currentSession = false', () => {
+  it('12 WordItemIndexedDbDriver - loadFirst method returns a WordItem with currentSession = false', () => {
     let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
 
     let testData = {
@@ -123,7 +186,7 @@ describe('worditem-indexeddb-driver.test.js', () => {
     expect(loadResult.currentSession).toBeFalsy()
   })
 
-  it('10 WordItemIndexedDbDriver - loadSegment method executes loadMethod specific for the segment from storageMap', () => {
+  it('13 WordItemIndexedDbDriver - loadSegment method executes loadMethod specific for the segment from storageMap', () => {
     let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
 
     dbDriverLocal.storageMap.context.load = jest.fn()
@@ -142,7 +205,33 @@ describe('worditem-indexeddb-driver.test.js', () => {
     expect(dbDriverLocal.storageMap.fullHomonym.load).toHaveBeenCalledWith('fooDataObject', 'foodata')
   })
 
-  it('11 WordItemIndexedDbDriver - segmentSelectQuery method returns settings for getting data for an objectStore', () => {
+  it('14 WordItemIndexedDbDriver - listItemsQuery method creates Query from common segment by listID if params has languageCode', () => {
+    let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
+    dbDriverLocal._formatQuery = jest.fn()
+    dbDriverLocal.listItemsQuery({ languageCode: 'lat' })
+    expect(dbDriverLocal._formatQuery).toHaveBeenCalledWith('common', dbDriverLocal._selectByListID('lat'))
+  })
+
+  it('15 WordItemIndexedDbDriver - listItemsQuery method creates Query from common segment by ID if params has wordItem', () => {
+    let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
+    dbDriverLocal._formatQuery = jest.fn()
+    let testWordItem = { languageCode: 'lat', targetWord: 'foo' }
+
+    dbDriverLocal.listItemsQuery({ wordItem: testWordItem })
+    expect(dbDriverLocal._formatQuery).toHaveBeenCalledWith('common', dbDriverLocal._selectByID(testWordItem))
+  })
+
+  it('16 WordItemIndexedDbDriver - listItemsQuery method throws an error if params has no languageCode and wordItem', () => {
+    let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
+    dbDriverLocal._formatQuery = jest.fn()
+
+    expect(function () {
+      let l = dbDriverLocal.listItemsQuery({})
+      console.log(l)
+    }).toThrowError(/Invalid query parameters/)
+  })
+
+  it('17 WordItemIndexedDbDriver - segmentSelectQuery method returns settings for getting data for an objectStore', () => {
     let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
     let testWordItem = new WordItem({
       targetWord: 'caeli', 
@@ -170,7 +259,118 @@ describe('worditem-indexeddb-driver.test.js', () => {
     expect(result.condition.indexName).toEqual('ID')
   })
 
-  it('12 WordItemIndexedDbDriver - segmentDeleteQuery method returns settings for getting data for an objectStore', () => {
+  it('18 WordItemIndexedDbDriver - segmentSelectQuery method executes select method of the current segment', () => {
+    let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
+    dbDriverLocal.storageMap['common'].select = jest.fn()
 
+    dbDriverLocal.segmentSelectQuery('common', 'fooWorditem')
+    expect(dbDriverLocal.storageMap['common'].select).toHaveBeenCalledWith('common', 'fooWorditem')
   })
+
+  it('19 WordItemIndexedDbDriver - segmentDeleteQuery method executes delete method of the current segment', () => {
+    let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
+    dbDriverLocal.storageMap['common'].delete = jest.fn()
+
+    dbDriverLocal.segmentDeleteQuery('common', 'fooWorditem')
+    expect(dbDriverLocal.storageMap['common'].delete).toHaveBeenCalledWith('common', 'fooWorditem')
+  })
+
+  it('20 WordItemIndexedDbDriver - _segmentSelectQueryByWordItemID method executes _formatQuery', () => {
+    let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
+    let testWordItem = new WordItem({
+      targetWord: 'caeli', 
+      languageCode: 'lat'
+    })
+
+    dbDriverLocal._formatQuery = jest.fn()
+
+    dbDriverLocal._segmentSelectQueryByWordItemID('common', testWordItem)
+    expect(dbDriverLocal._formatQuery).toHaveBeenCalledWith('common', dbDriverLocal._selectByWordItemID(testWordItem))
+  })
+
+  it('21 WordItemIndexedDbDriver - _segmentSelectQueryByID method executes _formatQuery', () => {
+    let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
+    let testWordItem = new WordItem({
+      targetWord: 'caeli', 
+      languageCode: 'lat'
+    })
+
+    dbDriverLocal._formatQuery = jest.fn()
+
+    dbDriverLocal._segmentSelectQueryByID('common', testWordItem)
+    expect(dbDriverLocal._formatQuery).toHaveBeenCalledWith('common', dbDriverLocal._selectByID(testWordItem))
+  })
+
+  it('22 WordItemIndexedDbDriver - segmentDeleteManyQuery method executes _formatQuery', () => {
+    let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
+
+    dbDriverLocal._formatQuery = jest.fn()
+
+    dbDriverLocal.segmentDeleteManyQuery('common', { languageCode: 'lat' })
+    expect(dbDriverLocal._formatQuery).toHaveBeenCalledWith('common', dbDriverLocal._selectByListID('lat'))
+  })
+
+  it('22 WordItemIndexedDbDriver - segmentDeleteManyQuery method throws Error if there is no languageCode in params', () => {
+    let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
+    expect(function () {
+      let l = dbDriverLocal.segmentDeleteManyQuery('common', {})
+      console.log(l)
+    }).toThrowError(/Invalid query parameters/)
+  })
+
+  it('23 WordItemIndexedDbDriver - updateSegmentQuery method returns objectStoreName and dataItems for updating', () => {
+    let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
+
+    let res = dbDriverLocal.updateSegmentQuery('common', {})
+    expect(res.objectStoreName).toBeDefined()
+    expect(res.dataItems).toBeDefined()
+    expect(Array.isArray(res.dataItems)).toBeTruthy()
+  })
+
+  it('24 WordItemIndexedDbDriver - _serializeCommon method returns jsonObj with properties common segment', () => {
+    let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
+    let testWordItem = new WordItem({
+      targetWord: 'caeli', 
+      languageCode: 'lat',
+      important: false
+    })
+
+    let res = dbDriverLocal._serializeCommon(testWordItem)[0]
+    expect(res.ID).toBeDefined()
+    expect(res.listID).toBeDefined()
+    expect(res.userID).toBeDefined()
+    expect(res.languageCode).toEqual('lat')
+    expect(res.targetWord).toEqual('caeli')
+    expect(res.important).toBeFalsy()
+    expect(res.createdDT).toBeDefined()
+  })
+
+  it('25 WordItemIndexedDbDriver - _serializeHomonym method returns jsonObj with homonym properties of WordItem', async () => {
+    let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
+
+    let adapterTuftsRes = await ClientAdapters.morphology.tufts({
+      method: 'getHomonym',
+      params: {
+        languageID: Constants.LANG_LATIN,
+        word: 'caeli'
+      }
+    })
+    let testHomonym = adapterTuftsRes.result
+
+    let testWordItem = new WordItem({
+      targetWord: 'caeli', 
+      languageCode: 'lat',
+      important: false,
+      homonym: testHomonym
+    })
+
+    let res = dbDriverLocal._serializeHomonym(testWordItem)[0]
+    expect(res.ID).toBeDefined()
+    expect(res.listID).toBeDefined()
+    expect(res.userID).toBeDefined()
+    expect(res.languageCode).toEqual('lat')
+    expect(res.targetWord).toEqual('caeli')
+    expect(res.homonym).toBeDefined()
+  })
+  
 })

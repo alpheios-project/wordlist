@@ -19,6 +19,7 @@ export default class IndexedDBLoadProcess {
       jsonObjs = [jsonObjs]  
     }
     worditem.context = WordItem.readContext(jsonObjs)
+    return worditem
   }
 
   /**
@@ -36,6 +37,7 @@ export default class IndexedDBLoadProcess {
         lexemes.push(new Lexeme(new Lemma(lexForm, languageID), []))
       }
       worditem.homonym = new Homonym(lexemes, jsonHomonym.targetWord)
+      return worditem
     }
   }
 

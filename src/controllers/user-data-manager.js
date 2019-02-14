@@ -103,7 +103,7 @@ export default class UserDataManager {
         data: data
       })
     }
-    try {
+    // try {
       this.blocked = true
       let finalConstrName = this.defineConstructorName(data.dataObj.constructor.name)
 
@@ -130,9 +130,11 @@ export default class UserDataManager {
       this.checkRequestQueue()
 
       return updatedLocal && updatedRemote
+    /*
     } catch (error) {
       console.error('Some errors happen on updating data in IndexedDB', error.message)
     }
+    */
   }
 
   /**

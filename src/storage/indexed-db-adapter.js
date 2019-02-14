@@ -93,7 +93,7 @@ export default class IndexedDBAdapter {
    * @return {Boolean} true if update succeeded false if not
    */
   async update (data, params) {
-    try {
+    // try {
       let segments = [params.segment]
       let result
       // if we weren't asked to update a specific segment, update them all
@@ -103,18 +103,20 @@ export default class IndexedDBAdapter {
       for (let segment of segments) {
         let query = this.dbDriver.updateSegmentQuery(segment, data)
         if (query.dataItems.length > 0) {
-         result = await this._set(query)
+          result = await this._set(query)
         } else {
           result = true
         }
       }
       return result
+    /*
     } catch (error) {
       if (error) {
         this.errors.push(error)
       }
       return
     }
+    */
   }
 
   /**

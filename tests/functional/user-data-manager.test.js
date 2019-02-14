@@ -75,8 +75,8 @@ describe('user-data-manager.test.js', () => {
     let udm = new UserDataManager(testUserID)
     let res1 = await udm.update({ dataObj: testWordItem1, params: { segment: 'common' }})
     
-    let res4 = await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }})
-    let localDataItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'lat' }})
-    console.info('localDataItems', localDataItems)
+    // let res4 = await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }})
+    // let localDataItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'lat' }})
+    // console.info('localDataItems', localDataItems)
   })
 })

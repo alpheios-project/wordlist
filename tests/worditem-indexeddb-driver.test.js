@@ -3,7 +3,7 @@
 import IndexedDB from 'fake-indexeddb'
 import IDBKeyRange from 'fake-indexeddb/lib/FDBKeyRange'
 import { ClientAdapters } from 'alpheios-client-adapters'
-import { WordItem, Constants } from 'alpheios-data-models'
+import { WordItem, Constants, TextQuoteSelector } from 'alpheios-data-models'
 
 import WordItemIndexedDbDriver from '@/storage/worditem-indexeddb-driver'
 
@@ -345,6 +345,43 @@ describe('worditem-indexeddb-driver.test.js', () => {
     expect(res.createdDT).toBeDefined()
   })
 
+  it('24 WordItemIndexedDbDriver - _serializeContext method returns jsonObj with properties context segment', () => {
+    let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
+    let context = []
+    let tqselector = TextQuoteSelector.readObject({
+      languageCode: Constants.STR_LANG_CODE_LAT,
+      targetWord: 'caeli',
+      target: {
+        source: 'foosource',
+        selector: {
+          exact: 'caeli',
+          prefix: 'fooprefix',
+          suffix: 'foosuffix'
+        }
+      }
+    })
+    context.push(tqselector)
+
+    let testWordItem = new WordItem({
+      targetWord: 'caeli', 
+      languageCode: 'lat',
+      important: false,
+      context: context
+    })
+
+    let res = dbDriverLocal._serializeContext(testWordItem)[0]
+    expect(res.ID).toBeDefined()
+    expect(res.listID).toBeDefined()
+    expect(res.userID).toBeDefined()
+    expect(res.languageCode).toEqual('lat')
+    expect(res.targetWord).toEqual('caeli')
+    expect(res.wordItemID).toBeDefined()
+    expect(res.target).toBeDefined()
+    expect(res.target.source).toBeDefined()
+    expect(res.target.selector).toBeDefined()
+  })
+  
+
   it('25 WordItemIndexedDbDriver - _serializeHomonym method returns jsonObj with homonym properties of WordItem', async () => {
     let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
 
@@ -372,5 +409,122 @@ describe('worditem-indexeddb-driver.test.js', () => {
     expect(res.targetWord).toEqual('caeli')
     expect(res.homonym).toBeDefined()
   })
-  
+
+  it('26 WordItemIndexedDbDriver - _serializeHomonymWithFullDefs executes _serializeHomonym', async () => {
+    let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
+
+    let adapterTuftsRes = await ClientAdapters.morphology.tufts({
+      method: 'getHomonym',
+      params: {
+        languageID: Constants.LANG_LATIN,
+        word: 'caeli'
+      }
+    })
+    let testHomonym = adapterTuftsRes.result
+
+    let testWordItem = new WordItem({
+      targetWord: 'caeli', 
+      languageCode: 'lat',
+      important: false,
+      homonym: testHomonym
+    })
+
+    dbDriverLocal._serializeHomonym = jest.fn()
+
+    dbDriverLocal._serializeHomonymWithFullDefs(testWordItem)
+    expect(dbDriverLocal._serializeHomonym).toHaveBeenCalledWith(testWordItem, true)
+  })
+
+  it('26 WordItemIndexedDbDriver - currentDate returns format date', () => {
+    let curDate = WordItemIndexedDbDriver.currentDate
+
+    expect(curDate.match(/\d+\/\d+\/\d+/))
+    expect(curDate.match(/\d+:\d+:\d+/))
+  })
+
+  it('27 WordItemIndexedDbDriver - _makeStorageID returns ID for using inside IndexedDB', () => {
+    let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
+    let testWordItem = new WordItem({
+      targetWord: 'caeli', 
+      languageCode: 'lat',
+      important: false
+    })
+
+    let testID = dbDriverLocal._makeStorageID(testWordItem)
+    expect(testID.includes('fooUserId')).toBeTruthy()
+    expect(testID.includes('caeli')).toBeTruthy()
+    expect(testID.includes('lat')).toBeTruthy()
+  })
+
+  it('28 WordItemIndexedDbDriver - _makeStorageListID returns listID for using inside IndexedDB', () => {
+    let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
+
+    let testID = dbDriverLocal._makeStorageListID('lat')
+    expect(testID.includes('fooUserId')).toBeTruthy()
+    expect(testID.includes('lat')).toBeTruthy()
+  })
+
+  it('29 WordItemIndexedDbDriver - makeIDCompareWithRemote returns ID for comparing with remote source', () => {
+    let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
+    let testWordItem = new WordItem({
+      targetWord: 'caeli', 
+      languageCode: 'lat',
+      important: false
+    })
+
+    let testID = dbDriverLocal.makeIDCompareWithRemote(testWordItem)
+    expect(testID.includes('caeli')).toBeTruthy()
+    expect(testID.includes('lat')).toBeTruthy()
+  })
+
+  it('30 WordItemIndexedDbDriver - getCheckArray returns array of ID for comparing with remote source', () => {
+    let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
+    let testWordItem = new WordItem({
+      targetWord: 'caeli', 
+      languageCode: 'lat',
+      important: false
+    })
+    let checkArray = [dbDriverLocal.makeIDCompareWithRemote(testWordItem)]
+    expect(dbDriverLocal.getCheckArray([testWordItem])).toEqual(checkArray)
+  })
+
+  it('31 WordItemIndexedDbDriver - createFromRemoteData returns WordItem created from remoteDataSource (without context and homonym)', () => {
+    let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
+    let testWordItem = {
+      targetWord: 'caeli', 
+      languageCode: 'lat',
+      important: false
+    }
+
+    jest.spyOn(dbDriverLocal, 'loadFirst')
+    jest.spyOn(dbDriverLocal, 'loadSegment')
+    
+    let resCreatedRemoteItem = dbDriverLocal.createFromRemoteData(testWordItem)
+    expect(resCreatedRemoteItem.constructor.name).toMatch(/WordItem/)
+    
+    expect(dbDriverLocal.loadFirst).toHaveBeenCalledWith(testWordItem)
+    expect(dbDriverLocal.loadSegment).toHaveBeenCalled()
+  })
+
+  it('31 WordItemIndexedDbDriver - createFromRemoteData returns WordItem created from remoteDataSource (without context and with homonym)', async () => {
+    let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
+
+    let testWordItem = new WordItem({
+      targetWord: 'caeli', 
+      languageCode: 'lat',
+      important: false,
+      homonym: {
+        targetWord: 'caeli',
+        languageCode: 'lat',
+        lemmasList: 'caeli'
+      }
+    })
+
+    jest.spyOn(dbDriverLocal, 'loadSegment')
+    
+    let resCreatedRemoteItem = dbDriverLocal.createFromRemoteData(testWordItem)
+    expect(dbDriverLocal.loadSegment).toHaveBeenCalled()
+    expect(resCreatedRemoteItem.constructor.name).toMatch(/WordItem/)
+    expect(resCreatedRemoteItem.homonym.constructor.name).toMatch(/Homonym/)
+  })
 })

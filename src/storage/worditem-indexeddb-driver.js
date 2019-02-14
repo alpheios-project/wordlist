@@ -425,8 +425,13 @@ static get currentDate () {
   createFromRemoteData (remoteDataItem) {
     let wordItem = this.loadFirst(remoteDataItem)
     
-    this.loadSegment('context', remoteDataItem.context, wordItem)
-    this.loadSegment('shortHomonym', [ remoteDataItem ], wordItem)
+    if (remoteDataItem.context) {
+      this.loadSegment('context', remoteDataItem.context, wordItem)
+    }
+
+    if (remoteDataItem.homonym) {
+      this.loadSegment('shortHomonym', [ remoteDataItem ], wordItem)
+    }
     return wordItem
   }
 }

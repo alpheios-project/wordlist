@@ -67,20 +67,28 @@ export default class WordItemRemoteDbDriver {
   }
 
   _serialize (wordItem) {
-    return {
+    let result = {
       ID: this._makeStorageID(wordItem),
       listID: this.userId + '-' + wordItem.languageCode,
       userID: this.userId,
       languageCode: wordItem.languageCode,
       targetWord: wordItem.targetWord,
       important: wordItem.important,
-      createdDT: WordItemRemoteDbDriver.currentDate,
-      homonym: {
+      createdDT: WordItemRemoteDbDriver.currentDate
+    }
+
+    if (wordItem.homonym && wordItem.homonym.targetWord) {
+      result.homonym = {
         targetWord: wordItem.homonym.targetWord,
         lemmasList: wordItem.lemmasList
-      },
-      context: this._serializeContext(wordItem)
+      }
     }
+    let context = this._serializeContext(wordItem)
+
+    if (context && context.length > 0) {
+      result.context = context
+    }
+    return result
   }
 
   _serializeContext (worditem) {

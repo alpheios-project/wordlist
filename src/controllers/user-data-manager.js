@@ -83,9 +83,11 @@ export default class UserDataManager {
       this.checkRequestQueue()
 
       return createdLocal && createdRemote
+    
     } catch (error) {
       console.error('Some errors happen on creating data in IndexedDB or RemoteDBAdapter', error.message)
     }
+    
   }
 
   /**
@@ -103,7 +105,7 @@ export default class UserDataManager {
         data: data
       })
     }
-    // try {
+    try {
       this.blocked = true
       let finalConstrName = this.defineConstructorName(data.dataObj.constructor.name)
 
@@ -130,11 +132,11 @@ export default class UserDataManager {
       this.checkRequestQueue()
 
       return updatedLocal && updatedRemote
-    /*
+    
     } catch (error) {
       console.error('Some errors happen on updating data in IndexedDB', error.message)
     }
-    */
+    
   }
 
   /**
@@ -214,21 +216,31 @@ export default class UserDataManager {
    */
   async query (data, type = 'merged') {
     let remoteAdapter =  this._remoteStorageAdapter(data.dataType)
-    let localAdapter = this._localStorageAdapter(data.dataType)
+    let localAdapter = this._localStorageAdapter(data.dataType) 
 
-    let remoteDataItems = await remoteAdapter.query(data.params)
-    let localDataItems = await localAdapter.query(data.params)
-
-    this.printErrors(localAdapter)
-
+    let result
+    // console.info('*********************query type', type, arguments)
     if (type === 'local') {
-      return localDataItems
+      // console.info('*********************query local')
+      let localDataItems = await localAdapter.query(data.params)
+      // console.info('*********************query localDataItems', localDataItems)
+      result = localDataItems
     } else if (type === 'remote') {
-      return remoteDataItems
+      console.info('*********************query remote')
+      let remoteDataItems = await remoteAdapter.query(data.params)
+      result = remoteDataItems
     } else {
+      // console.info('*********************query merged')
+      let localDataItems = await localAdapter.query(data.params)
+      let remoteDataItems = await remoteAdapter.query(data.params)
+
       let notInLocalWI = await this.mergeLocalRemote(localAdapter.dbDriver, remoteAdapter.dbDriver, localDataItems, remoteDataItems)
-      return [...localDataItems,...notInLocalWI]
+      result = [...localDataItems,...notInLocalWI]
     }
+
+    this.printErrors(remoteAdapter)
+    this.printErrors(localAdapter)
+    return result
   }
 
   async mergeLocalRemote (localDBDriver, remoteDBDriver, localDataItems, remoteDataItems) {

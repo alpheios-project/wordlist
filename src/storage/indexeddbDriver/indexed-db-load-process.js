@@ -25,20 +25,26 @@ export default class IndexedDBLoadProcess {
   /**
    * private method to load the Homonym property of a WordItem
    */
-  static loadHomonym (jsonObj, worditem) {
+  static loadHomonym (jsonObj, wordItem) {
     let jsonHomonym = jsonObj[0].homonym
+
     if (jsonHomonym.lexemes && Array.isArray(jsonHomonym.lexemes) && jsonHomonym.lexemes.length >0) {
-      worditem.homonym = WordItem.readHomonym(jsonObj[0])
+      wordItem.homonym = WordItem.readHomonym(jsonObj[0])
     } else {
       let languageID = LMF.getLanguageIdFromCode(jsonObj[0].languageCode)
-      let lexemesForms = jsonHomonym.lemmasList.split(', ')
       let lexemes = []
-      for (let lexForm of lexemesForms) {
-        lexemes.push(new Lexeme(new Lemma(lexForm, languageID), []))
+
+      if (jsonHomonym.lemmasList) {
+        let lexemesForms = jsonHomonym.lemmasList.split(', ')
+        for (let lexForm of lexemesForms) {
+          lexemes.push(new Lexeme(new Lemma(lexForm, languageID), []))
+        }
+      } else {
+        lexemes = [new Lexeme(new Lemma(jsonObj[0].targetWord, languageID), [])]
       }
-      worditem.homonym = new Homonym(lexemes, jsonHomonym.targetWord)
-      return worditem
+      wordItem.homonym = new Homonym(lexemes, jsonHomonym.targetWord)
     }
+    return wordItem
   }
 
   

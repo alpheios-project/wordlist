@@ -345,7 +345,7 @@ describe('worditem-indexeddb-driver.test.js', () => {
     expect(res.createdDT).toBeDefined()
   })
 
-  it('24 WordItemIndexedDbDriver - _serializeContext method returns jsonObj with properties context segment', () => {
+  it('25 WordItemIndexedDbDriver - _serializeContext method returns jsonObj with properties context segment', () => {
     let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
     let context = []
     let tqselector = TextQuoteSelector.readObject({
@@ -382,7 +382,7 @@ describe('worditem-indexeddb-driver.test.js', () => {
   })
   
 
-  it('25 WordItemIndexedDbDriver - _serializeHomonym method returns jsonObj with homonym properties of WordItem', async () => {
+  it('26 WordItemIndexedDbDriver - _serializeHomonym method returns jsonObj with homonym properties of WordItem', async () => {
     let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
 
     let adapterTuftsRes = await ClientAdapters.morphology.tufts({
@@ -410,7 +410,7 @@ describe('worditem-indexeddb-driver.test.js', () => {
     expect(res.homonym).toBeDefined()
   })
 
-  it('26 WordItemIndexedDbDriver - _serializeHomonymWithFullDefs executes _serializeHomonym', async () => {
+  it('27 WordItemIndexedDbDriver - _serializeHomonymWithFullDefs executes _serializeHomonym', async () => {
     let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
 
     let adapterTuftsRes = await ClientAdapters.morphology.tufts({
@@ -435,14 +435,14 @@ describe('worditem-indexeddb-driver.test.js', () => {
     expect(dbDriverLocal._serializeHomonym).toHaveBeenCalledWith(testWordItem, true)
   })
 
-  it('26 WordItemIndexedDbDriver - currentDate returns format date', () => {
+  it('28 WordItemIndexedDbDriver - currentDate returns format date', () => {
     let curDate = WordItemIndexedDbDriver.currentDate
 
     expect(curDate.match(/\d+\/\d+\/\d+/))
     expect(curDate.match(/\d+:\d+:\d+/))
   })
 
-  it('27 WordItemIndexedDbDriver - _makeStorageID returns ID for using inside IndexedDB', () => {
+  it('29 WordItemIndexedDbDriver - _makeStorageID returns ID for using inside IndexedDB', () => {
     let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
     let testWordItem = new WordItem({
       targetWord: 'caeli', 
@@ -456,7 +456,7 @@ describe('worditem-indexeddb-driver.test.js', () => {
     expect(testID.includes('lat')).toBeTruthy()
   })
 
-  it('28 WordItemIndexedDbDriver - _makeStorageListID returns listID for using inside IndexedDB', () => {
+  it('30 WordItemIndexedDbDriver - _makeStorageListID returns listID for using inside IndexedDB', () => {
     let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
 
     let testID = dbDriverLocal._makeStorageListID('lat')
@@ -464,7 +464,7 @@ describe('worditem-indexeddb-driver.test.js', () => {
     expect(testID.includes('lat')).toBeTruthy()
   })
 
-  it('29 WordItemIndexedDbDriver - makeIDCompareWithRemote returns ID for comparing with remote source', () => {
+  it('31 WordItemIndexedDbDriver - makeIDCompareWithRemote returns ID for comparing with remote source', () => {
     let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
     let testWordItem = new WordItem({
       targetWord: 'caeli', 
@@ -477,7 +477,7 @@ describe('worditem-indexeddb-driver.test.js', () => {
     expect(testID.includes('lat')).toBeTruthy()
   })
 
-  it('30 WordItemIndexedDbDriver - getCheckArray returns array of ID for comparing with remote source', () => {
+  it('32 WordItemIndexedDbDriver - getCheckArray returns array of ID for comparing with remote source', () => {
     let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
     let testWordItem = new WordItem({
       targetWord: 'caeli', 
@@ -488,7 +488,7 @@ describe('worditem-indexeddb-driver.test.js', () => {
     expect(dbDriverLocal.getCheckArray([testWordItem])).toEqual(checkArray)
   })
 
-  it('31 WordItemIndexedDbDriver - createFromRemoteData returns WordItem created from remoteDataSource (without context and homonym)', () => {
+  it('33 WordItemIndexedDbDriver - createFromRemoteData returns WordItem created from remoteDataSource (without context and homonym)', () => {
     let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
     let testWordItem = {
       targetWord: 'caeli', 
@@ -506,7 +506,7 @@ describe('worditem-indexeddb-driver.test.js', () => {
     expect(dbDriverLocal.loadSegment).toHaveBeenCalled()
   })
 
-  it('31 WordItemIndexedDbDriver - createFromRemoteData returns WordItem created from remoteDataSource (without context and with homonym)', async () => {
+  it('34 WordItemIndexedDbDriver - createFromRemoteData returns WordItem created from remoteDataSource (without context and with homonym)', async () => {
     let dbDriverLocal = new WordItemIndexedDbDriver('fooUserId')
 
     let testWordItem = new WordItem({
@@ -516,7 +516,7 @@ describe('worditem-indexeddb-driver.test.js', () => {
       homonym: {
         targetWord: 'caeli',
         languageCode: 'lat',
-        lemmasList: 'caeli'
+        lemmasList: 'caeli, caelis'
       }
     })
 

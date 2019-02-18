@@ -15315,9 +15315,11 @@ class UserDataManager {
       this.checkRequestQueue()
 
       return createdLocal && createdRemote
+    
     } catch (error) {
       console.error('Some errors happen on creating data in IndexedDB or RemoteDBAdapter', error.message)
     }
+    
   }
 
   /**
@@ -15335,7 +15337,7 @@ class UserDataManager {
         data: data
       })
     }
-    // try {
+    try {
       this.blocked = true
       let finalConstrName = this.defineConstructorName(data.dataObj.constructor.name)
 
@@ -15362,11 +15364,11 @@ class UserDataManager {
       this.checkRequestQueue()
 
       return updatedLocal && updatedRemote
-    /*
+    
     } catch (error) {
       console.error('Some errors happen on updating data in IndexedDB', error.message)
     }
-    */
+    
   }
 
   /**
@@ -15446,21 +15448,31 @@ class UserDataManager {
    */
   async query (data, type = 'merged') {
     let remoteAdapter =  this._remoteStorageAdapter(data.dataType)
-    let localAdapter = this._localStorageAdapter(data.dataType)
+    let localAdapter = this._localStorageAdapter(data.dataType) 
 
-    let remoteDataItems = await remoteAdapter.query(data.params)
-    let localDataItems = await localAdapter.query(data.params)
-
-    this.printErrors(localAdapter)
-
+    let result
+    // console.info('*********************query type', type, arguments)
     if (type === 'local') {
-      return localDataItems
+      // console.info('*********************query local')
+      let localDataItems = await localAdapter.query(data.params)
+      // console.info('*********************query localDataItems', localDataItems)
+      result = localDataItems
     } else if (type === 'remote') {
-      return remoteDataItems
+      console.info('*********************query remote')
+      let remoteDataItems = await remoteAdapter.query(data.params)
+      result = remoteDataItems
     } else {
+      // console.info('*********************query merged')
+      let localDataItems = await localAdapter.query(data.params)
+      let remoteDataItems = await remoteAdapter.query(data.params)
+
       let notInLocalWI = await this.mergeLocalRemote(localAdapter.dbDriver, remoteAdapter.dbDriver, localDataItems, remoteDataItems)
-      return [...localDataItems,...notInLocalWI]
+      result = [...localDataItems,...notInLocalWI]
     }
+
+    this.printErrors(remoteAdapter)
+    this.printErrors(localAdapter)
+    return result
   }
 
   async mergeLocalRemote (localDBDriver, remoteDBDriver, localDataItems, remoteDataItems) {
@@ -16037,7 +16049,7 @@ class IndexedDBAdapter {
    * @return Object[] array of data model items
    */
   async query(params) {
-    try {
+    // try {
       let listItemsQuery = this.dbDriver.listItemsQuery(params)
       let listItemsQueryResult = await this._getFromStore(listItemsQuery)
       
@@ -16049,8 +16061,13 @@ class IndexedDBAdapter {
         for (let segment of this.dbDriver.segmentsNotFirst) {
           let query = this.dbDriver.segmentSelectQuery(segment, resultObject)
 
+          // console.info('************IndexedDB ', query)
+
           let result = await this._getFromStore(query)
+          // console.info('************IndexedDB ', segment, result, resultObject)
+
           if (result.length > 0) {
+            
             this.dbDriver.loadSegment(segment, result, resultObject)
           }
         }
@@ -16058,12 +16075,14 @@ class IndexedDBAdapter {
       }
 
       return items
+      /*
     } catch (error) {
       if (error) {
         this.errors.push(error)
       }
       return []
     }
+    */
   }
 
   /**
@@ -16366,20 +16385,26 @@ class IndexedDBLoadProcess {
   /**
    * private method to load the Homonym property of a WordItem
    */
-  static loadHomonym (jsonObj, worditem) {
+  static loadHomonym (jsonObj, wordItem) {
     let jsonHomonym = jsonObj[0].homonym
+
     if (jsonHomonym.lexemes && Array.isArray(jsonHomonym.lexemes) && jsonHomonym.lexemes.length >0) {
-      worditem.homonym = alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["WordItem"].readHomonym(jsonObj[0])
+      wordItem.homonym = alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["WordItem"].readHomonym(jsonObj[0])
     } else {
       let languageID = alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["LanguageModelFactory"].getLanguageIdFromCode(jsonObj[0].languageCode)
-      let lexemesForms = jsonHomonym.lemmasList.split(', ')
       let lexemes = []
-      for (let lexForm of lexemesForms) {
-        lexemes.push(new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["Lexeme"](new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["Lemma"](lexForm, languageID), []))
+
+      if (jsonHomonym.lemmasList) {
+        let lexemesForms = jsonHomonym.lemmasList.split(', ')
+        for (let lexForm of lexemesForms) {
+          lexemes.push(new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["Lexeme"](new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["Lemma"](lexForm, languageID), []))
+        }
+      } else {
+        lexemes = [new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["Lexeme"](new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["Lemma"](jsonObj[0].targetWord, languageID), [])]
       }
-      worditem.homonym = new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["Homonym"](lexemes, jsonHomonym.targetWord)
-      return worditem
+      wordItem.homonym = new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["Homonym"](lexemes, jsonHomonym.targetWord)
     }
+    return wordItem
   }
 
   
@@ -16481,6 +16506,8 @@ class RemoteDBAdapter {
       let url = this.dbDriver.storageMap.post.url(data)
       let content = this.dbDriver.storageMap.post.serialize(data)
 
+      console.info('****************create url', url)
+      console.info('****************create content', content)
       let result = await axios__WEBPACK_IMPORTED_MODULE_0___default.a.post(url, content, this.dbDriver.requestsParams)
       let updated = this.dbDriver.storageMap.post.checkResult(result)
       
@@ -16543,12 +16570,13 @@ class RemoteDBAdapter {
   async query(data) {
     try {
       let url = this.dbDriver.storageMap.get.url(data)
-
+      // console.info('**************RemoteAdapter query url', url)
       let result = await axios__WEBPACK_IMPORTED_MODULE_0___default.a.get(url, this.dbDriver.requestsParams)
+      // console.info('**************RemoteAdapter query result', result)
       let updated = this.dbDriver.storageMap.get.checkResult(result)
       return updated
     } catch (error) {
-      console.error(error)
+      // console.error(error)
       if (error) {
         this.errors.push(error)
       }
@@ -17012,8 +17040,13 @@ static get currentDate () {
   createFromRemoteData (remoteDataItem) {
     let wordItem = this.loadFirst(remoteDataItem)
     
-    this.loadSegment('context', remoteDataItem.context, wordItem)
-    this.loadSegment('shortHomonym', [ remoteDataItem ], wordItem)
+    if (remoteDataItem.context) {
+      this.loadSegment('context', remoteDataItem.context, wordItem)
+    }
+
+    if (remoteDataItem.homonym) {
+      this.loadSegment('shortHomonym', [ remoteDataItem ], wordItem)
+    }
     return wordItem
   }
 }
@@ -17102,20 +17135,28 @@ class WordItemRemoteDbDriver {
   }
 
   _serialize (wordItem) {
-    return {
+    let result = {
       ID: this._makeStorageID(wordItem),
       listID: this.userId + '-' + wordItem.languageCode,
       userID: this.userId,
       languageCode: wordItem.languageCode,
       targetWord: wordItem.targetWord,
       important: wordItem.important,
-      createdDT: WordItemRemoteDbDriver.currentDate,
-      homonym: {
+      createdDT: WordItemRemoteDbDriver.currentDate
+    }
+
+    if (wordItem.homonym && wordItem.homonym.targetWord) {
+      result.homonym = {
         targetWord: wordItem.homonym.targetWord,
         lemmasList: wordItem.lemmasList
-      },
-      context: this._serializeContext(wordItem)
+      }
     }
+    let context = this._serializeContext(wordItem)
+
+    if (context && context.length > 0) {
+      result.context = context
+    }
+    return result
   }
 
   _serializeContext (worditem) {

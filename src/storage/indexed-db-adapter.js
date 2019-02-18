@@ -125,7 +125,7 @@ export default class IndexedDBAdapter {
    * @return Object[] array of data model items
    */
   async query(params) {
-    try {
+    // try {
       let listItemsQuery = this.dbDriver.listItemsQuery(params)
       let listItemsQueryResult = await this._getFromStore(listItemsQuery)
       
@@ -137,8 +137,13 @@ export default class IndexedDBAdapter {
         for (let segment of this.dbDriver.segmentsNotFirst) {
           let query = this.dbDriver.segmentSelectQuery(segment, resultObject)
 
+          // console.info('************IndexedDB ', query)
+
           let result = await this._getFromStore(query)
+          // console.info('************IndexedDB ', segment, result, resultObject)
+
           if (result.length > 0) {
+            
             this.dbDriver.loadSegment(segment, result, resultObject)
           }
         }
@@ -146,12 +151,14 @@ export default class IndexedDBAdapter {
       }
 
       return items
+      /*
     } catch (error) {
       if (error) {
         this.errors.push(error)
       }
       return []
     }
+    */
   }
 
   /**

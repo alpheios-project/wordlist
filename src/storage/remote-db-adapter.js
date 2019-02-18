@@ -16,6 +16,8 @@ export default class RemoteDBAdapter {
       let url = this.dbDriver.storageMap.post.url(data)
       let content = this.dbDriver.storageMap.post.serialize(data)
 
+      console.info('****************create url', url)
+      console.info('****************create content', content)
       let result = await axios.post(url, content, this.dbDriver.requestsParams)
       let updated = this.dbDriver.storageMap.post.checkResult(result)
       
@@ -78,12 +80,13 @@ export default class RemoteDBAdapter {
   async query(data) {
     try {
       let url = this.dbDriver.storageMap.get.url(data)
-
+      // console.info('**************RemoteAdapter query url', url)
       let result = await axios.get(url, this.dbDriver.requestsParams)
+      // console.info('**************RemoteAdapter query result', result)
       let updated = this.dbDriver.storageMap.get.checkResult(result)
       return updated
     } catch (error) {
-      console.error(error)
+      // console.error(error)
       if (error) {
         this.errors.push(error)
       }

@@ -33,7 +33,6 @@ export default class IndexedDBAdapter {
       }
       return updated > 0
     } catch (error) {
-      console.error(error)
       if (error) {
         this.errors.push(error)
       }
@@ -58,6 +57,7 @@ export default class IndexedDBAdapter {
       }
       return deletedResult
     } catch (error) {
+      console.error(error)
       if (error) {
         this.errors.push(error)
       }
@@ -78,6 +78,7 @@ export default class IndexedDBAdapter {
         await this._deleteFromStore(q)
       }
     } catch (error) {
+      console.error(error)
       if (error) {
         this.errors.push(error)
       }
@@ -93,8 +94,8 @@ export default class IndexedDBAdapter {
    * @return {Boolean} true if update succeeded false if not
    */
   async update (data, params) {
-    // try {
-      let segments = [params.segment]
+    try {
+      let segments = params && params.segment ? [params.segment] : []
       let result
       // if we weren't asked to update a specific segment, update them all
       if (segments.length === 0)  {
@@ -109,14 +110,12 @@ export default class IndexedDBAdapter {
         }
       }
       return result
-    /*
     } catch (error) {
       if (error) {
         this.errors.push(error)
       }
       return
     }
-    */
   }
 
   /**
@@ -125,7 +124,7 @@ export default class IndexedDBAdapter {
    * @return Object[] array of data model items
    */
   async query(params) {
-    // try {
+    try {
       let listItemsQuery = this.dbDriver.listItemsQuery(params)
       let listItemsQueryResult = await this._getFromStore(listItemsQuery)
       
@@ -151,14 +150,12 @@ export default class IndexedDBAdapter {
       }
 
       return items
-      /*
     } catch (error) {
       if (error) {
         this.errors.push(error)
       }
       return []
     }
-    */
   }
 
   /**

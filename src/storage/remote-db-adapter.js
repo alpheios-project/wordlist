@@ -16,8 +16,6 @@ export default class RemoteDBAdapter {
       let url = this.dbDriver.storageMap.post.url(data)
       let content = this.dbDriver.storageMap.post.serialize(data)
 
-      console.info('****************create url', url)
-      console.info('****************create content', content)
       let result = await axios.post(url, content, this.dbDriver.requestsParams)
       let updated = this.dbDriver.storageMap.post.checkResult(result)
       
@@ -50,7 +48,6 @@ export default class RemoteDBAdapter {
   async deleteOne(data) {
     try {
       let url = this.dbDriver.storageMap.deleteOne.url(data)
-
       let result = await axios.delete(url, this.dbDriver.requestsParams)
       let updated = this.dbDriver.storageMap.deleteOne.checkResult(result)
       return updated

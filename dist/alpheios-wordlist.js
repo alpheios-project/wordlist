@@ -15277,7 +15277,7 @@ class UserDataManager {
     return finalConstrName
   }
 
-  async create(data, params) {
+  async create(data, params = {}) {
     if (this.blocked) {
       this.requestsQueue.push({
         method: 'create',
@@ -15304,7 +15304,8 @@ class UserDataManager {
       }
 
       if (remoteAdapter.available && !params.onlyLocal) {
-        createdRemote = await remoteAdapter.create(data.dataObj)     
+        createdRemote = await remoteAdapter.create(data.dataObj)    
+        this.printErrors(remoteAdapter) 
       } else if (params.onlyLocal) {
         createdRemote = true
       } else {
@@ -15330,7 +15331,7 @@ class UserDataManager {
    *                      }
    * @return {Boolean} true if update succeeded false if not
    */
-  async update(data) {
+  async update(data, params = {}) {
     if (this.blocked) {
       this.requestsQueue.push({
         method: 'update',
@@ -15347,15 +15348,20 @@ class UserDataManager {
       let updatedLocal = false
       let updatedRemote = false
 
-      if (localAdapter.available) {
+      if (localAdapter.available && !params.onlyRemote) {
         updatedLocal = await localAdapter.update(data.dataObj, data.params)
         this.printErrors(localAdapter)
+      } else if (params.onlyRemote) {
+        updatedLocal = true
       } else {
         console.error('LocalAdapter is not available for usage')
       }
 
-      if (remoteAdapter.available) {
-        updatedRemote = await remoteAdapter.update(data.dataObj)     
+      if (remoteAdapter.available && !params.onlyLocal) {
+        updatedRemote = await remoteAdapter.update(data.dataObj) 
+        this.printErrors(remoteAdapter)    
+      } else if (params.onlyLocal) {
+        updatedRemote = true
       } else {
         console.error('RemoteAdapter is not available for usage')
       }
@@ -15364,11 +15370,9 @@ class UserDataManager {
       this.checkRequestQueue()
 
       return updatedLocal && updatedRemote
-    
     } catch (error) {
       console.error('Some errors happen on updating data in IndexedDB', error.message)
     }
-    
   }
 
   /**
@@ -15377,7 +15381,7 @@ class UserDataManager {
    *                      { dataObj: the data model object to be updated} }
    * @return {Boolean} true if delete succeeded false if not
    */
-  async delete(data) {
+  async delete(data, params = {}) {
     if (this.blocked) {
       this.requestsQueue.push({
         method: 'delete',
@@ -15390,9 +15394,26 @@ class UserDataManager {
 
       let localAdapter = this._localStorageAdapter(finalConstrName)
       let remoteAdapter = this._remoteStorageAdapter(finalConstrName)
-      let deletedLocal = await localAdapter.deleteOne(data.dataObj)
-      let deletedRemote = await remoteAdapter.deleteOne(data.dataObj)
-      this.printErrors(localAdapter)
+
+      let deletedLocal, deletedRemote
+
+      if (localAdapter.available && !params.onlyRemote) {
+        deletedLocal = await localAdapter.deleteOne(data.dataObj)
+        this.printErrors(localAdapter)
+      } else if (params.onlyRemote) {
+        deletedLocal = true
+      } else {
+        console.error('LocalAdapter is not available for usage')
+      }
+
+      if (remoteAdapter.available && !params.onlyLocal) {
+        deletedRemote = await remoteAdapter.deleteOne(data.dataObj)
+        this.printErrors(remoteAdapter)
+      } else if (params.onlyLocal) {
+        deletedRemote = true
+      } else {
+        console.error('RemoteAdapter is not available for usage')
+      }    
       
       this.blocked = false
 
@@ -15411,7 +15432,7 @@ class UserDataManager {
    *                        params: parameters to identify items to be deleted
    *                      }
    */
-  async deleteMany(data) {
+  async deleteMany(data, params = {}) {
     if (this.blocked) {
       this.requestsQueue.push({
         method: 'deleteMany',
@@ -15423,16 +15444,32 @@ class UserDataManager {
 
       let remoteAdapter =  this._remoteStorageAdapter(data.dataType)
       let localAdapter = this._localStorageAdapter(data.dataType)
-      let deletedLocalResult = localAdapter.deleteMany(data.params)
-      let deletedRemoteResult = remoteAdapter.deleteMany(data.params)
-      const finalResult = [await deletedLocalResult, await deletedRemoteResult]
-      
-      this.printErrors(localAdapter)      
+
+      let deletedLocal, deletedRemote
+
+      if (localAdapter.available && !params.onlyRemote) {
+        deletedLocal = await localAdapter.deleteMany(data.params)
+        this.printErrors(localAdapter)
+      } else if (params.onlyRemote) {
+        deletedLocal = true
+      } else {
+        console.error('LocalAdapter is not available for usage')
+      }
+
+      if (remoteAdapter.available && !params.onlyLocal) {
+        deletedRemote = await remoteAdapter.deleteMany(data.params)
+        this.printErrors(remoteAdapter)
+      } else if (params.onlyLocal) {
+        deletedRemote = true
+      } else {
+        console.error('RemoteAdapter is not available for usage')
+      }    
+    
       this.blocked = false
-      console.info('Result of deleted many from IndexedDB', finalResult)
+      console.info('Result of deleted many from IndexedDB', deletedLocal)
 
       this.checkRequestQueue()
-      
+      return deletedLocal && deletedRemote
     } catch (error) {
       console.error('Some errors happen on deleting data from IndexedDB', error.message)
     }
@@ -15451,18 +15488,13 @@ class UserDataManager {
     let localAdapter = this._localStorageAdapter(data.dataType) 
 
     let result
-    // console.info('*********************query type', type, arguments)
     if (type === 'local') {
-      // console.info('*********************query local')
       let localDataItems = await localAdapter.query(data.params)
-      // console.info('*********************query localDataItems', localDataItems)
       result = localDataItems
     } else if (type === 'remote') {
-      console.info('*********************query remote')
       let remoteDataItems = await remoteAdapter.query(data.params)
       result = remoteDataItems
     } else {
-      // console.info('*********************query merged')
       let localDataItems = await localAdapter.query(data.params)
       let remoteDataItems = await remoteAdapter.query(data.params)
 
@@ -15957,7 +15989,6 @@ class IndexedDBAdapter {
       }
       return updated > 0
     } catch (error) {
-      console.error(error)
       if (error) {
         this.errors.push(error)
       }
@@ -15982,6 +16013,7 @@ class IndexedDBAdapter {
       }
       return deletedResult
     } catch (error) {
+      console.error(error)
       if (error) {
         this.errors.push(error)
       }
@@ -16002,6 +16034,7 @@ class IndexedDBAdapter {
         await this._deleteFromStore(q)
       }
     } catch (error) {
+      console.error(error)
       if (error) {
         this.errors.push(error)
       }
@@ -16017,8 +16050,8 @@ class IndexedDBAdapter {
    * @return {Boolean} true if update succeeded false if not
    */
   async update (data, params) {
-    // try {
-      let segments = [params.segment]
+    try {
+      let segments = params && params.segment ? [params.segment] : []
       let result
       // if we weren't asked to update a specific segment, update them all
       if (segments.length === 0)  {
@@ -16033,14 +16066,12 @@ class IndexedDBAdapter {
         }
       }
       return result
-    /*
     } catch (error) {
       if (error) {
         this.errors.push(error)
       }
       return
     }
-    */
   }
 
   /**
@@ -16049,7 +16080,7 @@ class IndexedDBAdapter {
    * @return Object[] array of data model items
    */
   async query(params) {
-    // try {
+    try {
       let listItemsQuery = this.dbDriver.listItemsQuery(params)
       let listItemsQueryResult = await this._getFromStore(listItemsQuery)
       
@@ -16075,14 +16106,12 @@ class IndexedDBAdapter {
       }
 
       return items
-      /*
     } catch (error) {
       if (error) {
         this.errors.push(error)
       }
       return []
     }
-    */
   }
 
   /**
@@ -16506,8 +16535,6 @@ class RemoteDBAdapter {
       let url = this.dbDriver.storageMap.post.url(data)
       let content = this.dbDriver.storageMap.post.serialize(data)
 
-      console.info('****************create url', url)
-      console.info('****************create content', content)
       let result = await axios__WEBPACK_IMPORTED_MODULE_0___default.a.post(url, content, this.dbDriver.requestsParams)
       let updated = this.dbDriver.storageMap.post.checkResult(result)
       
@@ -16540,7 +16567,6 @@ class RemoteDBAdapter {
   async deleteOne(data) {
     try {
       let url = this.dbDriver.storageMap.deleteOne.url(data)
-
       let result = await axios__WEBPACK_IMPORTED_MODULE_0___default.a.delete(url, this.dbDriver.requestsParams)
       let updated = this.dbDriver.storageMap.deleteOne.checkResult(result)
       return updated

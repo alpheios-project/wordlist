@@ -98,14 +98,17 @@ describe('user-data-manager.test.js', () => {
 
     let final = [await res1, await res2, await res3, await res4, await res5]
 
-    await timeout(5000)
+    await timeout(50000)
+    if (udm.requestsQueue.length > 0) {
+      await timeout(50000)
+    }
     let localDataItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'lat' }})
     console.info('**************localDataItems', localDataItems)
     expect(localDataItems.filter(item => item.targetWord === testWordItem1.targetWord).length).toEqual(0)
     expect(localDataItems.filter(item => item.targetWord === testWordItem2.targetWord).length).toEqual(0)
     expect(localDataItems.filter(item => item.targetWord === testWordItem3.targetWord).length).toEqual(1)
     return localDataItems
-  }, 50000)
+  }, 150000)
 
   it('2 UserDataManager - create method - creates wordItem only in local with onlyLocal param', async () => {
     let testWord = 'elapsas'

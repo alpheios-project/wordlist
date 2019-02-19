@@ -100,18 +100,21 @@ describe('user-data-manager.test.js', () => {
     let final = [await res1, await res2, await res3, await res4, await res5]
 
     await timeout(50000)
-    for(let check = 0; check < 3; check++) {
+    for(let check = 0; check < 5; check++) {
       if (udm.requestsQueue.length > 0) {
         await timeout(50000)
       }
     }
     
-    let localDataItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'lat' }})
-    expect(localDataItems.filter(item => item.targetWord === testWordItem1.targetWord).length).toEqual(0)
-    expect(localDataItems.filter(item => item.targetWord === testWordItem2.targetWord).length).toEqual(0)
-    expect(localDataItems.filter(item => item.targetWord === testWordItem3.targetWord).length).toEqual(1)
+    let localDataItems
+    if (udm.requestsQueue.length === 0) {
+      localDataItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'lat' }})
+      expect(localDataItems.filter(item => item.targetWord === testWordItem1.targetWord).length).toEqual(0)
+      expect(localDataItems.filter(item => item.targetWord === testWordItem2.targetWord).length).toEqual(0)
+      expect(localDataItems.filter(item => item.targetWord === testWordItem3.targetWord).length).toEqual(1)
+    }
     return localDataItems
-  }, 150000)
+  }, 550000)
 
   it('2 UserDataManager - create method - creates wordItem only in local with onlyLocal param', async () => {
     let testWord = 'elapsas'

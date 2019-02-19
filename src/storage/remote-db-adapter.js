@@ -8,7 +8,7 @@ export default class RemoteDBAdapter {
   }
 
   _checkRemoteDBAvailability () {
-    return this.dbDriver.userId && this.dbDriver.requestsParams.headers
+    return this.dbDriver.userID && this.dbDriver.requestsParams.headers
   }
 
   async create(data) {

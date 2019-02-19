@@ -16527,7 +16527,7 @@ class RemoteDBAdapter {
   }
 
   _checkRemoteDBAvailability () {
-    return this.dbDriver.userId && this.dbDriver.requestsParams.headers
+    return this.dbDriver.userID && this.dbDriver.requestsParams.headers
   }
 
   async create(data) {
@@ -17095,10 +17095,9 @@ var _storage_remote_db_config_json__WEBPACK_IMPORTED_MODULE_0___namespace = /*#_
 
 
 class WordItemRemoteDbDriver {
-  constructor (userId) {
+  constructor (userID) {
     this.config = _storage_remote_db_config_json__WEBPACK_IMPORTED_MODULE_0__
-    this.userId = userId || this.config.testUserID
-    // this.userId = this.config.testUserID
+    this.userID = userID || this.config.testUserID
     
     let testAuthID = 'alpheiosMockUserIdlP0DWnmNxe'
 
@@ -17163,8 +17162,8 @@ class WordItemRemoteDbDriver {
   _serialize (wordItem) {
     let result = {
       ID: this._makeStorageID(wordItem),
-      listID: this.userId + '-' + wordItem.languageCode,
-      userID: this.userId,
+      listID: this.userID + '-' + wordItem.languageCode,
+      userID: this.userID,
       languageCode: wordItem.languageCode,
       targetWord: wordItem.targetWord,
       important: wordItem.important,
@@ -17177,6 +17176,10 @@ class WordItemRemoteDbDriver {
         lemmasList: wordItem.lemmasList
       }
     }
+    let homonym = this._serializeHomonym(wordItem)
+    if (homonym) {
+      result.homonym = homonym
+    }
     let context = this._serializeContext(wordItem)
 
     if (context && context.length > 0) {
@@ -17185,9 +17188,19 @@ class WordItemRemoteDbDriver {
     return result
   }
 
-  _serializeContext (worditem) {
+  _serializeHomonym (wordItem) {
+    if (wordItem.homonym && wordItem.homonym.targetWord) {
+      return {
+        targetWord: wordItem.homonym.targetWord,
+        lemmasList: wordItem.lemmasList
+      }
+    }
+    return null
+  }
+
+  _serializeContext (wordItem) {
     let result = []
-    for (let tq of worditem.context) {
+    for (let tq of wordItem.context) {
       let resultItem = {
         target: {
           source: tq.source,
@@ -17199,9 +17212,9 @@ class WordItemRemoteDbDriver {
             languageCode: tq.languageCode
           }
         },
-        languageCode: worditem.languageCode,
-        targetWord: worditem.targetWord,
-        createdDT: WordItemRemoteDbDriver.currentDate
+        languageCode: wordItem.languageCode,
+        targetWord: wordItem.targetWord,
+        createdDT: wordItem.currentDate
       }
       result.push(resultItem)
     }

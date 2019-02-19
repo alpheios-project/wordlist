@@ -1,5 +1,6 @@
 /* eslint-env jest */
 /* eslint-disable no-unused-vars */
+import 'whatwg-fetch'
 import IndexedDB from 'fake-indexeddb'
 import IDBKeyRange from 'fake-indexeddb/lib/FDBKeyRange'
 import { ClientAdapters } from 'alpheios-client-adapters'

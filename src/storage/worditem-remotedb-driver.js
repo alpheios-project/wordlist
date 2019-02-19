@@ -1,10 +1,9 @@
 import RemoteConfig from '@/storage/remote-db-config.json'
 
 export default class WordItemRemoteDbDriver {
-  constructor (userId) {
+  constructor (userID) {
     this.config = RemoteConfig
-    this.userId = userId || this.config.testUserID
-    // this.userId = this.config.testUserID
+    this.userID = userID || this.config.testUserID
     
     let testAuthID = 'alpheiosMockUserIdlP0DWnmNxe'
 
@@ -69,8 +68,8 @@ export default class WordItemRemoteDbDriver {
   _serialize (wordItem) {
     let result = {
       ID: this._makeStorageID(wordItem),
-      listID: this.userId + '-' + wordItem.languageCode,
-      userID: this.userId,
+      listID: this.userID + '-' + wordItem.languageCode,
+      userID: this.userID,
       languageCode: wordItem.languageCode,
       targetWord: wordItem.targetWord,
       important: wordItem.important,
@@ -83,6 +82,10 @@ export default class WordItemRemoteDbDriver {
         lemmasList: wordItem.lemmasList
       }
     }
+    let homonym = this._serializeHomonym(wordItem)
+    if (homonym) {
+      result.homonym = homonym
+    }
     let context = this._serializeContext(wordItem)
 
     if (context && context.length > 0) {
@@ -91,9 +94,19 @@ export default class WordItemRemoteDbDriver {
     return result
   }
 
-  _serializeContext (worditem) {
+  _serializeHomonym (wordItem) {
+    if (wordItem.homonym && wordItem.homonym.targetWord) {
+      return {
+        targetWord: wordItem.homonym.targetWord,
+        lemmasList: wordItem.lemmasList
+      }
+    }
+    return null
+  }
+
+  _serializeContext (wordItem) {
     let result = []
-    for (let tq of worditem.context) {
+    for (let tq of wordItem.context) {
       let resultItem = {
         target: {
           source: tq.source,
@@ -105,9 +118,9 @@ export default class WordItemRemoteDbDriver {
             languageCode: tq.languageCode
           }
         },
-        languageCode: worditem.languageCode,
-        targetWord: worditem.targetWord,
-        createdDT: WordItemRemoteDbDriver.currentDate
+        languageCode: wordItem.languageCode,
+        targetWord: wordItem.targetWord,
+        createdDT: wordItem.currentDate
       }
       result.push(resultItem)
     }

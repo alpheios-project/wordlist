@@ -17,8 +17,8 @@ import UserDataManager from '@/controllers/user-data-manager'
 
 describe('local-remote-merge-workflow.test.js', () => {
   // console.error = function () {}
-  // console.log = function () {}
-  // console.warn = function () {}
+  console.log = function () {}
+  console.warn = function () {}
   
   let testWord = 'provincias'
 
@@ -79,7 +79,7 @@ describe('local-remote-merge-workflow.test.js', () => {
     return new Promise(resolve => setTimeout(resolve, ms))
   }
 
-  it.skip('1 LocalRemoteMergeWorkflow - recieved wordItem, save to local and remote', async () => {
+  it('1 LocalRemoteMergeWorkflow - recieved wordItem, save to local and remote', async () => {
     let dbDriverLocal = new WordItemIndexedDbDriver()
     let localAdapter = new IndexedDBAdapter(dbDriverLocal)
 
@@ -89,48 +89,19 @@ describe('local-remote-merge-workflow.test.js', () => {
     let testWordItem = await prepareWordItem(testWord)
 
     let createResultLocal = await localAdapter.create(testWordItem)
-    console.info('***************createResultLocal', createResultLocal)
     let localDataItems = await localAdapter.query({ languageCode: testWordItem.languageCode })
+    expect(localDataItems.filter(item => item.targetWord === testWord).length).toBeGreaterThan(0)
     console.info('**************localDataItems', localDataItems)
     
     let createResultRemote = await remoteAdapter.create(testWordItem)
+    let remoteDataItems = await remoteAdapter.query({ languageCode: testWordItem.languageCode })
+    expect(remoteDataItems.filter(item => item.targetWord === testWord).length).toBeGreaterThan(0)
     console.info('**************createResultRemote', createResultRemote)
-    /*
-    expect(createResultRemote).toBeTruthy()
-    expect(remoteAdapter.errors.length).toEqual(0)
-
-    let remoteDataItems = await remoteAdapter.query({ wordItem: testWordItem })
-    console.info('********************remoteDataItems', remoteDataItems)
-    */
 
     return createResultLocal && createResultRemote
   }, 50000)
 
-  it.skip('2 LocalRemoteMergeWorkflow - recieved wordItem, save to local and remote via UserDataManager', async () => {
-    let testWordItem = await prepareWordItem('mala')
-    let udm = new UserDataManager()
-    
-    let resultCreate = await udm.create({ dataObj: testWordItem })
-    expect(resultCreate).toBeTruthy()
-
-    let resultQuery = await udm.query({ dataType: 'WordItem', params: { wordItem: {languageCode: testWordItem.languageCode, targetWord: testWordItem.targetWord} }})
-    console.info('*****************resultQuery', resultQuery)
-    /*
-    let dbDriverLocal = new WordItemIndexedDbDriver()
-    let localAdapter = new IndexedDBAdapter(dbDriverLocal)
-
-    let localDataItems = await localAdapter.query({ languageCode: testWordItem.languageCode })
-    console.info('**************localDataItems', localDataItems)
-
-    let remoteAdapterDriver = new WordItemRemoteDbDriver()
-    let remoteAdapter = new RemoteDBAdapter(remoteAdapterDriver)
-
-    let remoteDataItems = await remoteAdapter.query({ wordItem: testWordItem })
-    console.info('**************remoteDataItems', remoteDataItems)
-    */
-  })
-
-  it.skip('3 LocalRemoteMergeWorkflow - createAbsentRemoteItems creates in remote absent wordItems', async () => {
+  it('2 LocalRemoteMergeWorkflow - createAbsentRemoteItems creates in remote absent wordItems', async () => {
     let testWordItem = await prepareWordItem('latus')
     let localDataItems = [ testWordItem ]
     let remoteDataItems = []

@@ -87,7 +87,7 @@ describe('user-data-manager.test.js', () => {
     })
   }
 
-  it('1 UserDataManager - delete many and update method, checking blocking', async () => {
+  it.skip('1 UserDataManager - delete many and update method, checking blocking', async () => {
     let udm = new UserDataManager(testUserID)
 
     let res1 = udm.update({ dataObj: testWordItem1, params: { segment: 'common' }})

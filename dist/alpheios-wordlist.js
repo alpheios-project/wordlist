@@ -16527,7 +16527,7 @@ class RemoteDBAdapter {
   }
 
   _checkRemoteDBAvailability () {
-    return this.dbDriver.userID && this.dbDriver.requestsParams.headers
+    return Boolean(this.dbDriver.userID) && Boolean(this.dbDriver.requestsParams.headers)
   }
 
   async create(data) {
@@ -16540,11 +16540,10 @@ class RemoteDBAdapter {
       
       return updated
     } catch (error) {
-      console.error(error)
       if (error) {
         this.errors.push(error)
       }
-      return
+      return false
     }
   }
 
@@ -16560,7 +16559,7 @@ class RemoteDBAdapter {
       if (error) {
         this.errors.push(error)
       }
-      return
+      return false
     }
   }
 
@@ -16574,7 +16573,7 @@ class RemoteDBAdapter {
       if (error) {
         this.errors.push(error)
       }
-      return
+      return false
     }
   }
 
@@ -16589,24 +16588,21 @@ class RemoteDBAdapter {
       if (error) {
         this.errors.push(error)
       }
-      return
+      return false
     }
   }
 
   async query(data) {
     try {
       let url = this.dbDriver.storageMap.get.url(data)
-      // console.info('**************RemoteAdapter query url', url)
       let result = await axios__WEBPACK_IMPORTED_MODULE_0___default.a.get(url, this.dbDriver.requestsParams)
-      // console.info('**************RemoteAdapter query result', result)
       let updated = this.dbDriver.storageMap.get.checkResult(result)
       return updated
     } catch (error) {
-      // console.error(error)
       if (error) {
         this.errors.push(error)
       }
-      return
+      return false
     }
   }
 }

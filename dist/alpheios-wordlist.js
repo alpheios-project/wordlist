@@ -16091,14 +16091,9 @@ class IndexedDBAdapter {
 
         for (let segment of this.dbDriver.segmentsNotFirst) {
           let query = this.dbDriver.segmentSelectQuery(segment, resultObject)
-
-          // console.info('************IndexedDB ', query)
-
           let result = await this._getFromStore(query)
-          // console.info('************IndexedDB ', segment, result, resultObject)
 
-          if (result.length > 0) {
-            
+          if (result.length > 0) {           
             this.dbDriver.loadSegment(segment, result, resultObject)
           }
         }

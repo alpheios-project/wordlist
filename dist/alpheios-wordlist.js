@@ -15992,7 +15992,7 @@ class IndexedDBAdapter {
       if (error) {
         this.errors.push(error)
       }
-      return
+      return false
     }
   }
 
@@ -16017,7 +16017,7 @@ class IndexedDBAdapter {
       if (error) {
         this.errors.push(error)
       }
-      return
+      return false
     }
   }
 
@@ -16033,12 +16033,13 @@ class IndexedDBAdapter {
         let q = this.dbDriver.segmentDeleteQuery(segment,data)
         await this._deleteFromStore(q)
       }
+      return true
     } catch (error) {
       console.error(error)
       if (error) {
         this.errors.push(error)
       }
-      return
+      return false
     }
   }
 
@@ -16059,7 +16060,7 @@ class IndexedDBAdapter {
       }
       for (let segment of segments) {
         let query = this.dbDriver.updateSegmentQuery(segment, data)
-        if (query.dataItems.length > 0) {
+        if (query.dataItems && query.dataItems.length > 0) {
           result = await this._set(query)
         } else {
           result = true
@@ -16105,7 +16106,7 @@ class IndexedDBAdapter {
       if (error) {
         this.errors.push(error)
       }
-      return []
+      return false
     }
   }
 
@@ -16114,33 +16115,47 @@ class IndexedDBAdapter {
    * Used primarily for testing right now
    * TODO needs to be enhanced to support async removal of old database versions
    */
-  clear () {
-    let request = this.indexedDB.open(this.dbDriver.dbName, this.dbDriver.dbVersion)
-    request.onsuccess = (event) => {
-      try {
-        let db = event.target.result
-        let objectStores = this.dbDriver.objectStores
-        for (let store of objectStores) {
-          // open a read/write db transaction, ready for clearing the data
-          let transaction = db.transaction([store], 'readwrite')
-          // create an object store on the transaction
-          let objectStore = transaction.objectStore(store)
-          // Make a request to clear all the data out of the object store
-          let objectStoreRequest = objectStore.clear()
-          objectStoreRequest.onsuccess = function(event) {
-            console.log(`store ${store} cleared`)
+  async clear () {
+    let idba = this
+
+    let promiseDB = await new Promise((resolve, reject) => {
+      let request = idba.indexedDB.open(idba.dbDriver.dbName, idba.dbDriver.dbVersion)
+      request.onsuccess = (event) => {
+        try {
+          let db = event.target.result
+          let objectStores = idba.dbDriver.objectStores
+          let objectStoresDone = objectStores.length
+
+          for (let store of objectStores) {
+            // open a read/write db transaction, ready for clearing the data
+            let transaction = db.transaction([store], 'readwrite')
+            // create an object store on the transaction
+            let objectStore = transaction.objectStore(store)
+            // Make a request to clear all the data out of the object store
+            let objectStoreRequest = objectStore.clear()
+            objectStoreRequest.onsuccess = function(event) {
+              console.info(`store ${store} cleared`)
+              objectStoresDone = objectStoresDone - 1
+              if (objectStoresDone === 0) {
+                resolve(true)
+              }
+            }
+            objectStoreRequest.onerror = function(event) {
+              idba.errors.push(event.target)
+              reject(event.target)
+            }
           }
-          objectStoreRequest.onerror = function(event) {
-            this.errors.push(event.target)
-          }
+        } catch (error) {
+          idba.errors.push(error)
+          reject(error)
         }
-      } catch (error) {
-        this.errors.push(error)
       }
-    }
-    request.onerror = (event) => {
-      this.errors.push(event.target)
-    }
+      request.onerror = (event) => {
+        idba.errors.push(event.target)
+        reject(event.target)
+      }
+    })
+    return promiseDB
   }
 
 
@@ -16169,7 +16184,6 @@ class IndexedDBAdapter {
       const db = event.target.result
       const upgradeTransaction = event.target.transaction
       this._createObjectStores(db, upgradeTransaction)
-      // TODO we should clean up old database versions
     }
     return request
   }
@@ -16214,10 +16228,12 @@ class IndexedDBAdapter {
       let request = this._openDatabaseRequest()
       request.onsuccess = async (event) => {
         const db = event.target.result
+        console.info('***************event.target onsuccess', event.target)
         let rv = await this._putItem(db, data)
         resolve(rv)
       }
       request.onerror = (event) => {
+        console.info('***************event.target onerror', event.target)
         idba.errors.push(event.target)
         reject()
       }
@@ -16977,15 +16993,18 @@ class WordItemIndexedDbDriver {
    * @return {Object[]}
    */
   _serializeHomonym (worditem, addMeaning = false) {
-    let resultHomonym = worditem.homonym && (worditem.homonym instanceof alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["Homonym"]) ? worditem.homonym.convertToJSONObject(addMeaning) : {}
-    return [{
-      ID: this._makeStorageID(worditem),
-      listID: this.userId + '-' + worditem.languageCode,
-      userID: this.userId,
-      languageCode: worditem.languageCode,
-      targetWord: worditem.targetWord,
-      homonym: resultHomonym
-    }]
+    let resultHomonym = worditem.homonym && (worditem.homonym instanceof alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["Homonym"]) ? worditem.homonym.convertToJSONObject(addMeaning) : null
+    if (resultHomonym) {
+      return [{
+        ID: this._makeStorageID(worditem),
+        listID: this.userId + '-' + worditem.languageCode,
+        userID: this.userId,
+        languageCode: worditem.languageCode,
+        targetWord: worditem.targetWord,
+        homonym: resultHomonym
+      }]
+    }
+    return []
   }
 
 

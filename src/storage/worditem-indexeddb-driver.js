@@ -345,15 +345,18 @@ export default class WordItemIndexedDbDriver {
    * @return {Object[]}
    */
   _serializeHomonym (worditem, addMeaning = false) {
-    let resultHomonym = worditem.homonym && (worditem.homonym instanceof Homonym) ? worditem.homonym.convertToJSONObject(addMeaning) : {}
-    return [{
-      ID: this._makeStorageID(worditem),
-      listID: this.userId + '-' + worditem.languageCode,
-      userID: this.userId,
-      languageCode: worditem.languageCode,
-      targetWord: worditem.targetWord,
-      homonym: resultHomonym
-    }]
+    let resultHomonym = worditem.homonym && (worditem.homonym instanceof Homonym) ? worditem.homonym.convertToJSONObject(addMeaning) : null
+    if (resultHomonym) {
+      return [{
+        ID: this._makeStorageID(worditem),
+        listID: this.userId + '-' + worditem.languageCode,
+        userID: this.userId,
+        languageCode: worditem.languageCode,
+        targetWord: worditem.targetWord,
+        homonym: resultHomonym
+      }]
+    }
+    return []
   }
 
 

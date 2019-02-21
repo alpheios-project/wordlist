@@ -1,8 +1,9 @@
 export default class IndexedDBObjectStoresStructure {
   /**
-   * private method - creates a template for a new Object Store
+   * Defines basic template for creating objectStore
+   * @return {Object} - objectStore structure
    */
- static _objectStoreTemplate () {
+  static _objectStoreTemplate () {
     return {
       keyPath: 'ID',
       indexes: [
@@ -15,15 +16,18 @@ export default class IndexedDBObjectStoresStructure {
     }
   }
 
-   /**
-   * getter for the Common segment store
+  /**
+   * Defines objectStore structure for common segment
+   * @return {Object} - objectStore structure
    */
   static get WordListsCommon () {
     return IndexedDBObjectStoresStructure._objectStoreTemplate()
   }
 
   /**
-   * getter for the Context segment store
+   * Defines objectStore structure for context segment
+   * adds additional index
+   * @return {Object} - objectStore structure
    */
   static get WordListsContext () {
     let structure = IndexedDBObjectStoresStructure._objectStoreTemplate()
@@ -34,14 +38,16 @@ export default class IndexedDBObjectStoresStructure {
   }
 
   /**
-   * getter for the Homonym segment store
+   * Defines objectStore structure for short homonym segment
+   * @return {Object} - objectStore structure
    */
   static get WordListsHomonym () {
     return IndexedDBObjectStoresStructure._objectStoreTemplate()
   }
 
   /**
-   * getter for the Full Homonym segment store
+   * Defines objectStore structure for full homonym segment
+   * @return {Object} - objectStore structure
    */
   static get WordListsFullHomonym () {
     return IndexedDBObjectStoresStructure._objectStoreTemplate()

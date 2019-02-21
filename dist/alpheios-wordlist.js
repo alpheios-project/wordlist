@@ -16471,7 +16471,9 @@ __webpack_require__.r(__webpack_exports__);
 
 class IndexedDBLoadProcess {
   /**
-   * load a data model object from the database
+   * Creates WordItem with properties from json and sets currentSession = false
+   * @param {Object} jsonObj - data from common segment
+   * @return {WordItem} 
    */
   static loadBaseObject(jsonObj) {
     // make sure when we create from the database
@@ -16481,26 +16483,36 @@ class IndexedDBLoadProcess {
   }
 
   /**
-  * private method to load the Context property of a WordItem
-  */
-  static loadContext (jsonObjs, worditem) {
+   * Creates TextQuoteSelectors from jsonObjs and loads them to context property of wordItem
+   * @param {Object[]} jsonObjs - data from context segment
+   * @param {WordItem} wordItem
+   * @return {WordItem} 
+   */
+  static loadContext (jsonObjs, wordItem) {
     if (! Array.isArray(jsonObjs)) {
       jsonObjs = [jsonObjs]  
     }
-    worditem.context = alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["WordItem"].readContext(jsonObjs)
-    return worditem
+    wordItem.context = alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["WordItem"].readContext(jsonObjs)
+    return wordItem
   }
 
   /**
-   * private method to load the Homonym property of a WordItem
+   * Creates Homonym from jsonObj and loads it to homonym property of wordItem
+   *   if jsonObjs[0] has homonym property with full data from local DB, then it uses readHomonym method
+   *   if jsonObjs[0] has homonym property with short data from remote DB, 
+   *        it creates empty homonym with data for lexemes from lemmasList
+   *   if jsonObjs[0] has empty homonym property it creates empty homonym with languageCode and targetWord only
+   * @param {Object[]} jsonObjs - data from homonym segment
+   * @param {WordItem} wordItem
+   * @return {WordItem} 
    */
-  static loadHomonym (jsonObj, wordItem) {
-    let jsonHomonym = jsonObj[0].homonym
+  static loadHomonym (jsonObjs, wordItem) {
+    let jsonHomonym = jsonObjs[0].homonym
 
     if (jsonHomonym.lexemes && Array.isArray(jsonHomonym.lexemes) && jsonHomonym.lexemes.length >0) {
-      wordItem.homonym = alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["WordItem"].readHomonym(jsonObj[0])
+      wordItem.homonym = alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["WordItem"].readHomonym(jsonObjs[0])
     } else {
-      let languageID = alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["LanguageModelFactory"].getLanguageIdFromCode(jsonObj[0].languageCode)
+      let languageID = alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["LanguageModelFactory"].getLanguageIdFromCode(jsonObjs[0].languageCode)
       let lexemes = []
 
       if (jsonHomonym.lemmasList) {
@@ -16509,16 +16521,14 @@ class IndexedDBLoadProcess {
           lexemes.push(new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["Lexeme"](new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["Lemma"](lexForm, languageID), []))
         }
       } else {
-        lexemes = [new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["Lexeme"](new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["Lemma"](jsonObj[0].targetWord, languageID), [])]
+        lexemes = [new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["Lexeme"](new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["Lemma"](jsonObjs[0].targetWord, languageID), [])]
       }
       wordItem.homonym = new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["Homonym"](lexemes, jsonHomonym.targetWord)
     }
     return wordItem
   }
-
-  
-
 }
+
 
 /***/ }),
 
@@ -16534,9 +16544,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return IndexedDBObjectStoresStructure; });
 class IndexedDBObjectStoresStructure {
   /**
-   * private method - creates a template for a new Object Store
+   * Defines basic template for creating objectStore
+   * @return {Object} - objectStore structure
    */
- static _objectStoreTemplate () {
+  static _objectStoreTemplate () {
     return {
       keyPath: 'ID',
       indexes: [
@@ -16549,15 +16560,18 @@ class IndexedDBObjectStoresStructure {
     }
   }
 
-   /**
-   * getter for the Common segment store
+  /**
+   * Defines objectStore structure for common segment
+   * @return {Object} - objectStore structure
    */
   static get WordListsCommon () {
     return IndexedDBObjectStoresStructure._objectStoreTemplate()
   }
 
   /**
-   * getter for the Context segment store
+   * Defines objectStore structure for context segment
+   * adds additional index
+   * @return {Object} - objectStore structure
    */
   static get WordListsContext () {
     let structure = IndexedDBObjectStoresStructure._objectStoreTemplate()
@@ -16568,14 +16582,16 @@ class IndexedDBObjectStoresStructure {
   }
 
   /**
-   * getter for the Homonym segment store
+   * Defines objectStore structure for short homonym segment
+   * @return {Object} - objectStore structure
    */
   static get WordListsHomonym () {
     return IndexedDBObjectStoresStructure._objectStoreTemplate()
   }
 
   /**
-   * getter for the Full Homonym segment store
+   * Defines objectStore structure for full homonym segment
+   * @return {Object} - objectStore structure
    */
   static get WordListsFullHomonym () {
     return IndexedDBObjectStoresStructure._objectStoreTemplate()
@@ -16600,16 +16616,29 @@ __webpack_require__.r(__webpack_exports__);
 
 
 class RemoteDBAdapter {
+  /**
+   * 
+   * @param {WordItemRemoteDbDriver} dbDriver
+   */
   constructor (dbDriver) {
     this.dbDriver = dbDriver
     this.available = this._checkRemoteDBAvailability()
     this.errors = []
   }
 
+  /**
+   * Checks if defined obligatory params - userID and headers for request
+   * @return {Boolean} - true - adapter could be used, false - couldn't
+   */
   _checkRemoteDBAvailability () {
     return Boolean(this.dbDriver.userID) && Boolean(this.dbDriver.requestsParams.headers)
   }
 
+  /**
+   * Creates an item in remote storage
+   * @param {WordItem} data
+   * @return {Boolean} - successful/failed result
+   */
   async create(data) {
     try {
       let url = this.dbDriver.storageMap.post.url(data)
@@ -16627,6 +16656,11 @@ class RemoteDBAdapter {
     }
   }
 
+  /**
+   * Updates an item in remote storage
+   * @param {WordItem} data
+   * @return {Boolean} - successful/failed result
+   */
   async update(data) {
     try {
       let url = this.dbDriver.storageMap.put.url(data)
@@ -16643,6 +16677,11 @@ class RemoteDBAdapter {
     }
   }
 
+  /**
+   * Deletes a single item in remote storage
+   * @param {WordItem} data
+   * @return {Boolean} - successful/failed result
+   */
   async deleteOne(data) {
     try {
       let url = this.dbDriver.storageMap.deleteOne.url(data)
@@ -16657,6 +16696,12 @@ class RemoteDBAdapter {
     }
   }
 
+  /**
+   * Deletes all items by languageCode in remote storage
+   * @param {Object} data
+   * @param {String} data.languageCode
+   * @return {Boolean} - successful/failed result
+   */
   async deleteMany(data) {
     try {
       let url = this.dbDriver.storageMap.deleteMany.url(data)
@@ -16672,12 +16717,19 @@ class RemoteDBAdapter {
     }
   }
 
+  /**
+   * Queries data for one wordItem or wordList by languageID
+   * @param {Object} data
+   * @param {WordItem} data.wordItem
+   * @param {String} data.languageCode
+   * @return {WordItem[]}
+   */
   async query(data) {
     try {
       let url = this.dbDriver.storageMap.get.url(data)
       let result = await axios__WEBPACK_IMPORTED_MODULE_0___default.a.get(url, this.dbDriver.requestsParams)
-      let updated = this.dbDriver.storageMap.get.checkResult(result)
-      return updated
+      let final = this.dbDriver.storageMap.get.checkResult(result)
+      return final
     } catch (error) {
       if (error) {
         this.errors.push(error)
@@ -17174,6 +17226,10 @@ var _storage_remote_db_config_json__WEBPACK_IMPORTED_MODULE_0___namespace = /*#_
 
 
 class WordItemRemoteDbDriver {
+  /**
+   * Defines proper headers and uploads config for access to remote storage, defines storageMap
+   * @param {String} userID
+   */
   constructor (userID) {
     this.config = _storage_remote_db_config_json__WEBPACK_IMPORTED_MODULE_0__
     this.userID = userID || this.config.testUserID
@@ -17216,10 +17272,20 @@ class WordItemRemoteDbDriver {
     }
   }
 
+   /**
+   * Defines url for creating item in remote storage
+   * @param {WordItem} wordItem
+   * @return {String}
+   */
   _constructPostURL (wordItem) {
     return `/words/${this._makeStorageID(wordItem)}`
   }
 
+   /**
+   * Defines url for getting wordItem or wordList from remote storage
+   * @param {WordItem} wordItem
+   * @return {String}
+   */
   _constructGetURL (data) {
     if (data.wordItem) {
       return `/words/${this._makeStorageID(data.wordItem)}`
@@ -17230,14 +17296,29 @@ class WordItemRemoteDbDriver {
     return
   }
 
+  /**
+   * Defines url for deleting items from wordList from languageCode in remote storage
+   * @param {WordItem} wordItem
+   * @return {String}
+   */
   _constructDeleteManyURL (data) {
     return `/words?languageCode=${data.languageCode}`
   }
 
+  /**
+   * Defines ID to use in remote storage
+   * @param {WordItem} wordItem
+   * @return {String}
+   */
   _makeStorageID (wordItem) {
     return wordItem.languageCode + '-' + wordItem.targetWord
   }
 
+  /**
+   * Defines json object from wordItem to save to remote storage
+   * @param {WordItem} wordItem
+   * @return {Object}
+   */
   _serialize (wordItem) {
     let result = {
       ID: this._makeStorageID(wordItem),
@@ -17267,6 +17348,11 @@ class WordItemRemoteDbDriver {
     return result
   }
 
+  /**
+   * Defines json object from homonym to save to remote storage
+   * @param {WordItem} wordItem
+   * @return {Object}
+   */
   _serializeHomonym (wordItem) {
     if (wordItem.homonym && wordItem.homonym.targetWord) {
       return {
@@ -17277,6 +17363,11 @@ class WordItemRemoteDbDriver {
     return null
   }
 
+  /**
+   * Defines json object from textQuoteSelectors to save to remote storage
+   * @param {WordItem} wordItem
+   * @return {Object[]}
+   */
   _serializeContext (wordItem) {
     let result = []
     for (let tq of wordItem.context) {
@@ -17300,14 +17391,29 @@ class WordItemRemoteDbDriver {
     return result
   }
 
+  /**
+   * Checks status of response (post) from remote storage 
+   * @param {WordItem} wordItem
+   * @return {Boolean}
+   */
   _checkPostResult (result) {
     return result.status === 201
   }
 
+  /**
+   * Checks status of response (put) from remote storage 
+   * @param {WordItem} wordItem
+   * @return {Boolean}
+   */
   _checkPutResult (result) {
     return result.status === 200
   }
 
+  /**
+   * Checks status of response (get) from remote storage 
+   * @param {WordItem} wordItem
+   * @return {Object/Object[]}
+   */
   _checkGetResult (result) {
     if (result.status !== 200) {
       return []
@@ -17319,6 +17425,9 @@ class WordItemRemoteDbDriver {
     }
   }
 
+  /**
+   * Defines date 
+   */
   static get currentDate () {
     let dt = new Date()
     return dt.getFullYear() + '/'
@@ -17330,6 +17439,11 @@ class WordItemRemoteDbDriver {
 
   }
 
+  /**
+   * Creates array is IDs from wordItems for comparing with remote storage data
+   * @param {WordItem[]} wordItems
+   * @return {String[]}
+   */
   getCheckArray (dataItems) {
     return dataItems.map(item => this._makeStorageID(item))
   }

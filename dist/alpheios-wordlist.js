@@ -15296,9 +15296,16 @@ class UserDataManager {
    * Promise-based method - creates a new object in local/remote storage
    * uses blocking workflow: 
    *       at the starting of the method it checks if some data method (create, update, delete) is already using DB
-   *       
+   *         if it is bocked, it pushes params to queue
+   *         if it is unblocked, it blocks, starts the data manipulation process and at the end
+   *            it removes blocking and checks the queue
    * @param {Object} data
    * @param {WordItem} data.dataObj - object for saving to local/remote storage
+   * @param {Object} [params={}] - could have the following additional parameters
+   *                                 onlyLocal - it creates data only in local DB
+   *                                 onlyRemote - it creates data only in remote DB
+   *                               if there are no parameters it creates both in local, remote
+   * @return {Boolean} true if created successful, false if not
    * @return {RemoteDBAdapter}
    */
   async create(data, params = {}) {
@@ -15349,12 +15356,12 @@ class UserDataManager {
   }
 
   /**
-   * Update data in the user data stores
-   * @param {Object} data object adhering to
-   *                      { dataObj: the data model object to be updated}
-   *                        params: datatype specific parameters
-   *                      }
-   * @return {Boolean} true if update succeeded false if not
+   * Promise-based method - updates object in local/remote storage
+   * uses blocking workflow: 
+   * @param {Object} data
+   * @param {WordItem} data.dataObj - object for saving to local/remote storage
+   * @param {Object} [params={}] - the same as in create method
+   * @return {Boolean} true if updated successful, false if not
    */
   async update(data, params = {}) {
     if (this.blocked) {
@@ -15402,10 +15409,12 @@ class UserDataManager {
   }
 
   /**
-   * Delete a single data model object from the user data stores
-   * @param {Object} data object adhering to
-   *                      { dataObj: the data model object to be updated} }
-   * @return {Boolean} true if delete succeeded false if not
+   * Promise-based method - deletes single object in local/remote storage
+   * uses blocking workflow: 
+   * @param {Object} data
+   * @param {WordItem} data.dataObj - object for saving to local/remote storage
+   * @param {Object} [params={}] - the same as in create method
+   * @return {Boolean} true if deleted successful, false if not
    */
   async delete(data, params = {}) {
     if (this.blocked) {
@@ -15453,11 +15462,12 @@ class UserDataManager {
   }
 
   /**
-   * Delete a set objects from the data store
-   * @param {Object} data object adhering to
-   *                      { dataType: the name of the datatype to delete,
-   *                        params: parameters to identify items to be deleted
-   *                      }
+   * Promise-based method - deletes all objects from the wordlist by languageCode in local/remote storage
+   * uses blocking workflow: 
+   * @param {Object} data
+   * @param {String} data.languageCode - languageCode of Wordlist to be deleted
+   * @param {Object} [params={}] - the same as in create method
+   * @return {Boolean} true if deleted successful, false if not
    */
   async deleteMany(data, params = {}) {
     if (this.blocked) {
@@ -15504,12 +15514,17 @@ class UserDataManager {
   }
 
   /**
-   * Query the user data stores
-   * @param {Object} data object adhering to
-   *                      { dataType: the name of the datatype to query
-   *                        params: query parameters to
-   *                      }
-   * @return {Object[]} an array of data items
+   * Promise-based method - queries all objects from the wordlist by languageCode 
+   * or one wordItem from local/remote storage 
+   * @param {Object} data
+   * @param {String} data.languageCode
+   * @param {WordItem} data.wordItem
+   * @param {String} [type = merged] - there are the following available values:
+   *                                     local - queries data from local DB
+   *                                     remote - queries data from remote DB
+   *                                     merged - queries data from local and remote DB, compares, 
+   *                                              merges and saves absent data to local/remote
+   * @return {WordItem[]} 
    */
   async query (data, type = 'merged') {
     let remoteAdapter =  this._remoteStorageAdapter(data.dataType)
@@ -15535,12 +15550,28 @@ class UserDataManager {
     return result
   }
 
+  /**
+   * Promise-based method - inits methods for creating absent local items, absent remote items
+   * @param {WordItemIndexedDbDriver} localDBDriver
+   * @param {WordItemRemoteDbDriver} remoteDBDriver
+   * @param {WordItem[]} localDataItems - items that are stored localy before merging
+   * @param {WordItem[]} remoteDataItems - items that are stored remotely before merging
+   * @return {WordItem[]} - new wordItems that were created after merging
+   */
   async mergeLocalRemote (localDBDriver, remoteDBDriver, localDataItems, remoteDataItems) {
     let notInLocalWI = await this.createAbsentLocalItems(localDBDriver, remoteDBDriver, localDataItems, remoteDataItems)
     this.createAbsentRemoteItems(localDBDriver, remoteDBDriver, localDataItems, remoteDataItems)
     return notInLocalWI
   }
 
+  /**
+   * Promise-based method - creates absent remote items
+   * @param {WordItemIndexedDbDriver} localDBDriver
+   * @param {WordItemRemoteDbDriver} remoteDBDriver
+   * @param {WordItem[]} localDataItems - items that are stored localy before merging
+   * @param {WordItem[]} remoteDataItems - items that are stored remotely before merging
+   * @return {WordItem[]} - new wordItems that were created after merging
+   */
   async createAbsentRemoteItems (localDBDriver, remoteDBDriver, localDataItems, remoteDataItems) {
     let remoteCheckAray = remoteDBDriver.getCheckArray(remoteDataItems)
 
@@ -15551,6 +15582,14 @@ class UserDataManager {
     return notInRemote
   }
 
+  /**
+   * Promise-based method - creates absent local items
+   * @param {WordItemIndexedDbDriver} localDBDriver
+   * @param {WordItemRemoteDbDriver} remoteDBDriver
+   * @param {WordItem[]} localDataItems - items that are stored localy before merging
+   * @param {WordItem[]} remoteDataItems - items that are stored remotely before merging
+   * @return {WordItem[]} - new wordItems that were created after merging
+   */
   async createAbsentLocalItems (localDBDriver, remoteDBDriver, localDataItems, remoteDataItems) {
     let localCheckAray = localDBDriver.getCheckArray(localDataItems)
 
@@ -15565,6 +15604,9 @@ class UserDataManager {
     return notInLocalWI
   }
 
+  /**
+   * Method checks request queue, and if it is not empty executes the first in the queue
+   */
   checkRequestQueue () {
     if (this.requestsQueue.length > 0) {
       let curRequest = this.requestsQueue.shift()
@@ -15572,9 +15614,12 @@ class UserDataManager {
     }
   }
 
-  printErrors (localAdapter) {
-    if (localAdapter.errors && localAdapter.errors.length > 0) {
-      localAdapter.errors.forEach(error => console.error(`Print error - ${error.message}`))
+  /**
+   * Method prints errors from the errors property of the given adapter
+   */
+  printErrors (adapter) {
+    if (adapter.errors && adapter.errors.length > 0) {
+      adapter.errors.forEach(error => console.error(`Print error - ${error.message}`))
     }
   }
 }
@@ -15622,8 +15667,6 @@ class WordlistController {
   /**
    * Asynchronously initialize the word lists managed by this controller
    * @param {UserDataManager} dataManager a user data manager to retrieve initial wordlist data from
-   *  // TODO may need a way to process a queue of pending words here e.g. if the wordlist controller isn't
-    * // activated until after number of lookups have already occurred
    * Emits a WORDLIST_UPDATED event when the wordlists are available
    */
   async initLists (dataManager) {
@@ -15658,7 +15701,6 @@ class WordlistController {
    * Emits a WORDLIST_DELETED event
    */
   removeWordList (languageCode) {
-    let toDelete = this.wordLists[languageCode]
     delete this.wordLists[languageCode]
     WordlistController.evt.WORDLIST_DELETED.pub({dataType: 'WordItem', params: {languageCode: languageCode}})
     WordlistController.evt.WORDLIST_UPDATED.pub(this.wordLists)
@@ -15676,10 +15718,13 @@ class WordlistController {
       let deleted = wordList.deleteWordItem(targetWord)
       if (deleted) {
         WordlistController.evt.WORDITEM_DELETED.pub({dataObj: deleted})
+        if (wordList.isEmpty) {
+          this.removeWordList(languageCode)
+        }
+      } else {
+        console.error('Trying to delete an absent element')
       }
     }
-    // TODO error handling if item not found
-    // TODO call removeWordList if the list is empty now
   }
 
   /**
@@ -15691,12 +15736,14 @@ class WordlistController {
    */
   getWordListItem (languageCode, targetWord, create=false) {
     let wordList = this.getWordList(languageCode, create)
-    let worditem
+    let wordItem
     if (wordList) {
-      worditem = wordList.getWordItem(targetWord, create, WordlistController.evt.WORDITEM_UPDATED)
+      wordItem = wordList.getWordItem(targetWord, create, WordlistController.evt.WORDITEM_UPDATED)
     }
-    // TODO error handling for no item?
-    return worditem
+    if (!wordItem) {
+      console.error(`There are no items for these parameters ${languageCode} ${targetWord}`)
+    }
+    return wordItem
   }
 
   /**
@@ -15705,7 +15752,6 @@ class WordlistController {
    * Emits WORDITEM_UPDATED and WORDLIST_UPDATED events
    */
    onHomonymReady (data) {
-    // console.info('********************onHomonymReady1', data)
     // when receiving this event, it's possible this is the first time we are seeing the word so
     // create the item in the word list if it doesn't exist
     let wordItem = this.getWordListItem(data.language,data.targetWord,true)
@@ -15721,7 +15767,6 @@ class WordlistController {
   * Emits a WORDITEM_UPDATED event
   */
   onDefinitionsReady (data) {
-    // console.info('********************onDefinitionsReady', data.homonym)
     let wordItem = this.getWordListItem(data.homonym.language,data.homonym.targetWord)
     if (wordItem) {
       wordItem.homonym = data.homonym
@@ -15739,7 +15784,6 @@ class WordlistController {
   * Emits a WORDITEM_UPDATED event
   */
   onLemmaTranslationsReady (data) {
-    // console.info('********************onLemmaTranslationsReady', data)
     let wordItem = this.getWordListItem(data.language, data.targetWord)
     if (wordItem) {
       wordItem.homonym = data
@@ -15755,7 +15799,6 @@ class WordlistController {
   * Emits a WORDITEM_UPDATED and WORDLIST_UPDATED events
   */
   onTextQuoteSelectorReceived (data) {
-    // console.info('********************onTextQuoteSelectorReceived', data)
     // when receiving this event, it's possible this is the first time we are seeing the word so
     // create the item in the word list if it doesn't exist
     let wordItem = this.getWordListItem(data.languageCode, data.normalizedText,true)

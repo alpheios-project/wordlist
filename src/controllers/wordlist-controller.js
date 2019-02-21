@@ -18,8 +18,6 @@ export default class WordlistController {
   /**
    * Asynchronously initialize the word lists managed by this controller
    * @param {UserDataManager} dataManager a user data manager to retrieve initial wordlist data from
-   *  // TODO may need a way to process a queue of pending words here e.g. if the wordlist controller isn't
-    * // activated until after number of lookups have already occurred
    * Emits a WORDLIST_UPDATED event when the wordlists are available
    */
   async initLists (dataManager) {
@@ -54,7 +52,6 @@ export default class WordlistController {
    * Emits a WORDLIST_DELETED event
    */
   removeWordList (languageCode) {
-    let toDelete = this.wordLists[languageCode]
     delete this.wordLists[languageCode]
     WordlistController.evt.WORDLIST_DELETED.pub({dataType: 'WordItem', params: {languageCode: languageCode}})
     WordlistController.evt.WORDLIST_UPDATED.pub(this.wordLists)
@@ -72,10 +69,13 @@ export default class WordlistController {
       let deleted = wordList.deleteWordItem(targetWord)
       if (deleted) {
         WordlistController.evt.WORDITEM_DELETED.pub({dataObj: deleted})
+        if (wordList.isEmpty) {
+          this.removeWordList(languageCode)
+        }
+      } else {
+        console.error('Trying to delete an absent element')
       }
     }
-    // TODO error handling if item not found
-    // TODO call removeWordList if the list is empty now
   }
 
   /**
@@ -87,12 +87,14 @@ export default class WordlistController {
    */
   getWordListItem (languageCode, targetWord, create=false) {
     let wordList = this.getWordList(languageCode, create)
-    let worditem
+    let wordItem
     if (wordList) {
-      worditem = wordList.getWordItem(targetWord, create, WordlistController.evt.WORDITEM_UPDATED)
+      wordItem = wordList.getWordItem(targetWord, create, WordlistController.evt.WORDITEM_UPDATED)
     }
-    // TODO error handling for no item?
-    return worditem
+    if (!wordItem) {
+      console.error(`There are no items for these parameters ${languageCode} ${targetWord}`)
+    }
+    return wordItem
   }
 
   /**
@@ -101,7 +103,6 @@ export default class WordlistController {
    * Emits WORDITEM_UPDATED and WORDLIST_UPDATED events
    */
    onHomonymReady (data) {
-    // console.info('********************onHomonymReady1', data)
     // when receiving this event, it's possible this is the first time we are seeing the word so
     // create the item in the word list if it doesn't exist
     let wordItem = this.getWordListItem(data.language,data.targetWord,true)
@@ -117,7 +118,6 @@ export default class WordlistController {
   * Emits a WORDITEM_UPDATED event
   */
   onDefinitionsReady (data) {
-    // console.info('********************onDefinitionsReady', data.homonym)
     let wordItem = this.getWordListItem(data.homonym.language,data.homonym.targetWord)
     if (wordItem) {
       wordItem.homonym = data.homonym
@@ -135,7 +135,6 @@ export default class WordlistController {
   * Emits a WORDITEM_UPDATED event
   */
   onLemmaTranslationsReady (data) {
-    // console.info('********************onLemmaTranslationsReady', data)
     let wordItem = this.getWordListItem(data.language, data.targetWord)
     if (wordItem) {
       wordItem.homonym = data
@@ -151,7 +150,6 @@ export default class WordlistController {
   * Emits a WORDITEM_UPDATED and WORDLIST_UPDATED events
   */
   onTextQuoteSelectorReceived (data) {
-    // console.info('********************onTextQuoteSelectorReceived', data)
     // when receiving this event, it's possible this is the first time we are seeing the word so
     // create the item in the word list if it doesn't exist
     let wordItem = this.getWordListItem(data.languageCode, data.normalizedText,true)

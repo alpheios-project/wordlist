@@ -64,9 +64,16 @@ export default class UserDataManager {
    * Promise-based method - creates a new object in local/remote storage
    * uses blocking workflow: 
    *       at the starting of the method it checks if some data method (create, update, delete) is already using DB
-   *       
+   *         if it is bocked, it pushes params to queue
+   *         if it is unblocked, it blocks, starts the data manipulation process and at the end
+   *            it removes blocking and checks the queue
    * @param {Object} data
    * @param {WordItem} data.dataObj - object for saving to local/remote storage
+   * @param {Object} [params={}] - could have the following additional parameters
+   *                                 onlyLocal - it creates data only in local DB
+   *                                 onlyRemote - it creates data only in remote DB
+   *                               if there are no parameters it creates both in local, remote
+   * @return {Boolean} true if created successful, false if not
    * @return {RemoteDBAdapter}
    */
   async create(data, params = {}) {
@@ -117,12 +124,12 @@ export default class UserDataManager {
   }
 
   /**
-   * Update data in the user data stores
-   * @param {Object} data object adhering to
-   *                      { dataObj: the data model object to be updated}
-   *                        params: datatype specific parameters
-   *                      }
-   * @return {Boolean} true if update succeeded false if not
+   * Promise-based method - updates object in local/remote storage
+   * uses blocking workflow: 
+   * @param {Object} data
+   * @param {WordItem} data.dataObj - object for saving to local/remote storage
+   * @param {Object} [params={}] - the same as in create method
+   * @return {Boolean} true if updated successful, false if not
    */
   async update(data, params = {}) {
     if (this.blocked) {
@@ -170,10 +177,12 @@ export default class UserDataManager {
   }
 
   /**
-   * Delete a single data model object from the user data stores
-   * @param {Object} data object adhering to
-   *                      { dataObj: the data model object to be updated} }
-   * @return {Boolean} true if delete succeeded false if not
+   * Promise-based method - deletes single object in local/remote storage
+   * uses blocking workflow: 
+   * @param {Object} data
+   * @param {WordItem} data.dataObj - object for saving to local/remote storage
+   * @param {Object} [params={}] - the same as in create method
+   * @return {Boolean} true if deleted successful, false if not
    */
   async delete(data, params = {}) {
     if (this.blocked) {
@@ -221,11 +230,12 @@ export default class UserDataManager {
   }
 
   /**
-   * Delete a set objects from the data store
-   * @param {Object} data object adhering to
-   *                      { dataType: the name of the datatype to delete,
-   *                        params: parameters to identify items to be deleted
-   *                      }
+   * Promise-based method - deletes all objects from the wordlist by languageCode in local/remote storage
+   * uses blocking workflow: 
+   * @param {Object} data
+   * @param {String} data.languageCode - languageCode of Wordlist to be deleted
+   * @param {Object} [params={}] - the same as in create method
+   * @return {Boolean} true if deleted successful, false if not
    */
   async deleteMany(data, params = {}) {
     if (this.blocked) {
@@ -272,12 +282,17 @@ export default class UserDataManager {
   }
 
   /**
-   * Query the user data stores
-   * @param {Object} data object adhering to
-   *                      { dataType: the name of the datatype to query
-   *                        params: query parameters to
-   *                      }
-   * @return {Object[]} an array of data items
+   * Promise-based method - queries all objects from the wordlist by languageCode 
+   * or one wordItem from local/remote storage 
+   * @param {Object} data
+   * @param {String} data.languageCode
+   * @param {WordItem} data.wordItem
+   * @param {String} [type = merged] - there are the following available values:
+   *                                     local - queries data from local DB
+   *                                     remote - queries data from remote DB
+   *                                     merged - queries data from local and remote DB, compares, 
+   *                                              merges and saves absent data to local/remote
+   * @return {WordItem[]} 
    */
   async query (data, type = 'merged') {
     let remoteAdapter =  this._remoteStorageAdapter(data.dataType)
@@ -303,12 +318,28 @@ export default class UserDataManager {
     return result
   }
 
+  /**
+   * Promise-based method - inits methods for creating absent local items, absent remote items
+   * @param {WordItemIndexedDbDriver} localDBDriver
+   * @param {WordItemRemoteDbDriver} remoteDBDriver
+   * @param {WordItem[]} localDataItems - items that are stored localy before merging
+   * @param {WordItem[]} remoteDataItems - items that are stored remotely before merging
+   * @return {WordItem[]} - new wordItems that were created after merging
+   */
   async mergeLocalRemote (localDBDriver, remoteDBDriver, localDataItems, remoteDataItems) {
     let notInLocalWI = await this.createAbsentLocalItems(localDBDriver, remoteDBDriver, localDataItems, remoteDataItems)
     this.createAbsentRemoteItems(localDBDriver, remoteDBDriver, localDataItems, remoteDataItems)
     return notInLocalWI
   }
 
+  /**
+   * Promise-based method - creates absent remote items
+   * @param {WordItemIndexedDbDriver} localDBDriver
+   * @param {WordItemRemoteDbDriver} remoteDBDriver
+   * @param {WordItem[]} localDataItems - items that are stored localy before merging
+   * @param {WordItem[]} remoteDataItems - items that are stored remotely before merging
+   * @return {WordItem[]} - new wordItems that were created after merging
+   */
   async createAbsentRemoteItems (localDBDriver, remoteDBDriver, localDataItems, remoteDataItems) {
     let remoteCheckAray = remoteDBDriver.getCheckArray(remoteDataItems)
 
@@ -319,6 +350,14 @@ export default class UserDataManager {
     return notInRemote
   }
 
+  /**
+   * Promise-based method - creates absent local items
+   * @param {WordItemIndexedDbDriver} localDBDriver
+   * @param {WordItemRemoteDbDriver} remoteDBDriver
+   * @param {WordItem[]} localDataItems - items that are stored localy before merging
+   * @param {WordItem[]} remoteDataItems - items that are stored remotely before merging
+   * @return {WordItem[]} - new wordItems that were created after merging
+   */
   async createAbsentLocalItems (localDBDriver, remoteDBDriver, localDataItems, remoteDataItems) {
     let localCheckAray = localDBDriver.getCheckArray(localDataItems)
 
@@ -333,6 +372,9 @@ export default class UserDataManager {
     return notInLocalWI
   }
 
+  /**
+   * Method checks request queue, and if it is not empty executes the first in the queue
+   */
   checkRequestQueue () {
     if (this.requestsQueue.length > 0) {
       let curRequest = this.requestsQueue.shift()
@@ -340,9 +382,12 @@ export default class UserDataManager {
     }
   }
 
-  printErrors (localAdapter) {
-    if (localAdapter.errors && localAdapter.errors.length > 0) {
-      localAdapter.errors.forEach(error => console.error(`Print error - ${error.message}`))
+  /**
+   * Method prints errors from the errors property of the given adapter
+   */
+  printErrors (adapter) {
+    if (adapter.errors && adapter.errors.length > 0) {
+      adapter.errors.forEach(error => console.error(`Print error - ${error.message}`))
     }
   }
 }

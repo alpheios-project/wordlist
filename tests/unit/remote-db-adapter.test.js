@@ -1,11 +1,10 @@
 /* eslint-env jest */
 /* eslint-disable no-unused-vars */
 import 'whatwg-fetch'
-import { ClientAdapters } from 'alpheios-client-adapters'
 import WordItemRemoteDbDriver from '@/storage/worditem-remotedb-driver'
 import RemoteDBAdapter from '@/storage/remote-db-adapter'
 import axios from 'axios';
-import { WordItem, Constants, TextQuoteSelector } from 'alpheios-data-models'
+import { WordItem } from 'alpheios-data-models'
 
 describe('remote-db-adapter.test.js', () => {
   console.error = function () {}

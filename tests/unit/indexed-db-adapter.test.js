@@ -1,11 +1,9 @@
 /* eslint-env jest */
 /* eslint-disable no-unused-vars */
 import 'whatwg-fetch'
-import { ClientAdapters } from 'alpheios-client-adapters'
 import WordItemIndexedDbDriver from '@/storage/worditem-indexeddb-driver'
 import IndexedDBAdapter from '@/storage/indexed-db-adapter'
-import axios from 'axios'
-import { WordItem, Constants, TextQuoteSelector } from 'alpheios-data-models'
+import { WordItem, Constants } from 'alpheios-data-models'
 
 import IndexedDB from 'fake-indexeddb'
 import IDBKeyRange from 'fake-indexeddb/lib/FDBKeyRange'
@@ -403,20 +401,5 @@ describe('indexed-db-adapter.test.js', () => {
     expect(localAdapter.errors.length).toEqual(1)
   })
 
-/*
-  it('20 IndexedDBAdapter - _set creates Promise for openDataBase - on success it executes _putItem', async () => {
-    let dbDriverLocal = new WordItemIndexedDbDriver('alpheiosMockUser')
-    let localAdapter = new IndexedDBAdapter(dbDriverLocal)
 
-    let testWordItem = new WordItem({
-      targetWord: 'tuli',
-      languageCode: Constants.STR_LANG_CODE_LAT
-    })
-
-    jest.spyOn(localAdapter, '_putItem')
-
-    let result = await localAdapter._set(testWordItem)
-    expect(localAdapter._putItem).toHaveBeenCalled()
-  }, 10000)
-  */
 })

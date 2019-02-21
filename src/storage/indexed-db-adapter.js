@@ -168,7 +168,7 @@ export default class IndexedDBAdapter {
         try {
           let db = event.target.result
           let objectStores = idba.dbDriver.objectStores
-          let objectStoresDone = objectStores.length
+          let objectStoresRemaining = objectStores.length
 
           for (let store of objectStores) {
             // open a read/write db transaction, ready for clearing the data
@@ -179,8 +179,8 @@ export default class IndexedDBAdapter {
             let objectStoreRequest = objectStore.clear()
             objectStoreRequest.onsuccess = function(event) {
               console.info(`store ${store} cleared`)
-              objectStoresDone = objectStoresDone - 1
-              if (objectStoresDone === 0) {
+              objectStoresRemaining = objectStoresRemaining - 1
+              if (objectStoresRemaining === 0) {
                 resolve(true)
               }
             }

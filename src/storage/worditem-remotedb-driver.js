@@ -105,12 +105,6 @@ export default class WordItemRemoteDbDriver {
       createdDT: WordItemRemoteDbDriver.currentDate
     }
 
-    if (wordItem.homonym && wordItem.homonym.targetWord) {
-      result.homonym = {
-        targetWord: wordItem.homonym.targetWord,
-        lemmasList: wordItem.lemmasList
-      }
-    }
     let homonym = this._serializeHomonym(wordItem)
     if (homonym) {
       result.homonym = homonym

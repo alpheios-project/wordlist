@@ -271,13 +271,11 @@ export default class IndexedDBAdapter {
     let promiseOpenDB = await new Promise((resolve, reject) => {
       let request = this._openDatabaseRequest()
       request.onsuccess = async (event) => {
-        console.info('***************onsuccess')
         const db = event.target.result
         let rv = await this._putItem(db, data)
         resolve(rv)
       }
       request.onerror = (event) => {
-        console.info('***************onerror')
         idba.errors.push(event.target)
         reject()
       }

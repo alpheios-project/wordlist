@@ -15236,7 +15236,12 @@ __webpack_require__.r(__webpack_exports__);
 
 class UserDataManager {
 
-  constructor (userID,events) {
+  /**
+   * Creates with userID argument, subscribe to WordItem and WorList events, inits blocked property and request queue
+   * @param {String} userID - userID that would be used for access to remote storage
+   * @param {String} events - events object of the WordlistController, passed in UIController
+   */
+  constructor (userID, events) {
     this.userID = userID
     if (events) {
       events.WORDITEM_UPDATED.sub(this.update.bind(this))
@@ -15247,11 +15252,21 @@ class UserDataManager {
     this.requestsQueue = []
   }
 
+  /**
+   * Initializes IndexedDBAdapter with appropriate local dbDriver (WordItemIndexedDbDriver) 
+   * @param {String} dataType - data type for choosing a proper dbDriver (WordItem)
+   * @return {IndexedDBAdapter}
+   */
   _localStorageAdapter(dataType) {
     let dbDriver = new UserDataManager.LOCAL_DRIVER_CLASSES[dataType](this.userID)
     return new _storage_indexed_db_adapter_js__WEBPACK_IMPORTED_MODULE_2__["default"](dbDriver)
   }
 
+  /**
+   * Initializes RemoteDBAdapter with appropriate remote dbDriver (WordItemRemoteDbDriver) 
+   * @param {String} dataType - data type for choosing a proper dbDriver (WordItem)
+   * @return {RemoteDBAdapter}
+   */
   _remoteStorageAdapter(dataType) {
     let dbDriver = new UserDataManager.REMOTE_DRIVER_CLASSES[dataType](this.userID)
     return new _storage_remote_db_adapter_js__WEBPACK_IMPORTED_MODULE_3__["default"](dbDriver)
@@ -15277,12 +15292,22 @@ class UserDataManager {
     return finalConstrName
   }
 
+  /**
+   * Promise-based method - creates a new object in local/remote storage
+   * uses blocking workflow: 
+   *       at the starting of the method it checks if some data method (create, update, delete) is already using DB
+   *       
+   * @param {Object} data
+   * @param {WordItem} data.dataObj - object for saving to local/remote storage
+   * @return {RemoteDBAdapter}
+   */
   async create(data, params = {}) {
     if (this.blocked) {
       this.requestsQueue.push({
         method: 'create',
         data: data
       })
+      return
     }
     try {
       this.blocked = true
@@ -15337,6 +15362,7 @@ class UserDataManager {
         method: 'update',
         data: data
       })
+      return
     }
     try {
       this.blocked = true
@@ -15387,6 +15413,7 @@ class UserDataManager {
         method: 'delete',
         data: data
       })
+      return
     }
     try {
       this.blocked = true
@@ -15438,6 +15465,7 @@ class UserDataManager {
         method: 'deleteMany',
         data: data
       })
+      return
     }
     try {
       this.blocked = true
@@ -16227,13 +16255,11 @@ class IndexedDBAdapter {
     let promiseOpenDB = await new Promise((resolve, reject) => {
       let request = this._openDatabaseRequest()
       request.onsuccess = async (event) => {
-        console.info('***************onsuccess')
         const db = event.target.result
         let rv = await this._putItem(db, data)
         resolve(rv)
       }
       request.onerror = (event) => {
-        console.info('***************onerror')
         idba.errors.push(event.target)
         reject()
       }

@@ -4,7 +4,12 @@ import IndexedDBAdapter from '@/storage/indexed-db-adapter.js'
 import RemoteDBAdapter from '@/storage/remote-db-adapter.js'
 export default class UserDataManager {
 
-  constructor (userID,events) {
+  /**
+   * Creates with userID argument, subscribe to WordItem and WorList events, inits blocked property and request queue
+   * @param {String} userID - userID that would be used for access to remote storage
+   * @param {String} events - events object of the WordlistController, passed in UIController
+   */
+  constructor (userID, events) {
     this.userID = userID
     if (events) {
       events.WORDITEM_UPDATED.sub(this.update.bind(this))
@@ -15,11 +20,21 @@ export default class UserDataManager {
     this.requestsQueue = []
   }
 
+  /**
+   * Initializes IndexedDBAdapter with appropriate local dbDriver (WordItemIndexedDbDriver) 
+   * @param {String} dataType - data type for choosing a proper dbDriver (WordItem)
+   * @return {IndexedDBAdapter}
+   */
   _localStorageAdapter(dataType) {
     let dbDriver = new UserDataManager.LOCAL_DRIVER_CLASSES[dataType](this.userID)
     return new IndexedDBAdapter(dbDriver)
   }
 
+  /**
+   * Initializes RemoteDBAdapter with appropriate remote dbDriver (WordItemRemoteDbDriver) 
+   * @param {String} dataType - data type for choosing a proper dbDriver (WordItem)
+   * @return {RemoteDBAdapter}
+   */
   _remoteStorageAdapter(dataType) {
     let dbDriver = new UserDataManager.REMOTE_DRIVER_CLASSES[dataType](this.userID)
     return new RemoteDBAdapter(dbDriver)
@@ -45,12 +60,22 @@ export default class UserDataManager {
     return finalConstrName
   }
 
+  /**
+   * Promise-based method - creates a new object in local/remote storage
+   * uses blocking workflow: 
+   *       at the starting of the method it checks if some data method (create, update, delete) is already using DB
+   *       
+   * @param {Object} data
+   * @param {WordItem} data.dataObj - object for saving to local/remote storage
+   * @return {RemoteDBAdapter}
+   */
   async create(data, params = {}) {
     if (this.blocked) {
       this.requestsQueue.push({
         method: 'create',
         data: data
       })
+      return
     }
     try {
       this.blocked = true
@@ -105,6 +130,7 @@ export default class UserDataManager {
         method: 'update',
         data: data
       })
+      return
     }
     try {
       this.blocked = true
@@ -155,6 +181,7 @@ export default class UserDataManager {
         method: 'delete',
         data: data
       })
+      return
     }
     try {
       this.blocked = true
@@ -206,6 +233,7 @@ export default class UserDataManager {
         method: 'deleteMany',
         data: data
       })
+      return
     }
     try {
       this.blocked = true

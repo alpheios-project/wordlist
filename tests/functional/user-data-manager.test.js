@@ -87,7 +87,7 @@ describe('user-data-manager.test.js', () => {
     })
   }
 
-  it.skip('1 UserDataManager - delete many and update method, checking blocking', async () => {
+  it('1 UserDataManager - delete many and update method, checking blocking', async () => {
     let udm = new UserDataManager(testUserID)
 
     let res1 = udm.update({ dataObj: testWordItem1, params: { segment: 'common' }})
@@ -99,22 +99,24 @@ describe('user-data-manager.test.js', () => {
 
     let final = [await res1, await res2, await res3, await res4, await res5]
 
-    await timeout(50000)
+    await timeout(5000)
     for(let check = 0; check < 5; check++) {
       if (udm.requestsQueue.length > 0) {
-        await timeout(50000)
+        await timeout(5000)
       }
     }
     
     let localDataItems
     if (udm.requestsQueue.length === 0) {
+
       localDataItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'lat' }})
       expect(localDataItems.filter(item => item.targetWord === testWordItem1.targetWord).length).toEqual(0)
       expect(localDataItems.filter(item => item.targetWord === testWordItem2.targetWord).length).toEqual(0)
       expect(localDataItems.filter(item => item.targetWord === testWordItem3.targetWord).length).toEqual(1)
     }
+    await timeout(5000)
     return localDataItems
-  }, 550000)
+  }, 55000)
 
   it('2 UserDataManager - create method - creates wordItem only in local with onlyLocal param', async () => {
     let testWord = 'elapsas'

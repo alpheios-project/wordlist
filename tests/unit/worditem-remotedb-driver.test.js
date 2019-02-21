@@ -52,7 +52,6 @@ describe('worditem-remotedb-driver.test.js', () => {
     
     let resUrl = dbDriverRemote._constructPostURL(testWordItem)
     expect(resUrl).toEqual('/words/lat-beatum')
-    // console.info('*********resUrl', resUrl)
   })
 
   it('3 WordItemIndexedDbDriver - _constructGetURL creates url for getting one word', () => {

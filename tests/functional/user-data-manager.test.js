@@ -90,6 +90,9 @@ describe('user-data-manager.test.js', () => {
   it('1 UserDataManager - delete many and update method, checking blocking', async () => {
     let udm = new UserDataManager(testUserID)
 
+    // make sure that in remote there are no words
+    await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }})
+
     let res1 = udm.update({ dataObj: testWordItem1, params: { segment: 'common' }})
     let res2 = udm.update({ dataObj: testWordItem2, params: { segment: 'common' }})
     let res3 = udm.update({ dataObj: testWordItem3, params: { segment: 'common' }})
@@ -99,6 +102,7 @@ describe('user-data-manager.test.js', () => {
 
     let final = [await res1, await res2, await res3, await res4, await res5]
 
+    expect(udm.requestsQueue.length).toBeGreaterThan(0)
     await timeout(5000)
     for(let check = 0; check < 5; check++) {
       if (udm.requestsQueue.length > 0) {
@@ -115,6 +119,7 @@ describe('user-data-manager.test.js', () => {
       expect(localDataItems.filter(item => item.targetWord === testWordItem3.targetWord).length).toEqual(1)
     }
     await timeout(5000)
+    await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }})
     return localDataItems
   }, 55000)
 
@@ -137,6 +142,8 @@ describe('user-data-manager.test.js', () => {
 
     checkDataItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'lat' }}, 'remote')
     expect(checkDataItems.filter(item => item.targetWord === testWord).length).toEqual(0) // does not have in remote
+
+    await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }})
   }, 50000)
 
   it('3 UserDataManager - create method - creates wordItem only in remote with onlyRemote param', async () => {
@@ -158,6 +165,8 @@ describe('user-data-manager.test.js', () => {
 
     checkDataItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'lat' }}, 'remote')
     expect(checkDataItems.filter(item => item.targetWord === testWord).length).toEqual(1) // has in remote
+
+    await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }})
   }, 50000)
 
   it('4 UserDataManager - create method - creates wordItem both in remote and local (if no additional parameter)', async () => {
@@ -166,7 +175,7 @@ describe('user-data-manager.test.js', () => {
     let udm = new UserDataManager('alpheiosMockUser')
     
     // make sure that in remote there are no words
-    await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }})
+    await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }}, { onlyRemote: true })
 
     await udm.create({ dataObj: testWordItem })
 
@@ -175,6 +184,8 @@ describe('user-data-manager.test.js', () => {
 
     checkDataItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'lat' }}, 'remote')
     expect(checkDataItems.filter(item => item.targetWord === testWord).length).toEqual(1) // has in remote
+
+    await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }}, { onlyRemote: true })
   }, 50000)
 
   it('5 UserDataManager - update method - updates wordItem only in local with onlyLocal param', async () => {
@@ -200,6 +211,7 @@ describe('user-data-manager.test.js', () => {
     checkDataItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'lat' }}, 'local')
     expect(checkDataItems.filter(item => item.targetWord === testWord)[0].important).toBeTruthy()
     
+    await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }})
   }, 50000)
 
   it('6 UserDataManager - update method - updates wordItem only in remote with onlyRemote param', async () => {
@@ -225,6 +237,7 @@ describe('user-data-manager.test.js', () => {
     checkDataItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'lat' }}, 'remote')
     expect(checkDataItems.filter(item => item.targetWord === testWord)[0].important).toBeTruthy()
     
+    await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }})
   }, 50000)
 
   it('7 UserDataManager - update method - updates wordItem both in local and remote without additional params', async () => {
@@ -250,6 +263,7 @@ describe('user-data-manager.test.js', () => {
     checkDataItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'lat' }})
     expect(checkDataItems.filter(item => item.targetWord === testWord)[0].important).toBeTruthy()
     
+    await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }})
   }, 50000)
 
   it('8 UserDataManager - delete method - deletes wordItem only in local with onlyLocal param', async () => {
@@ -276,6 +290,7 @@ describe('user-data-manager.test.js', () => {
     checkDataItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'lat' }}, 'remote')
     expect(checkDataItems.filter(item => item.targetWord === testWord).length).toEqual(1) // has in remote
     
+    await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }})
   }, 50000)
 
   it('9 UserDataManager - delete method - deletes wordItem only in remote with onlyRemote param', async () => {
@@ -302,6 +317,7 @@ describe('user-data-manager.test.js', () => {
     checkDataItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'lat' }}, 'local')
     expect(checkDataItems.filter(item => item.targetWord === testWord).length).toEqual(1) // has in remote
     
+    await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }})
   }, 50000)
 
   it('10 UserDataManager - delete method - deletes wordItem both in remote and local without additional params', async () => {
@@ -328,6 +344,7 @@ describe('user-data-manager.test.js', () => {
     checkDataItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'lat' }})
     expect(checkDataItems.filter(item => item.targetWord === testWord).length).toEqual(0) // has no in remote
     
+    await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }})
   }, 50000)
 
   it('11 UserDataManager - deleteMany method - deletes all wordItems for given languageCode only in local with onlyLocal param', async () => {
@@ -336,6 +353,8 @@ describe('user-data-manager.test.js', () => {
     let testWordItem3 = await prepareWordItem('ἔννεπε', Constants.LANG_GREEK)
 
     let udm = new UserDataManager('alpheiosMockUser')
+
+    await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }})
 
     // created both in local and remote
     await udm.create({ dataObj: testWordItem1 })
@@ -359,6 +378,8 @@ describe('user-data-manager.test.js', () => {
 
     checkDataItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'lat' }}, 'remote')
     expect(checkDataItems.length).toBeGreaterThan(0) // has in remote lat
+
+    await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }})
   }, 50000)
 
   it('12 UserDataManager - deleteMany method - deletes all wordItems for given languageCode only in remote with onlyRemote param', async () => {
@@ -367,6 +388,8 @@ describe('user-data-manager.test.js', () => {
     let testWordItem3 = await prepareWordItem('ἔννεπε', Constants.LANG_GREEK)
 
     let udm = new UserDataManager('alpheiosMockUser')
+
+    await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }})
 
     // created both in local and remote
     await udm.create({ dataObj: testWordItem1 })
@@ -390,6 +413,8 @@ describe('user-data-manager.test.js', () => {
 
     checkDataItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'lat' }}, 'local')
     expect(checkDataItems.length).toBeGreaterThan(0) // has in remote lat
+
+    await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }})
   }, 50000)
 
   it('13 UserDataManager - deleteMany method - deletes all wordItems for given languageCode both in local and remote without additional parameters', async () => {
@@ -398,6 +423,8 @@ describe('user-data-manager.test.js', () => {
     let testWordItem3 = await prepareWordItem('ἔννεπε', Constants.LANG_GREEK)
 
     let udm = new UserDataManager('alpheiosMockUser')
+
+    await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }})
 
     // created both in local and remote
     await udm.create({ dataObj: testWordItem1 })
@@ -421,6 +448,8 @@ describe('user-data-manager.test.js', () => {
 
     checkDataItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'grc' }})
     expect(checkDataItems.length).toBeGreaterThan(0) // still has grc
+
+    await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }})
    
   }, 50000)
 

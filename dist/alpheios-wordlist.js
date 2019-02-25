@@ -15541,8 +15541,8 @@ class UserDataManager {
       let localDataItems = await localAdapter.query(data.params)
       let remoteDataItems = await remoteAdapter.query(data.params)
 
-      let notInLocalWI = await this.mergeLocalRemote(localAdapter.dbDriver, remoteAdapter.dbDriver, localDataItems, remoteDataItems)
-      result = [...localDataItems,...notInLocalWI]
+      let finalLocal = await this.mergeLocalRemote(localAdapter, remoteAdapter, localDataItems, remoteDataItems)
+      result = finalLocal
     }
 
     this.printErrors(remoteAdapter)
@@ -15558,9 +15558,9 @@ class UserDataManager {
    * @param {WordItem[]} remoteDataItems - items that are stored remotely before merging
    * @return {WordItem[]} - new wordItems that were created after merging
    */
-  async mergeLocalRemote (localDBDriver, remoteDBDriver, localDataItems, remoteDataItems) {
-    let notInLocalWI = await this.createAbsentLocalItems(localDBDriver, remoteDBDriver, localDataItems, remoteDataItems)
-    this.createAbsentRemoteItems(localDBDriver, remoteDBDriver, localDataItems, remoteDataItems)
+  async mergeLocalRemote (localAdapter, remoteAdapter, localDataItems, remoteDataItems) {
+    let notInLocalWI = await this.createAbsentLocalItems(localAdapter, remoteAdapter, localDataItems, remoteDataItems)
+    this.createAbsentRemoteItems(localAdapter, remoteAdapter, localDataItems, remoteDataItems)
     return notInLocalWI
   }
 
@@ -15572,14 +15572,28 @@ class UserDataManager {
    * @param {WordItem[]} remoteDataItems - items that are stored remotely before merging
    * @return {WordItem[]} - new wordItems that were created after merging
    */
-  async createAbsentRemoteItems (localDBDriver, remoteDBDriver, localDataItems, remoteDataItems) {
-    let remoteCheckAray = remoteDBDriver.getCheckArray(remoteDataItems)
+  async createAbsentRemoteItems (localAdapter, remoteAdapter, localDataItems, remoteDataItems) {
+    let remoteDBDriver = remoteAdapter.dbDriver
+    let localDBDriver = localAdapter.dbDriver
 
-    let notInRemote = localDataItems.filter(item => !remoteCheckAray.includes(localDBDriver.makeIDCompareWithRemote(item)))
-    for (let item of notInRemote) {
-      await this.create({ dataObj: item }, { onlyRemote: true })
+    let remoteCheckAray = remoteDBDriver.getCheckArray(remoteDataItems)
+    
+    let notInRemote = []
+    
+    for (let localItem of localDataItems) {
+      let checkID = localDBDriver.makeIDCompareWithRemote(localItem)
+      if (!remoteCheckAray.includes(checkID)) {
+        await this.create({ dataObj: localItem }, { onlyRemote: true })
+        notInRemote.push(localItem)
+      } else {
+        let remoteItem = remoteDBDriver.getByStorageID(remoteDataItems, checkID)
+
+        let updateRemote = remoteDBDriver.comparePartly(remoteItem, localItem)
+        if (updateRemote) {
+          await remoteAdapter.update(updateRemote, true) 
+        }       
+      }
     }
-    return notInRemote
   }
 
   /**
@@ -15590,18 +15604,33 @@ class UserDataManager {
    * @param {WordItem[]} remoteDataItems - items that are stored remotely before merging
    * @return {WordItem[]} - new wordItems that were created after merging
    */
-  async createAbsentLocalItems (localDBDriver, remoteDBDriver, localDataItems, remoteDataItems) {
+  async createAbsentLocalItems (localAdapter, remoteAdapter, localDataItems, remoteDataItems) {
+    let remoteDBDriver = remoteAdapter.dbDriver
+    let localDBDriver = localAdapter.dbDriver
+
     let localCheckAray = localDBDriver.getCheckArray(localDataItems)
 
-    let notInLocal = remoteDataItems.filter(item => !localCheckAray.includes(remoteDBDriver._makeStorageID(item)))
+    let finalLocal = []
 
-    let notInLocalWI = []
-    for (let item of notInLocal) {
-      let dataItemForLocal = localDBDriver.createFromRemoteData(item)
-      await this.create({ dataObj: dataItemForLocal }, { onlyLocal: true })
-      notInLocalWI.push(dataItemForLocal)
+    for (let remoteItem of remoteDataItems) {
+      let checkID = remoteDBDriver._makeStorageID(remoteItem)
+      if (!localCheckAray.includes(checkID)) {
+        let dataItemForLocal = localDBDriver.createFromRemoteData(remoteItem)
+        await this.create({ dataObj: dataItemForLocal }, { onlyLocal: true })
+        finalLocal.push(dataItemForLocal)
+      } else {
+        let localItem = localDBDriver.getByStorageID(localDataItems, checkID)
+
+        let updateLocal = localDBDriver.comparePartly(localItem, remoteItem)
+        if (updateLocal) {
+          await this.update({ dataObj: updateLocal }, { onlyLocal: true })
+          finalLocal.push(updateLocal)
+        } else {
+          finalLocal.push(localItem)
+        }  
+      }
     }
-    return notInLocalWI
+    return finalLocal
   }
 
   /**
@@ -16649,6 +16678,7 @@ class RemoteDBAdapter {
       
       return updated
     } catch (error) {
+      console.error(error)
       if (error) {
         this.errors.push(error)
       }
@@ -16661,15 +16691,21 @@ class RemoteDBAdapter {
    * @param {WordItem} data
    * @return {Boolean} - successful/failed result
    */
-  async update(data) {
+  async update(data, skipSerialize = false) {
     try {
       let url = this.dbDriver.storageMap.put.url(data)
-      let content = this.dbDriver.storageMap.put.serialize(data)
+      let content
+      if (skipSerialize) {
+        content = data
+      } else {
+        content = this.dbDriver.storageMap.put.serialize(data)
+      }
 
       let result = await axios__WEBPACK_IMPORTED_MODULE_0___default.a.put(url, content, this.dbDriver.requestsParams)
       let updated = this.dbDriver.storageMap.put.checkResult(result)
       return updated
     } catch (error) {
+      console.error(error)
       if (error) {
         this.errors.push(error)
       }
@@ -17206,6 +17242,45 @@ static get currentDate () {
     }
     return wordItem
   }
+
+  getByStorageID (dataItems, ID) {
+    return dataItems.find(item => this.makeIDCompareWithRemote(item) === ID)
+  }
+
+  comparePartly (changeItem, sourceItem) {
+    let part = 'context'
+    if (!sourceItem[part]) {
+      return null
+    }
+    // console.info('****************comparePartly', changeItem, sourceItem)
+    if (sourceItem[part] && !changeItem[part]) {
+      changeItem[part] = sourceItem[part]
+      return changeItem
+    }
+    if (sourceItem[part] && changeItem[part]) {
+      changeItem = this.mergeContextData(changeItem, sourceItem)
+      return changeItem
+    }
+  }
+
+  mergeContextData (changeItem, sourceItem) {
+    // console.info('*************mergeContextData changeItem', changeItem)
+    // console.info('*************mergeContextData sourceItem', sourceItem)
+    let pushContext = changeItem.context
+    for (let contextItem of sourceItem.context) {
+      // console.info('*****************contextItem', contextItem)
+      let hasCheck = changeItem.context.some(tqChange => {       
+        return tqChange.isEqual(alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["TextQuoteSelector"].readObject(contextItem)) 
+      })
+      if (!hasCheck) {
+        let addContextItem = alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["WordItem"].readContext([contextItem])
+        pushContext.push(addContextItem[0])
+      }
+    }
+    changeItem.context = pushContext
+    return changeItem
+  }
+
 }
 
 
@@ -17223,6 +17298,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return WordItemRemoteDbDriver; });
 /* harmony import */ var _storage_remote_db_config_json__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @/storage/remote-db-config.json */ "./storage/remote-db-config.json");
 var _storage_remote_db_config_json__WEBPACK_IMPORTED_MODULE_0___namespace = /*#__PURE__*/__webpack_require__.t(/*! @/storage/remote-db-config.json */ "./storage/remote-db-config.json", 1);
+/* harmony import */ var alpheios_data_models__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! alpheios-data-models */ "alpheios-data-models");
+/* harmony import */ var alpheios_data_models__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(alpheios_data_models__WEBPACK_IMPORTED_MODULE_1__);
+
 
 
 class WordItemRemoteDbDriver {
@@ -17365,24 +17443,27 @@ class WordItemRemoteDbDriver {
   _serializeContext (wordItem) {
     let result = []
     for (let tq of wordItem.context) {
-      let resultItem = {
-        target: {
-          source: tq.source,
-          selector: {
-            type: 'TextQuoteSelector',
-            exact: tq.text,
-            prefix: tq.prefix.length > 0 ? tq.prefix : ' ',
-            suffix: tq.suffix > 0 ? tq.suffix : ' ',
-            languageCode: tq.languageCode
-          }
-        },
-        languageCode: wordItem.languageCode,
-        targetWord: wordItem.targetWord,
-        createdDT: wordItem.currentDate
-      }
-      result.push(resultItem)
+      result.push(this._serializeContextItem(tq, wordItem))
     }
     return result
+  }
+
+  _serializeContextItem (tq, wordItem) {
+    return {
+      target: {
+        source: tq.source,
+        selector: {
+          type: 'TextQuoteSelector',
+          exact: tq.text,
+          prefix: tq.prefix.length > 0 ? tq.prefix : ' ',
+          suffix: tq.suffix.length > 0 ? tq.suffix : ' ',
+          languageCode: tq.languageCode
+        }
+      },
+      languageCode: wordItem.languageCode,
+      targetWord: wordItem.targetWord,
+      createdDT: WordItemRemoteDbDriver.currentDate
+    }
   }
 
   /**
@@ -17440,6 +17521,41 @@ class WordItemRemoteDbDriver {
    */
   getCheckArray (dataItems) {
     return dataItems.map(item => this._makeStorageID(item))
+  }
+
+  isTheSame (remoteItem, localItem) {
+    return this._makeStorageID(remoteItem) === this._makeStorageID(localItem)
+  }
+
+  comparePartly (changeItem, sourceItem) {
+    let part = 'context'
+    if (!sourceItem[part]) {
+      return null
+    }
+    if (sourceItem[part] && !changeItem[part]) {
+      changeItem[part] = sourceItem[part]
+      return changeItem
+    }
+    if (sourceItem[part] && changeItem[part]) {
+      changeItem = this.mergeContextData(changeItem, sourceItem)
+      return changeItem
+    }
+  }
+
+  mergeContextData (changeItem, sourceItem) {
+    let pushContext = []
+    for (let contextItem of sourceItem.context) {
+      let hasCheck = changeItem.context.some(tqRemote => alpheios_data_models__WEBPACK_IMPORTED_MODULE_1__["TextQuoteSelector"].readObject(tqRemote).isEqual(contextItem))
+      if (!hasCheck) {
+        pushContext.push(this._serializeContextItem(contextItem, changeItem))
+      }
+    }
+    changeItem.context.push(...pushContext)
+    return changeItem
+  }
+
+  getByStorageID (dataItems, ID) {
+    return dataItems.find(item => this._makeStorageID(item) === ID)
   }
 }
 

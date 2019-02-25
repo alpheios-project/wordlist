@@ -157,12 +157,13 @@ describe('merge-context-workflow.test.js', () => {
         await timeout(5000)
       }
     }
-    
-    expect(finalItems.length).toEqual(1)
-    expect(finalItems[0].context.length).toEqual(2)
-    expect(finalItems[0].context.some(item => item.source === 'foosource1')).toBeTruthy()
-    expect(finalItems[0].context.some(item => item.source === 'foosource2')).toBeTruthy()
 
+    if (udm.requestsQueue.length === 0) {
+      expect(finalItems.length).toEqual(1)
+      expect(finalItems[0].context.length).toEqual(2)
+      expect(finalItems[0].context.some(item => item.source === 'foosource1')).toBeTruthy()
+      expect(finalItems[0].context.some(item => item.source === 'foosource2')).toBeTruthy()
+    }
     await timeout(5000)
   }, 50000)
 })

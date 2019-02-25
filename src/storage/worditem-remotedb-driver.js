@@ -1,4 +1,5 @@
 import RemoteConfig from '@/storage/remote-db-config.json'
+import { TextQuoteSelector } from 'alpheios-data-models'
 
 export default class WordItemRemoteDbDriver {
   /**
@@ -140,24 +141,27 @@ export default class WordItemRemoteDbDriver {
   _serializeContext (wordItem) {
     let result = []
     for (let tq of wordItem.context) {
-      let resultItem = {
-        target: {
-          source: tq.source,
-          selector: {
-            type: 'TextQuoteSelector',
-            exact: tq.text,
-            prefix: tq.prefix.length > 0 ? tq.prefix : ' ',
-            suffix: tq.suffix > 0 ? tq.suffix : ' ',
-            languageCode: tq.languageCode
-          }
-        },
-        languageCode: wordItem.languageCode,
-        targetWord: wordItem.targetWord,
-        createdDT: wordItem.currentDate
-      }
-      result.push(resultItem)
+      result.push(this._serializeContextItem(tq, wordItem))
     }
     return result
+  }
+
+  _serializeContextItem (tq, wordItem) {
+    return {
+      target: {
+        source: tq.source,
+        selector: {
+          type: 'TextQuoteSelector',
+          exact: tq.text,
+          prefix: tq.prefix.length > 0 ? tq.prefix : ' ',
+          suffix: tq.suffix.length > 0 ? tq.suffix : ' ',
+          languageCode: tq.languageCode
+        }
+      },
+      languageCode: wordItem.languageCode,
+      targetWord: wordItem.targetWord,
+      createdDT: WordItemRemoteDbDriver.currentDate
+    }
   }
 
   /**
@@ -215,5 +219,40 @@ export default class WordItemRemoteDbDriver {
    */
   getCheckArray (dataItems) {
     return dataItems.map(item => this._makeStorageID(item))
+  }
+
+  isTheSame (remoteItem, localItem) {
+    return this._makeStorageID(remoteItem) === this._makeStorageID(localItem)
+  }
+
+  comparePartly (changeItem, sourceItem) {
+    let part = 'context'
+    if (!sourceItem[part]) {
+      return null
+    }
+    if (sourceItem[part] && !changeItem[part]) {
+      changeItem[part] = sourceItem[part]
+      return changeItem
+    }
+    if (sourceItem[part] && changeItem[part]) {
+      changeItem = this.mergeContextData(changeItem, sourceItem)
+      return changeItem
+    }
+  }
+
+  mergeContextData (changeItem, sourceItem) {
+    let pushContext = []
+    for (let contextItem of sourceItem.context) {
+      let hasCheck = changeItem.context.some(tqRemote => TextQuoteSelector.readObject(tqRemote).isEqual(contextItem))
+      if (!hasCheck) {
+        pushContext.push(this._serializeContextItem(contextItem, changeItem))
+      }
+    }
+    changeItem.context.push(...pushContext)
+    return changeItem
+  }
+
+  getByStorageID (dataItems, ID) {
+    return dataItems.find(item => this._makeStorageID(item) === ID)
   }
 }

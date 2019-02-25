@@ -9,7 +9,7 @@ import IndexedDB from 'fake-indexeddb'
 import IDBKeyRange from 'fake-indexeddb/lib/FDBKeyRange'
 
 describe('user-data-manager.test.js', () => {
-  // console.error = function () {}
+  console.error = function () {}
   console.log = function () {}
   console.warn = function () {}
 
@@ -251,16 +251,21 @@ describe('user-data-manager.test.js', () => {
     let checkDataItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'lat' }})
     expect(checkDataItems.filter(item => item.targetWord === testWord).length).toEqual(0)
 
-    // create the word only in local
+    // create the word
     await udm.create({ dataObj: testWordItem })
+    
+
     checkDataItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'lat' }})
+    
     expect(checkDataItems.filter(item => item.targetWord === testWord)[0].important).toBeFalsy()
 
     testWordItem.important = true
 
     // changed important and update
     await udm.update({ dataObj: testWordItem })
+    
     checkDataItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'lat' }})
+    
     expect(checkDataItems.filter(item => item.targetWord === testWord)[0].important).toBeTruthy()
     
     await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }})
@@ -312,7 +317,14 @@ describe('user-data-manager.test.js', () => {
     // delete
     await udm.delete({ dataObj: testWordItem }, { onlyRemote: true })
     checkDataItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'lat' }}, 'remote')
-    expect(checkDataItems.filter(item => item.targetWord === testWord).length).toEqual(0) // has no in remote
+    for(let check = 0; check < 5; check++) {
+      if (udm.requestsQueue.length > 0) {
+        await timeout(5000)
+      }
+    }
+    if (udm.requestsQueue.length === 0) {
+      expect(checkDataItems.filter(item => item.targetWord === testWord).length).toEqual(0) // has no in remote
+    }
 
     checkDataItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'lat' }}, 'local')
     expect(checkDataItems.filter(item => item.targetWord === testWord).length).toEqual(1) // has in remote
@@ -339,7 +351,14 @@ describe('user-data-manager.test.js', () => {
     // delete
     await udm.delete({ dataObj: testWordItem })
     checkDataItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'lat' }})
-    expect(checkDataItems.filter(item => item.targetWord === testWord).length).toEqual(0) // has no in remote
+    for(let check = 0; check < 5; check++) {
+      if (udm.requestsQueue.length > 0) {
+        await timeout(5000)
+      }
+    }
+    if (udm.requestsQueue.length === 0) {
+      expect(checkDataItems.filter(item => item.targetWord === testWord).length).toEqual(0) // has no in remote
+    }
 
     checkDataItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'lat' }})
     expect(checkDataItems.filter(item => item.targetWord === testWord).length).toEqual(0) // has no in remote
@@ -367,6 +386,7 @@ describe('user-data-manager.test.js', () => {
     checkDataItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'grc' }})
     expect(checkDataItems.length).toBeGreaterThan(0)
 
+    
     // delete
     await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }}, { onlyLocal: true })
     checkDataItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'lat' }}, 'local')
@@ -380,6 +400,7 @@ describe('user-data-manager.test.js', () => {
     expect(checkDataItems.length).toBeGreaterThan(0) // has in remote lat
 
     await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }})
+    
   }, 50000)
 
   it('12 UserDataManager - deleteMany method - deletes all wordItems for given languageCode only in remote with onlyRemote param', async () => {
@@ -406,6 +427,11 @@ describe('user-data-manager.test.js', () => {
     await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }}, { onlyRemote: true })
     checkDataItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'lat' }}, 'remote')
 
+    for(let check = 0; check < 5; check++) {
+      if (udm.requestsQueue.length > 0) {
+        await timeout(5000)
+      }
+    }
     expect(checkDataItems.length).toEqual(0) // has no in remote lat
 
     checkDataItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'grc' }}, 'remote')
@@ -441,7 +467,14 @@ describe('user-data-manager.test.js', () => {
     await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }})
 
     checkDataItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'lat' }}, 'remote')
-    expect(checkDataItems.length).toEqual(0) // has no in remote lat
+    for(let check = 0; check < 5; check++) {
+      if (udm.requestsQueue.length > 0) {
+        await timeout(5000)
+      }
+    }
+    if (udm.requestsQueue.length === 0) {
+      expect(checkDataItems.length).toEqual(0) // has no in remote lat
+    }
 
     checkDataItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'lat' }}, 'local')
     expect(checkDataItems.length).toEqual(0) // has no in local lat

@@ -309,8 +309,8 @@ export default class UserDataManager {
       let localDataItems = await localAdapter.query(data.params)
       let remoteDataItems = await remoteAdapter.query(data.params)
 
-      let notInLocalWI = await this.mergeLocalRemote(localAdapter.dbDriver, remoteAdapter.dbDriver, localDataItems, remoteDataItems)
-      result = [...localDataItems,...notInLocalWI]
+      let finalLocal = await this.mergeLocalRemote(localAdapter, remoteAdapter, localDataItems, remoteDataItems)
+      result = finalLocal
     }
 
     this.printErrors(remoteAdapter)
@@ -326,9 +326,9 @@ export default class UserDataManager {
    * @param {WordItem[]} remoteDataItems - items that are stored remotely before merging
    * @return {WordItem[]} - new wordItems that were created after merging
    */
-  async mergeLocalRemote (localDBDriver, remoteDBDriver, localDataItems, remoteDataItems) {
-    let notInLocalWI = await this.createAbsentLocalItems(localDBDriver, remoteDBDriver, localDataItems, remoteDataItems)
-    this.createAbsentRemoteItems(localDBDriver, remoteDBDriver, localDataItems, remoteDataItems)
+  async mergeLocalRemote (localAdapter, remoteAdapter, localDataItems, remoteDataItems) {
+    let notInLocalWI = await this.createAbsentLocalItems(localAdapter, remoteAdapter, localDataItems, remoteDataItems)
+    this.createAbsentRemoteItems(localAdapter, remoteAdapter, localDataItems, remoteDataItems)
     return notInLocalWI
   }
 
@@ -340,14 +340,28 @@ export default class UserDataManager {
    * @param {WordItem[]} remoteDataItems - items that are stored remotely before merging
    * @return {WordItem[]} - new wordItems that were created after merging
    */
-  async createAbsentRemoteItems (localDBDriver, remoteDBDriver, localDataItems, remoteDataItems) {
-    let remoteCheckAray = remoteDBDriver.getCheckArray(remoteDataItems)
+  async createAbsentRemoteItems (localAdapter, remoteAdapter, localDataItems, remoteDataItems) {
+    let remoteDBDriver = remoteAdapter.dbDriver
+    let localDBDriver = localAdapter.dbDriver
 
-    let notInRemote = localDataItems.filter(item => !remoteCheckAray.includes(localDBDriver.makeIDCompareWithRemote(item)))
-    for (let item of notInRemote) {
-      await this.create({ dataObj: item }, { onlyRemote: true })
+    let remoteCheckAray = remoteDBDriver.getCheckArray(remoteDataItems)
+    
+    let notInRemote = []
+    
+    for (let localItem of localDataItems) {
+      let checkID = localDBDriver.makeIDCompareWithRemote(localItem)
+      if (!remoteCheckAray.includes(checkID)) {
+        await this.create({ dataObj: localItem }, { onlyRemote: true })
+        notInRemote.push(localItem)
+      } else {
+        let remoteItem = remoteDBDriver.getByStorageID(remoteDataItems, checkID)
+
+        let updateRemote = remoteDBDriver.comparePartly(remoteItem, localItem)
+        if (updateRemote) {
+          await remoteAdapter.update(updateRemote, true) 
+        }       
+      }
     }
-    return notInRemote
   }
 
   /**
@@ -358,18 +372,33 @@ export default class UserDataManager {
    * @param {WordItem[]} remoteDataItems - items that are stored remotely before merging
    * @return {WordItem[]} - new wordItems that were created after merging
    */
-  async createAbsentLocalItems (localDBDriver, remoteDBDriver, localDataItems, remoteDataItems) {
+  async createAbsentLocalItems (localAdapter, remoteAdapter, localDataItems, remoteDataItems) {
+    let remoteDBDriver = remoteAdapter.dbDriver
+    let localDBDriver = localAdapter.dbDriver
+
     let localCheckAray = localDBDriver.getCheckArray(localDataItems)
 
-    let notInLocal = remoteDataItems.filter(item => !localCheckAray.includes(remoteDBDriver._makeStorageID(item)))
+    let finalLocal = []
 
-    let notInLocalWI = []
-    for (let item of notInLocal) {
-      let dataItemForLocal = localDBDriver.createFromRemoteData(item)
-      await this.create({ dataObj: dataItemForLocal }, { onlyLocal: true })
-      notInLocalWI.push(dataItemForLocal)
+    for (let remoteItem of remoteDataItems) {
+      let checkID = remoteDBDriver._makeStorageID(remoteItem)
+      if (!localCheckAray.includes(checkID)) {
+        let dataItemForLocal = localDBDriver.createFromRemoteData(remoteItem)
+        await this.create({ dataObj: dataItemForLocal }, { onlyLocal: true })
+        finalLocal.push(dataItemForLocal)
+      } else {
+        let localItem = localDBDriver.getByStorageID(localDataItems, checkID)
+
+        let updateLocal = localDBDriver.comparePartly(localItem, remoteItem)
+        if (updateLocal) {
+          await this.update({ dataObj: updateLocal }, { onlyLocal: true })
+          finalLocal.push(updateLocal)
+        } else {
+          finalLocal.push(localItem)
+        }  
+      }
     }
-    return notInLocalWI
+    return finalLocal
   }
 
   /**

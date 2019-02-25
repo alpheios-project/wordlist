@@ -34,6 +34,7 @@ export default class RemoteDBAdapter {
       
       return updated
     } catch (error) {
+      console.error(error)
       if (error) {
         this.errors.push(error)
       }
@@ -46,15 +47,21 @@ export default class RemoteDBAdapter {
    * @param {WordItem} data
    * @return {Boolean} - successful/failed result
    */
-  async update(data) {
+  async update(data, skipSerialize = false) {
     try {
       let url = this.dbDriver.storageMap.put.url(data)
-      let content = this.dbDriver.storageMap.put.serialize(data)
+      let content
+      if (skipSerialize) {
+        content = data
+      } else {
+        content = this.dbDriver.storageMap.put.serialize(data)
+      }
 
       let result = await axios.put(url, content, this.dbDriver.requestsParams)
       let updated = this.dbDriver.storageMap.put.checkResult(result)
       return updated
     } catch (error) {
+      console.error(error)
       if (error) {
         this.errors.push(error)
       }

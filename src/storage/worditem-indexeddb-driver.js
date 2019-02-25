@@ -1,4 +1,4 @@
-import { Homonym, WordItem, Lexeme, Lemma, LanguageModelFactory as LMF } from 'alpheios-data-models'
+import { Homonym, WordItem, TextQuoteSelector, LanguageModelFactory as LMF } from 'alpheios-data-models'
 
 import IndexedDBObjectStoresStructure from '@/storage/indexeddbDriver/indexed-db-object-stores-structure'
 import IndexedDBLoadProcess from '@/storage/indexeddbDriver/indexed-db-load-process'
@@ -437,4 +437,43 @@ static get currentDate () {
     }
     return wordItem
   }
+
+  getByStorageID (dataItems, ID) {
+    return dataItems.find(item => this.makeIDCompareWithRemote(item) === ID)
+  }
+
+  comparePartly (changeItem, sourceItem) {
+    let part = 'context'
+    if (!sourceItem[part]) {
+      return null
+    }
+    // console.info('****************comparePartly', changeItem, sourceItem)
+    if (sourceItem[part] && !changeItem[part]) {
+      changeItem[part] = sourceItem[part]
+      return changeItem
+    }
+    if (sourceItem[part] && changeItem[part]) {
+      changeItem = this.mergeContextData(changeItem, sourceItem)
+      return changeItem
+    }
+  }
+
+  mergeContextData (changeItem, sourceItem) {
+    // console.info('*************mergeContextData changeItem', changeItem)
+    // console.info('*************mergeContextData sourceItem', sourceItem)
+    let pushContext = changeItem.context
+    for (let contextItem of sourceItem.context) {
+      // console.info('*****************contextItem', contextItem)
+      let hasCheck = changeItem.context.some(tqChange => {       
+        return tqChange.isEqual(TextQuoteSelector.readObject(contextItem)) 
+      })
+      if (!hasCheck) {
+        let addContextItem = WordItem.readContext([contextItem])
+        pushContext.push(addContextItem[0])
+      }
+    }
+    changeItem.context = pushContext
+    return changeItem
+  }
+
 }

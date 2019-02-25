@@ -79,7 +79,7 @@ describe('merge-context-workflow.test.js', () => {
     })
   }
 
-  it.skip('1 MergeContextWorkflow - createAbsentRemoteItems, createAbsentLocalItems', async () => {
+  it('1 MergeContextWorkflow - createAbsentRemoteItems, createAbsentLocalItems', async () => {
     let dbDriverRemote = new WordItemRemoteDbDriver('alpheiosMockUser')
     let remoteAdapter = new RemoteDBAdapter(dbDriverRemote)
 
@@ -119,6 +119,9 @@ describe('merge-context-workflow.test.js', () => {
     expect(remoteItems[0].context[0].target.source).toEqual('foosource2')
     expect(remoteItems[0].context[0].target.selector.prefix).toEqual('fooprefix2')
     expect(remoteItems[0].context[0].target.selector.suffix).toEqual('foosuffix2')
+    expect(remoteItems[0].context[1].target.source).toEqual('foosource1')
+    expect(remoteItems[0].context[1].target.selector.prefix).toEqual('fooprefix1')
+    expect(remoteItems[0].context[1].target.selector.suffix).toEqual('foosuffix1')
 
     await udm.createAbsentLocalItems(localAdapter, remoteAdapter, localItems, remoteItems)
     localItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'lat' }}, 'local')

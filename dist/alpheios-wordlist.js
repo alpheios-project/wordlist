@@ -15323,6 +15323,52 @@ class UserDataManager {
       let localAdapter = this._localStorageAdapter(finalConstrName)
       let remoteAdapter = this._remoteStorageAdapter(finalConstrName)
 
+      let newDataObj = data.dataObj
+      
+      let createdLocal = false
+      let createdRemote = false
+
+      if (localAdapter.available && params.onlyLocal) {
+        let currentLocal = await localAdapter.query({ wordItem: newDataObj })
+        let finalNewDataObj = newDataObj
+        if (currentLocal.length > 0) {
+          finalNewDataObj = localAdapter.dbDriver.comparePartly(currentLocal[0], newDataObj)
+        } 
+        createdLocal = await localAdapter.create(finalNewDataObj)
+        createdRemote = true
+      } else if (remoteAdapter.available && params.onlyRemote) {
+        let currentRemote = await remoteAdapter.query({ wordItem: newDataObj })
+        let finalNewDataObj = newDataObj
+        if (currentRemote.length > 0) {
+          finalNewDataObj = remoteAdapter.dbDriver.comparePartly(currentRemote[0], newDataObj)
+        } 
+        createdRemote = await remoteAdapter.create(finalNewDataObj)
+        createdLocal = true
+      } else if (remoteAdapter.available && localAdapter.available) {
+        let currentLocal = await localAdapter.query({ wordItem: newDataObj })
+        let currentRemote = await remoteAdapter.query({ wordItem: newDataObj })
+        let finalNewDataObj = newDataObj
+
+        if (currentLocal.length > 0 && currentRemote.length === 0) {
+          finalNewDataObj = localAdapter.dbDriver.comparePartly(currentLocal[0], newDataObj)
+        } else if (currentLocal.length === 0 && currentRemote.length > 0) {
+          finalNewDataObj = remoteAdapter.dbDriver.comparePartly(currentRemote[0], newDataObj)
+        }
+        if (currentLocal.length > 0 && currentRemote.length > 0) {
+          let mergedObject = localAdapter.dbDriver.comparePartly(currentLocal[0], currentRemote[0])
+          finalNewDataObj = localAdapter.dbDriver.comparePartly(mergedObject, newDataObj)
+          await remoteAdapter.create(finalNewDataObj)
+          await localAdapter.create(finalNewDataObj)
+        }
+      } 
+      /*
+      if (!remoteAdapter.available) {
+        console.error('RemoteAdapter is not available for usage')
+      }
+      if (!localAdapter.available) {
+        console.error('LocalAdapter is not available for usage')
+      }
+
       let createdLocal = false
       let createdRemote = false
 
@@ -15343,7 +15389,7 @@ class UserDataManager {
       } else {
         console.error('RemoteAdapter is not available for usage')
       }
-
+      */
       this.blocked = false
       this.checkRequestQueue()
 
@@ -15684,7 +15730,7 @@ class WordlistController {
    * @param {String[]} availableLangs language codes
    * @param {PSEvent[]} events events that the controller can subscribe to
    */
-  constructor (availableLangs,events) {
+  constructor (availableLangs, events) {
     this.wordLists = {}
     this.availableLangs = availableLangs
     events.TEXT_QUOTE_SELECTOR_RECEIVED.sub(this.onTextQuoteSelectorReceived.bind(this))
@@ -15783,7 +15829,7 @@ class WordlistController {
    onHomonymReady (data) {
     // when receiving this event, it's possible this is the first time we are seeing the word so
     // create the item in the word list if it doesn't exist
-    let wordItem = this.getWordListItem(data.language,data.targetWord,true)
+    let wordItem = this.getWordListItem(data.language, data.targetWord, true)
     wordItem.homonym = data
     WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'shortHomonym'}})
     // emit a wordlist updated event too in case the wordlist was updated
@@ -16767,10 +16813,13 @@ class RemoteDBAdapter {
       let final = this.dbDriver.storageMap.get.checkResult(result)
       return final
     } catch (error) {
-      if (error) {
-        this.errors.push(error)
+      let errorFinal = this.dbDriver.storageMap.get.checkErrorResult(error)
+      if (!errorFinal && error) {
+        if (error) {
+          this.errors.push(error)
+        }
       }
-      return false
+      return errorFinal      
     }
   }
 }
@@ -17254,21 +17303,43 @@ static get currentDate () {
     }
     // console.info('****************comparePartly', changeItem, sourceItem)
     if (sourceItem[part] && !changeItem[part]) {
+      console.info('*******first')
       changeItem[part] = sourceItem[part]
       return changeItem
     }
     if (sourceItem[part] && changeItem[part]) {
-      changeItem = this.mergeContextData(changeItem, sourceItem)
+      console.info('*******second')
+      console.info('*******second 2', changeItem.constructor.name.match(/WordItem/))
+      if (sourceItem.constructor.name.match(/WordItem/)) {
+        console.info('***************mergeContextDataWithWordItem')
+        changeItem = this.mergeContextDataWithWordItem(changeItem, sourceItem)
+      } else {
+        console.info('***************mergeContextDataWithObject')
+        changeItem = this.mergeContextDataWithObject(changeItem, sourceItem)
+      }
       return changeItem
     }
   }
 
-  mergeContextData (changeItem, sourceItem) {
-    // console.info('*************mergeContextData changeItem', changeItem)
-    // console.info('*************mergeContextData sourceItem', sourceItem)
+  mergeContextDataWithWordItem (changeItem, sourceItem) {
     let pushContext = changeItem.context
     for (let contextItem of sourceItem.context) {
-      // console.info('*****************contextItem', contextItem)
+      let hasCheck = changeItem.context.some(tqChange => {       
+        return tqChange.isEqual(contextItem) 
+      })
+      if (!hasCheck) {
+        pushContext.push(contextItem)
+      }
+    }
+
+    changeItem.context = pushContext
+    // console.info('*****************pushContext', pushContext)
+    return changeItem
+  }
+
+  mergeContextDataWithObject (changeItem, sourceItem) {
+    let pushContext = changeItem.context
+    for (let contextItem of sourceItem.context) {
       let hasCheck = changeItem.context.some(tqChange => {       
         return tqChange.isEqual(alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["TextQuoteSelector"].readObject(contextItem)) 
       })
@@ -17337,7 +17408,8 @@ class WordItemRemoteDbDriver {
       },
       get: {
         url: this._constructGetURL.bind(this),
-        checkResult: this._checkGetResult.bind(this)
+        checkResult: this._checkGetResult.bind(this),
+        checkErrorResult: this._checkGetErrorResult.bind(this),
       },
       deleteOne: {
         url: this._constructPostURL.bind(this),
@@ -17496,7 +17568,21 @@ class WordItemRemoteDbDriver {
     if (Array.isArray(result.data)) {
       return result.data.map(item => item.body ? item.body : item)
     } else {
-      return result.data
+      return [ result.data ]
+    }
+  }
+
+  /**
+   * Checks status of response error (get) from remote storage 
+   * If error message consists of 'Item not found.' - it is not an error. Return empty error instead of error.
+   * @param {Error} error
+   * @return {[]/Boolean}
+   */
+  _checkGetErrorResult (error) {
+    if (error.response && error.response.data && (error.response.data.error === 'Item not found.')) {
+      return []
+    } else {
+      return false
     }
   }
 

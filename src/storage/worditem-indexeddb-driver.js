@@ -447,23 +447,38 @@ static get currentDate () {
     if (!sourceItem[part]) {
       return null
     }
-    // console.info('****************comparePartly', changeItem, sourceItem)
     if (sourceItem[part] && !changeItem[part]) {
       changeItem[part] = sourceItem[part]
       return changeItem
     }
     if (sourceItem[part] && changeItem[part]) {
-      changeItem = this.mergeContextData(changeItem, sourceItem)
+      if (sourceItem.constructor.name.match(/WordItem/)) {
+        changeItem = this.mergeContextDataWithWordItem(changeItem, sourceItem)
+      } else {
+        changeItem = this.mergeContextDataWithObject(changeItem, sourceItem)
+      }
       return changeItem
     }
   }
 
-  mergeContextData (changeItem, sourceItem) {
-    // console.info('*************mergeContextData changeItem', changeItem)
-    // console.info('*************mergeContextData sourceItem', sourceItem)
+  mergeContextDataWithWordItem (changeItem, sourceItem) {
     let pushContext = changeItem.context
     for (let contextItem of sourceItem.context) {
-      // console.info('*****************contextItem', contextItem)
+      let hasCheck = changeItem.context.some(tqChange => {       
+        return tqChange.isEqual(contextItem) 
+      })
+      if (!hasCheck) {
+        pushContext.push(contextItem)
+      }
+    }
+
+    changeItem.context = pushContext
+    return changeItem
+  }
+
+  mergeContextDataWithObject (changeItem, sourceItem) {
+    let pushContext = changeItem.context
+    for (let contextItem of sourceItem.context) {
       let hasCheck = changeItem.context.some(tqChange => {       
         return tqChange.isEqual(TextQuoteSelector.readObject(contextItem)) 
       })

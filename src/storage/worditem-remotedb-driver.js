@@ -35,7 +35,8 @@ export default class WordItemRemoteDbDriver {
       },
       get: {
         url: this._constructGetURL.bind(this),
-        checkResult: this._checkGetResult.bind(this)
+        checkResult: this._checkGetResult.bind(this),
+        checkErrorResult: this._checkGetErrorResult.bind(this),
       },
       deleteOne: {
         url: this._constructPostURL.bind(this),
@@ -194,7 +195,21 @@ export default class WordItemRemoteDbDriver {
     if (Array.isArray(result.data)) {
       return result.data.map(item => item.body ? item.body : item)
     } else {
-      return result.data
+      return [ result.data ]
+    }
+  }
+
+  /**
+   * Checks status of response error (get) from remote storage 
+   * If error message consists of 'Item not found.' - it is not an error. Return empty error instead of error.
+   * @param {Error} error
+   * @return {[]/Boolean}
+   */
+  _checkGetErrorResult (error) {
+    if (error.response && error.response.data && (error.response.data.error === 'Item not found.')) {
+      return []
+    } else {
+      return false
     }
   }
 

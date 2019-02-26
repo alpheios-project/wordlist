@@ -123,10 +123,13 @@ export default class RemoteDBAdapter {
       let final = this.dbDriver.storageMap.get.checkResult(result)
       return final
     } catch (error) {
-      if (error) {
-        this.errors.push(error)
+      let errorFinal = this.dbDriver.storageMap.get.checkErrorResult(error)
+      if (!errorFinal && error) {
+        if (error) {
+          this.errors.push(error)
+        }
       }
-      return false
+      return errorFinal      
     }
   }
 }

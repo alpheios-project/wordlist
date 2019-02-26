@@ -6,7 +6,7 @@ export default class WordlistController {
    * @param {String[]} availableLangs language codes
    * @param {PSEvent[]} events events that the controller can subscribe to
    */
-  constructor (availableLangs,events) {
+  constructor (availableLangs, events) {
     this.wordLists = {}
     this.availableLangs = availableLangs
     events.TEXT_QUOTE_SELECTOR_RECEIVED.sub(this.onTextQuoteSelectorReceived.bind(this))
@@ -105,7 +105,7 @@ export default class WordlistController {
    onHomonymReady (data) {
     // when receiving this event, it's possible this is the first time we are seeing the word so
     // create the item in the word list if it doesn't exist
-    let wordItem = this.getWordListItem(data.language,data.targetWord,true)
+    let wordItem = this.getWordListItem(data.language, data.targetWord, true)
     wordItem.homonym = data
     WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'shortHomonym'}})
     // emit a wordlist updated event too in case the wordlist was updated

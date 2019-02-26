@@ -91,26 +91,55 @@ export default class UserDataManager {
       let localAdapter = this._localStorageAdapter(finalConstrName)
       let remoteAdapter = this._remoteStorageAdapter(finalConstrName)
 
+      let newDataObj = data.dataObj
+      
       let createdLocal = false
       let createdRemote = false
 
-      if (localAdapter.available && !params.onlyRemote) {
-        createdLocal = await localAdapter.create(data.dataObj)
-        this.printErrors(localAdapter)
-      } else if (params.onlyRemote) {
-        createdLocal = true
-      } else {
-        console.error('LocalAdapter is not available for the usage')
-      }
-
-      if (remoteAdapter.available && !params.onlyLocal) {
-        createdRemote = await remoteAdapter.create(data.dataObj)    
-        this.printErrors(remoteAdapter) 
-      } else if (params.onlyLocal) {
+      if (localAdapter.available && params.onlyLocal) {
+        let currentLocal = await localAdapter.query({ wordItem: newDataObj })
+        let finalNewDataObj = newDataObj
+        if (currentLocal.length > 0) {
+          finalNewDataObj = localAdapter.dbDriver.comparePartly(currentLocal[0], newDataObj)
+        } 
+        createdLocal = await localAdapter.create(finalNewDataObj)
         createdRemote = true
-      } else {
-        console.error('RemoteAdapter is not available for usage')
-      }
+      } else if (remoteAdapter.available && params.onlyRemote) {
+        let currentRemote = await remoteAdapter.query({ wordItem: newDataObj })
+        let finalNewDataObj = newDataObj
+        if (currentRemote.length > 0) {
+          finalNewDataObj = remoteAdapter.dbDriver.comparePartly(currentRemote[0], newDataObj)
+        } 
+        createdRemote = await remoteAdapter.create(finalNewDataObj)
+        createdLocal = true
+      } else if (remoteAdapter.available && localAdapter.available) {
+        
+        let currentLocal = await localAdapter.query({ wordItem: newDataObj })
+        let currentRemote = await remoteAdapter.query({ wordItem: newDataObj })
+
+        console.info('newDataObj', newDataObj)
+        console.info('currentLocal', currentLocal)
+        console.info('currentRemote', currentRemote)
+
+        let finalNewDataObj = newDataObj
+
+        if (currentLocal.length > 0 && currentRemote.length === 0) {
+          finalNewDataObj = localAdapter.dbDriver.comparePartly(currentLocal[0], newDataObj)
+        } else if (currentLocal.length === 0 && currentRemote.length > 0) {
+          finalNewDataObj = remoteAdapter.dbDriver.comparePartly(currentRemote[0], newDataObj)
+        } else if (currentLocal.length > 0 && currentRemote.length > 0) {
+          let mergedObject = localAdapter.dbDriver.comparePartly(currentLocal[0], currentRemote[0])
+          finalNewDataObj = localAdapter.dbDriver.comparePartly(mergedObject, newDataObj)
+          await remoteAdapter.create(finalNewDataObj)
+          await localAdapter.create(finalNewDataObj)
+        } else {
+          createdLocal = await localAdapter.create(newDataObj)
+          createdRemote = await remoteAdapter.create(newDataObj)
+        }
+      } 
+
+      this.printErrors(localAdapter)
+      this.printErrors(remoteAdapter)
 
       this.blocked = false
       this.checkRequestQueue()

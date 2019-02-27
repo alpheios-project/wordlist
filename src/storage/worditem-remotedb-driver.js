@@ -141,6 +141,8 @@ export default class WordItemRemoteDbDriver {
    */
   _serializeContext (wordItem) {
     let result = []
+    // console.info('**********_serializeContext1', wordItem)
+    // console.info('**********_serializeContext2', wordItem.context)
     for (let tq of wordItem.context) {
       result.push(this._serializeContextItem(tq, wordItem))
     }
@@ -148,14 +150,15 @@ export default class WordItemRemoteDbDriver {
   }
 
   _serializeContextItem (tq, wordItem) {
+    // console.info('**********_serializeContextItem', tq)
     return {
       target: {
         source: tq.source,
         selector: {
           type: 'TextQuoteSelector',
           exact: tq.text,
-          prefix: tq.prefix.length > 0 ? tq.prefix : ' ',
-          suffix: tq.suffix.length > 0 ? tq.suffix : ' ',
+          prefix: tq.prefix && tq.prefix.length > 0 ? tq.prefix : ' ',
+          suffix: tq.suffix && tq.suffix.length > 0 ? tq.suffix : ' ',
           languageCode: tq.languageCode
         }
       },
@@ -242,15 +245,22 @@ export default class WordItemRemoteDbDriver {
 
   comparePartly (changeItem, sourceItem) {
     let part = 'context'
-    if (!sourceItem[part]) {
-      return null
+    changeItem.important = sourceItem.important
+
+    // console.info('*****comparePartly changeItem1', changeItem)
+    if (!sourceItem[part] && changeItem[part]) {
+      // console.info('*****comparePartly changeItem2', changeItem)
+      return changeItem
     }
+
     if (sourceItem[part] && !changeItem[part]) {
       changeItem[part] = sourceItem[part]
+      // console.info('*****comparePartly changeItem2', changeItem)
       return changeItem
     }
     if (sourceItem[part] && changeItem[part]) {
       changeItem = this.mergeContextData(changeItem, sourceItem)
+      // console.info('*****comparePartly changeItem3', changeItem)
       return changeItem
     }
   }

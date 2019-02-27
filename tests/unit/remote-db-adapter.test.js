@@ -238,7 +238,7 @@ describe('remote-db-adapter.test.js', () => {
 
     expect(axios.get).toHaveBeenCalledWith(url, dbDriverRemote.requestsParams)
     expect(dbDriverRemote.storageMap.get.checkResult).toHaveBeenCalledWith({ status: 200, data: 'foodata' })
-    expect(getResult).toEqual('foodata')
+    expect(getResult).toEqual(['foodata'])
   })
 
   it('13 RemoteDBAdapter - query method catches error and saves it to errors property', async () => {

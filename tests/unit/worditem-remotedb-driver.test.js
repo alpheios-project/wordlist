@@ -24,7 +24,7 @@ describe('worditem-remotedb-driver.test.js', () => {
     jest.clearAllMocks()
   })
   
-  it('1 WordItemIndexedDbDriver - constructor creates object with the following properties: userId, storageMap, config, requestsParams', () => {
+  it('1 WordItemRemoteDbDriver - constructor creates object with the following properties: userId, storageMap, config, requestsParams', () => {
     let dbDriverRemote = new WordItemRemoteDbDriver('fooUserId')
 
     expect(dbDriverRemote.userID).toEqual('fooUserId')
@@ -37,7 +37,7 @@ describe('worditem-remotedb-driver.test.js', () => {
     expect(dbDriverRemote.requestsParams.headers.common.Authorization).toBeDefined()
   })
 
-  it('2 WordItemIndexedDbDriver - _constructPostURL creates url for creating the word', () => {
+  it('2 WordItemRemoteDbDriver - _constructPostURL creates url for creating the word', () => {
     let dbDriverRemote = new WordItemRemoteDbDriver('fooUserId')
     let testData = {
       ID: 'testUserID-lat-beatum',
@@ -54,7 +54,7 @@ describe('worditem-remotedb-driver.test.js', () => {
     expect(resUrl).toEqual('/words/lat-beatum')
   })
 
-  it('3 WordItemIndexedDbDriver - _constructGetURL creates url for getting one word', () => {
+  it('3 WordItemRemoteDbDriver - _constructGetURL creates url for getting one word', () => {
     let dbDriverRemote = new WordItemRemoteDbDriver('fooUserId')
     let testData = {
       ID: 'testUserID-lat-beatum',
@@ -71,25 +71,25 @@ describe('worditem-remotedb-driver.test.js', () => {
     expect(resUrl).toEqual('/words/lat-beatum')
   })
 
-  it('4 WordItemIndexedDbDriver - _constructGetURL creates url for getting all words from the list by languageCode', () => {
+  it('4 WordItemRemoteDbDriver - _constructGetURL creates url for getting all words from the list by languageCode', () => {
     let dbDriverRemote = new WordItemRemoteDbDriver('fooUserId')
     let resUrl = dbDriverRemote._constructGetURL({ languageCode: 'lat' })
     expect(resUrl).toEqual('/words?languageCode=lat')
   })
 
-  it('5 WordItemIndexedDbDriver - _constructGetURL returns undefined if there are no wordItem or languageCode', () => {
+  it('5 WordItemRemoteDbDriver - _constructGetURL returns undefined if there are no wordItem or languageCode', () => {
     let dbDriverRemote = new WordItemRemoteDbDriver('fooUserId')
     let resUrl = dbDriverRemote._constructGetURL({})
     expect(resUrl).not.toBeDefined()
   })
 
-  it('6 WordItemIndexedDbDriver - _constructDeleteManyURL creates url for deleting all words from the list by languageCode', () => {
+  it('6 WordItemRemoteDbDriver - _constructDeleteManyURL creates url for deleting all words from the list by languageCode', () => {
     let dbDriverRemote = new WordItemRemoteDbDriver('fooUserId')
     let resUrl = dbDriverRemote._constructDeleteManyURL({ languageCode: 'lat' })
     expect(resUrl).toEqual('/words?languageCode=lat')
   })
 
-  it('7 WordItemIndexedDbDriver - _makeStorageID creates ID for the remote source format (without userID)', () => {
+  it('7 WordItemRemoteDbDriver - _makeStorageID creates ID for the remote source format (without userID)', () => {
     let dbDriverRemote = new WordItemRemoteDbDriver('fooUserId')
     let testData = {
       ID: 'testUserID-lat-beatum',
@@ -107,7 +107,7 @@ describe('worditem-remotedb-driver.test.js', () => {
     expect(resID).toEqual('lat-beatum')
   })
 
-  it('8 WordItemIndexedDbDriver - _serialize creates jsonObj from wordItem, without homonym and context if they are absent in wordItem, executes _serializeHomonym, _serializeContext', () => {
+  it('8 WordItemRemoteDbDriver - _serialize creates jsonObj from wordItem, without homonym and context if they are absent in wordItem, executes _serializeHomonym, _serializeContext', () => {
     let dbDriverRemote = new WordItemRemoteDbDriver('fooUserId')
 
     let testData = {
@@ -140,7 +140,7 @@ describe('worditem-remotedb-driver.test.js', () => {
     expect(dbDriverRemote._serializeContext).toHaveBeenCalled()
   })
 
-  it('9 WordItemIndexedDbDriver - _serialize creates jsonObj from WordItem with homonym, if homonym is present in wordItem', async () => {
+  it('9 WordItemRemoteDbDriver - _serialize creates jsonObj from WordItem with homonym, if homonym is present in wordItem', async () => {
     let dbDriverRemote = new WordItemRemoteDbDriver('fooUserId')
 
     let testData = {
@@ -170,7 +170,7 @@ describe('worditem-remotedb-driver.test.js', () => {
     expect(resJsonObj.homonym.lemmasList).toBeDefined()
   })
 
-  it('10 WordItemIndexedDbDriver - _serialize creates jsonObj from WordItem with context, if context is present in wordItem', async () => {
+  it('10 WordItemRemoteDbDriver - _serialize creates jsonObj from WordItem with context, if context is present in wordItem', async () => {
     let dbDriverRemote = new WordItemRemoteDbDriver('fooUserId')
 
     let testData = {
@@ -205,7 +205,7 @@ describe('worditem-remotedb-driver.test.js', () => {
     expect(resJsonObj.context[0].target.source).toEqual('foosource')
   })
 
-  it('11 WordItemIndexedDbDriver - _checkPostResult checks result\'s status', async () => {
+  it('11 WordItemRemoteDbDriver - _checkPostResult checks result\'s status', async () => {
     let dbDriverRemote = new WordItemRemoteDbDriver('fooUserId')
 
     expect(dbDriverRemote._checkPostResult({ status: 201 })).toBeTruthy()
@@ -214,7 +214,7 @@ describe('worditem-remotedb-driver.test.js', () => {
     expect(dbDriverRemote._checkPostResult({ status: 200 })).toBeFalsy()
   })
 
-  it('12 WordItemIndexedDbDriver - _checkPutResult checks result\'s status', async () => {
+  it('12 WordItemRemoteDbDriver - _checkPutResult checks result\'s status', async () => {
     let dbDriverRemote = new WordItemRemoteDbDriver('fooUserId')
 
     expect(dbDriverRemote._checkPutResult({ status: 200 })).toBeTruthy()
@@ -223,19 +223,19 @@ describe('worditem-remotedb-driver.test.js', () => {
     expect(dbDriverRemote._checkPutResult({ status: 201 })).toBeFalsy()
   })
 
-  it('13 WordItemIndexedDbDriver - _checkGetResult checks result\'s status and return data', async () => {
+  it('13 WordItemRemoteDbDriver - _checkGetResult checks result\'s status and return data', async () => {
     let dbDriverRemote = new WordItemRemoteDbDriver('fooUserId')
 
     expect(dbDriverRemote._checkGetResult({ status: 500 })).toEqual([])
     
     let result1 = dbDriverRemote._checkGetResult({ status: 200, data: 'fooData' })
-    expect(result1).toEqual('fooData')
+    expect(result1).toEqual(['fooData'])
 
     let result2 = dbDriverRemote._checkGetResult({ status: 200, data: [{ body: 'fooData'}] })
     expect(result2).toEqual(['fooData'])
   })
 
-  it('14 WordItemIndexedDbDriver - getCheckArray prepares array with ID for compare with remote data', async () => {
+  it('14 WordItemRemoteDbDriver - getCheckArray prepares array with ID for compare with remote data', async () => {
     let dbDriverRemote = new WordItemRemoteDbDriver('fooUserId')
 
     let testDataItems = [{targetWord: 'fooWord1', languageCode: 'lat'}, {targetWord: 'fooWord2', languageCode: 'lat'}]

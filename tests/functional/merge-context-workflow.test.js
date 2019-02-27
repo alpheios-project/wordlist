@@ -43,7 +43,7 @@ describe('merge-context-workflow.test.js', () => {
     jest.clearAllMocks()
   })
 
-  async function prepareWordItem (word, contextData, lang = Constants.LANG_LATIN) {
+  async function prepareWordItem (word, contextData = {}, lang = Constants.LANG_LATIN) {
     let langCode = LMF.getLanguageCodeFromId(lang)
     /*
     let adapterTuftsRes = await ClientAdapters.morphology.tufts({
@@ -61,11 +61,11 @@ describe('merge-context-workflow.test.js', () => {
     languageCode: langCode,
     targetWord: word,
     target: {
-        source: contextData.source,
+        source: contextData.source || 'foosource',
         selector: {
         exact: word,
-        prefix: contextData.prefix,
-        suffix: contextData.suffix
+        prefix: contextData.prefix || 'fooprefix',
+        suffix: contextData.suffix || 'foosuffix'
         }
     }
     })
@@ -90,15 +90,17 @@ describe('merge-context-workflow.test.js', () => {
 
     await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }})
 
-    let testWord1 = await prepareWordItem('caeli')
-    testWord1.context[0].source = 'foosource1'
-    testWord1.context[0].prefix = 'fooprefix1'
-    testWord1.context[0].suffix = 'foosuffix1'
+    let testWord1 = await prepareWordItem('caeli', {
+      source: 'foosource1',
+      prefix: 'fooprefix1',
+      suffix: 'foosuffix1'
+    })
 
-    let testWord2 = await prepareWordItem('caeli')
-    testWord2.context[0].source = 'foosource2'
-    testWord2.context[0].prefix = 'fooprefix2'
-    testWord2.context[0].suffix = 'foosuffix2'
+    let testWord2 = await prepareWordItem('caeli', {
+      source: 'foosource2',
+      prefix: 'fooprefix2',
+      suffix: 'foosuffix2'
+    })
 
     await udm.create({ dataObj: testWord1 }, { onlyLocal: true })
     
@@ -137,36 +139,37 @@ describe('merge-context-workflow.test.js', () => {
    await timeout(5000)
   }, 50000)
 
-  it.skip('2 MergeContextWorkflow - query merged', async () => {
+  it('2 MergeContextWorkflow - query merged', async () => {
     let udm = new UserDataManager('alpheiosMockUser')
     await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }})
+    await timeout(5000)
 
-    let testWord1 = await prepareWordItem('caeli')
-    testWord1.context[0].source = 'foosource1'
-    testWord1.context[0].prefix = 'fooprefix1'
-    testWord1.context[0].suffix = 'foosuffix1'
+    let testWord1 = await prepareWordItem('caeli', {
+      source: 'foosource1',
+      prefix: 'fooprefix1',
+      suffix: 'foosuffix1'
+    })
 
-    let testWord2 = await prepareWordItem('caeli')
-    testWord2.context[0].source = 'foosource2'
-    testWord2.context[0].prefix = 'fooprefix2'
-    testWord2.context[0].suffix = 'foosuffix2'
+    let testWord2 = await prepareWordItem('caeli', {
+      source: 'foosource2',
+      prefix: 'fooprefix2',
+      suffix: 'foosuffix2'
+    })
 
     await udm.create({ dataObj: testWord1 }, { onlyLocal: true })
+    await timeout(5000)
+
     await udm.create({ dataObj: testWord2 }, { onlyRemote: true })
+    await timeout(5000)
 
     let finalItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'lat' }})
-    for(let check = 0; check < 5; check++) {
-      if (udm.requestsQueue.length > 0) {
-        await timeout(5000)
-      }
-    }
+    await timeout(10000)
 
-    if (udm.requestsQueue.length === 0) {
-      expect(finalItems.length).toEqual(1)
-      expect(finalItems[0].context.length).toEqual(2)
-      expect(finalItems[0].context.some(item => item.source === 'foosource1')).toBeTruthy()
-      expect(finalItems[0].context.some(item => item.source === 'foosource2')).toBeTruthy()
-    }
+    expect(finalItems.length).toEqual(1)
+    expect(finalItems[0].context.length).toEqual(2)
+    expect(finalItems[0].context.some(item => item.source === 'foosource1')).toBeTruthy()
+    expect(finalItems[0].context.some(item => item.source === 'foosource2')).toBeTruthy()
+    
     await timeout(5000)
   }, 50000)
 
@@ -276,7 +279,7 @@ describe('merge-context-workflow.test.js', () => {
     await localAdapter.create(testWord1)
     await remoteAdapter.create(testWord1)
 
-    /*****************start with creating testWord2******/
+    //*****************start with creating testWord2******
     let currentLocal = await localAdapter.query({ wordItem: testWord2 })
     let updateLocal = localAdapter.dbDriver.comparePartly(currentLocal[0], testWord2)
 
@@ -320,7 +323,7 @@ describe('merge-context-workflow.test.js', () => {
     await localAdapter.create(testWord1)
     await remoteAdapter.create(testWord2)
 
-    /*****************start with creating testWord3******/
+    //*****************start with creating testWord3******
     let currentLocal = await localAdapter.query({ wordItem: testWord3 })
     let currentRemote = await remoteAdapter.query({ wordItem: testWord3 })
 
@@ -362,10 +365,16 @@ describe('merge-context-workflow.test.js', () => {
     await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }})
 
     await udm.create({dataObj: testWord1})
+    await timeout(5000)
+
     let currentLocal = await localAdapter.query({ wordItem: testWord3 })
+    await timeout(5000)
+
     expect(currentLocal[0].context.length).toEqual(1)
     
     let currentRemote = await remoteAdapter.query({ wordItem: testWord3 })
+    await timeout(5000)
+
     expect(currentRemote[0].context.length).toEqual(1)
   }, 50000)
 
@@ -396,14 +405,22 @@ describe('merge-context-workflow.test.js', () => {
 
     await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }})
     await localAdapter.create(testWord1)
+    await timeout(5000)
+
     await remoteAdapter.create(testWord1)
+    await timeout(5000)
 
     await udm.create({dataObj: testWord2})
+    await timeout(5000)
 
     let currentLocal = await localAdapter.query({ wordItem: testWord3 })
+    await timeout(5000)
+
     expect(currentLocal[0].context.length).toEqual(2)
     
     let currentRemote = await remoteAdapter.query({ wordItem: testWord3 })
+    await timeout(5000)
+
     expect(currentRemote[0].context.length).toEqual(2)
   }, 50000)
 
@@ -433,15 +450,23 @@ describe('merge-context-workflow.test.js', () => {
     })
 
     await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }})
+
     await localAdapter.create(testWord1)
+    await timeout(5000)
+
     await remoteAdapter.create(testWord2)
+    await timeout(5000)
 
     await udm.create({dataObj: testWord3})
+    await timeout(5000)
 
     let currentLocal = await localAdapter.query({ wordItem: testWord3 })
+    await timeout(10000)
     expect(currentLocal[0].context.length).toEqual(3)
     
     let currentRemote = await remoteAdapter.query({ wordItem: testWord3 })
+    await timeout(10000)
     expect(currentRemote[0].context.length).toEqual(3)
-  }, 50000)
+  }, 500000)
+  
 })

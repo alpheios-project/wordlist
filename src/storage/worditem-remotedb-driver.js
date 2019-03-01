@@ -268,11 +268,18 @@ export default class WordItemRemoteDbDriver {
   mergeContextData (changeItem, sourceItem) {
     let pushContext = []
     for (let contextItem of sourceItem.context) {
-      let hasCheck = changeItem.context.some(tqRemote => TextQuoteSelector.readObject(tqRemote).isEqual(contextItem))
+      let hasCheck = changeItem.context.some(tqRemote => {
+        // console.info('******inside tqRemote', tqRemote)
+        // console.info('******inside contextItem', contextItem)
+        return TextQuoteSelector.readObject(tqRemote).isEqual(contextItem)
+      })
+      // onsole.info('****contextItem', hasCheck, contextItem)
       if (!hasCheck) {
         pushContext.push(this._serializeContextItem(contextItem, changeItem))
       }
     }
+    // console.info('****changeItem.context', changeItem.context)
+
     changeItem.context.push(...pushContext)
     return changeItem
   }

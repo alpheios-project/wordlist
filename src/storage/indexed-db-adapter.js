@@ -105,6 +105,7 @@ export default class IndexedDBAdapter {
       for (let segment of segments) {
         let query = this.dbDriver.updateSegmentQuery(segment, data)
         if (query.dataItems && query.dataItems.length > 0) {
+          // console.info('****update IndexedDB', segment, query.dataItems[0].target)
           result = await this._set(query)
         } else {
           result = true

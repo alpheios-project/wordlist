@@ -88,7 +88,7 @@ describe('user-data-manager.test.js', () => {
       context: context
     })
   }
-
+  
   it('1 UserDataManager - delete many and update method, checking blocking', async () => {
     let udm = new UserDataManager(testUserID)
 
@@ -381,10 +381,12 @@ describe('user-data-manager.test.js', () => {
     let testWordItem1 = await prepareWordItem('elapsas')
     let testWordItem2 = await prepareWordItem('caeli')
     let testWordItem3 = await prepareWordItem('ἔννεπε', Constants.LANG_GREEK)
+    let checkDataItems 
 
     let udm = new UserDataManager('alpheiosMockUser')
 
     await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }})
+    await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'grc' }})
 
     // created both in local and remote
     await udm.create({ dataObj: testWordItem1 })
@@ -395,17 +397,17 @@ describe('user-data-manager.test.js', () => {
 
     await udm.create({ dataObj: testWordItem3 })
     await timeout(5000)
-
-    let checkDataItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'lat' }})
+    
+    checkDataItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'lat' }})
     await timeout(5000)
-    expect(checkDataItems.length).toBeGreaterThan(0)
+    expect(checkDataItems.length).toEqual(2)
 
     checkDataItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'grc' }})
     await timeout(5000)
-    expect(checkDataItems.length).toBeGreaterThan(0)
+    expect(checkDataItems.length).toEqual(1)  
 
-    
     // delete
+    
     await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }}, { onlyLocal: true })
     await timeout(5000)
 
@@ -420,8 +422,9 @@ describe('user-data-manager.test.js', () => {
     checkDataItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'lat' }}, 'remote')
     await timeout(5000)
     expect(checkDataItems.length).toBeGreaterThan(0) // has in remote lat
-
+    
     await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }})
+    await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'grc' }})
     
   }, 500000)
 

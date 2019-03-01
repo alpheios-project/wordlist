@@ -312,6 +312,7 @@ export default class WordItemIndexedDbDriver {
     let index = 0
     let wordItemId = this._makeStorageID(worditem)
     for (let tq of worditem.context) {
+      // console.info('*****tq', tq)
       index++
       let resultItem = {
         ID: wordItemId + '-' + index,
@@ -333,6 +334,7 @@ export default class WordItemIndexedDbDriver {
         },
         createdDT: WordItemIndexedDbDriver.currentDate
       }
+      // console.info('*****resultItem', resultItem)
       result.push(resultItem)
     }
     return result
@@ -482,6 +484,8 @@ static get currentDate () {
     let pushContext = changeItem.context
     for (let contextItem of sourceItem.context) {
       let hasCheck = changeItem.context.some(tqChange => {       
+        // console.info('********inside tqChange', tqChange)
+        // console.info('********inside contextItem', contextItem)
         return tqChange.isEqual(TextQuoteSelector.readObject(contextItem)) 
       })
       if (!hasCheck) {

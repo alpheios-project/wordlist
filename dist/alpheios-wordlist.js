@@ -15496,6 +15496,7 @@ class UserDataManager {
       return
     }
     try {
+      console.info('*****************create', data)
       this.blocked = true
       let finalConstrName = this.defineConstructorName(data.dataObj.constructor.name)
 
@@ -15508,18 +15509,17 @@ class UserDataManager {
       if (this.checkAdapters(localAdapter, remoteAdapter, params)) {
         let newDataObj = data.dataObj
         
-        // console.info('*****inside newDataObj', newDataObj)
         if (params.onlyLocal) {
-          // console.info('*****inside onlyLocal')
           createdLocal = await this.compareAndSaveAdapter(localAdapter, newDataObj)
           createdRemote = true
         } else if (params.onlyRemote) {
-          // console.info('*****inside onlyRemote')
           createdRemote = await this.compareAndSaveAdapter(remoteAdapter, newDataObj)
           createdLocal = true
         } else {
           if (localAdapter.available && remoteAdapter.available) {
-            [createdLocal, createdRemote] = await this.compareAndSaveBothAdapter(localAdapter, remoteAdapter, newDataObj)
+            let res = await this.compareAndSaveBothAdapter(localAdapter, remoteAdapter, newDataObj)
+            createdLocal = res[0]
+            createdRemote = res[1]
           }
         }
         this.printErrors(localAdapter)
@@ -15530,11 +15530,9 @@ class UserDataManager {
       this.checkRequestQueue()
 
       return createdLocal && createdRemote
-    
     } catch (error) {
       console.error('Some errors happen on creating data in IndexedDB or RemoteDBAdapter', error.message)
-    }
-    
+    }    
   }
 
   checkAdapters (localAdapter, remoteAdapter, params) {
@@ -15564,15 +15562,14 @@ class UserDataManager {
   async compareAndSaveAdapter (adapter, newDataObj) {
     try {
       let currentItems = await adapter.query({ wordItem: newDataObj })
-      // console.info('*****compareAndSaveAdapter', currentItems)
       let finalNewDataObj = newDataObj
 
       if (currentItems.length > 0) {
         finalNewDataObj = adapter.dbDriver.comparePartly(currentItems[0], newDataObj)
-        // console.info('*****compareAndSaveAdapter finalNewDataObj', finalNewDataObj)
-        // console.info('*****compareAndSaveAdapter adapter', adapter.constructor.name)
+        // console.info('*****************compareAndSaveAdapter update', finalNewDataObj)
         return await adapter.update(finalNewDataObj)
       } else {
+        // console.info('*****************compareAndSaveAdapter create', finalNewDataObj)
         return await adapter.create(finalNewDataObj)
       }
     } catch (error) {
@@ -15587,26 +15584,31 @@ class UserDataManager {
 
     let finalNewDataObj = newDataObj
     let createdLocal, createdRemote
-
+    
     if (currentLocal.length > 0 && currentRemote.length === 0) {
       finalNewDataObj = localAdapter.dbDriver.comparePartly(currentLocal[0], newDataObj)
       createdRemote = await remoteAdapter.create(finalNewDataObj)
       createdLocal = await localAdapter.update(finalNewDataObj)
 
     } else if (currentLocal.length === 0 && currentRemote.length > 0) {
+      // console.info('*****compareAndSaveBothAdapter2')
       finalNewDataObj = remoteAdapter.dbDriver.comparePartly(currentRemote[0], newDataObj)
       createdRemote = await remoteAdapter.update(finalNewDataObj)
-      createdLocal = await localAdapter.create(finalNewDataObj)
 
+      let finalNewWordItem = localAdapter.dbDriver.createFromRemoteData(finalNewDataObj)
+
+      createdLocal = await localAdapter.create(finalNewWordItem)
     } else if (currentLocal.length > 0 && currentRemote.length > 0) {
+      // console.info('*****compareAndSaveBothAdapter3')
       let mergedObject = localAdapter.dbDriver.comparePartly(currentLocal[0], currentRemote[0])
       finalNewDataObj = localAdapter.dbDriver.comparePartly(mergedObject, newDataObj)
       createdRemote = await remoteAdapter.update(finalNewDataObj)
       createdLocal = await localAdapter.update(finalNewDataObj)
 
     } else {
-      createdLocal = await localAdapter.create(newDataObj)
-      createdRemote = await remoteAdapter.create(newDataObj)
+      // console.info('*****compareAndSaveBothAdapter4')
+      createdLocal = await localAdapter.create(finalNewDataObj)
+      createdRemote = await remoteAdapter.create(finalNewDataObj)
     }
     return [createdLocal, createdRemote]
   }
@@ -15624,6 +15626,7 @@ class UserDataManager {
    * @return {Boolean} true if updated successful, false if not
    */
   async update(data, params = {}) {
+    console.info('******update method', data)
     this.create(data, params)
   }
 
@@ -15723,7 +15726,7 @@ class UserDataManager {
       }    
     
       this.blocked = false
-      console.info('Result of deleted many from IndexedDB', deletedLocal)
+      console.warn('Result of deleted many from IndexedDB', deletedLocal)
 
       this.checkRequestQueue()
       return deletedLocal && deletedRemote
@@ -15746,6 +15749,7 @@ class UserDataManager {
    * @return {WordItem[]} 
    */
   async query (data, type = 'merged') {
+    console.info('*****************query', data)
     let remoteAdapter =  this._remoteStorageAdapter(data.dataType)
     let localAdapter = this._localStorageAdapter(data.dataType) 
 
@@ -15758,6 +15762,7 @@ class UserDataManager {
       result = remoteDataItems
     } else {
       let localDataItems = await localAdapter.query(data.params)
+      
       let remoteDataItems = await remoteAdapter.query(data.params)
 
       let finalLocal = await this.mergeLocalRemote(localAdapter, remoteAdapter, localDataItems, remoteDataItems)
@@ -15819,7 +15824,7 @@ class UserDataManager {
    * Promise-based method - creates absent local items
    * @param {WordItemIndexedDbDriver} localDBDriver
    * @param {WordItemRemoteDbDriver} remoteDBDriver
-   * @param {WordItem[]} localDataItems - items that are stored localy before merging
+   * param {WordItem[]} localDataItems - items that are stored localy before merging
    * @param {WordItem[]} remoteDataItems - items that are stored remotely before merging
    * @return {WordItem[]} - new wordItems that were created after merging
    */
@@ -15839,8 +15844,8 @@ class UserDataManager {
         finalLocal.push(dataItemForLocal)
       } else {
         let localItem = localDBDriver.getByStorageID(localDataItems, checkID)
-
         let updateLocal = localDBDriver.comparePartly(localItem, remoteItem)
+        
         if (updateLocal) {
           await this.update({ dataObj: updateLocal }, { onlyLocal: true })
           finalLocal.push(updateLocal)
@@ -15867,7 +15872,7 @@ class UserDataManager {
    */
   printErrors (adapter) {
     if (adapter.errors && adapter.errors.length > 0) {
-      adapter.errors.forEach(error => console.error(`Print error - ${error.message}`))
+      adapter.errors.forEach(error => console.error(`Print error - ${error}`))
     }
   }
 }
@@ -16004,6 +16009,7 @@ class WordlistController {
     // create the item in the word list if it doesn't exist
     let wordItem = this.getWordListItem(data.language, data.targetWord, true)
     wordItem.homonym = data
+    console.info('******onHomonymReady', data)    
     WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'shortHomonym'}})
     // emit a wordlist updated event too in case the wordlist was updated
     WordlistController.evt.WORDLIST_UPDATED.pub(this.wordLists)
@@ -16015,6 +16021,7 @@ class WordlistController {
   * Emits a WORDITEM_UPDATED event
   */
   onDefinitionsReady (data) {
+    console.info('******onDefinitionsReady', data) 
     let wordItem = this.getWordListItem(data.homonym.language,data.homonym.targetWord)
     if (wordItem) {
       wordItem.homonym = data.homonym
@@ -16047,9 +16054,10 @@ class WordlistController {
   * Emits a WORDITEM_UPDATED and WORDLIST_UPDATED events
   */
   onTextQuoteSelectorReceived (data) {
+    console.info('******onTextQuoteSelectorReceived', data) 
     // when receiving this event, it's possible this is the first time we are seeing the word so
     // create the item in the word list if it doesn't exist
-    let wordItem = this.getWordListItem(data.languageCode, data.normalizedText,true)
+    let wordItem = this.getWordListItem(data.languageCode, data.normalizedText, true)
     if (wordItem) {
       wordItem.addContext([data])
       WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'context'}})
@@ -16308,6 +16316,7 @@ class IndexedDBAdapter {
       }
       return updated > 0
     } catch (error) {
+      console.error(error)
       if (error) {
         this.errors.push(error)
       }
@@ -16371,22 +16380,35 @@ class IndexedDBAdapter {
    */
   async update (data, params) {
     try {
+      // console.info('start updating params', params.segment)
       let segments = params && params.segment ? [params.segment] : []
+      // console.info('2 inside indexeddb adapter', params, segments)
       let result
       // if we weren't asked to update a specific segment, update them all
       if (segments.length === 0)  {
         segments = this.dbDriver.segments
       }
+      // console.info('3 inside indexeddb final segments', segments)
       for (let segment of segments) {
+        // console.info('*****************update segment', segment, '*************')
         let query = this.dbDriver.updateSegmentQuery(segment, data)
         if (query.dataItems && query.dataItems.length > 0) {
+/*
+          if (segment === 'context') {
+            query.dataItems.forEach(dataItem => {
+              console.info('******dataItem', dataItem.target)
+            })
+          }
+*/          
           result = await this._set(query)
+          // console.info('end updating params')
         } else {
           result = true
         }
       }
       return result
     } catch (error) {
+      console.error(error)
       if (error) {
         this.errors.push(error)
       }
@@ -16422,6 +16444,7 @@ class IndexedDBAdapter {
 
       return items
     } catch (error) {
+      console.error(error)
       if (error) {
         this.errors.push(error)
       }
@@ -16529,6 +16552,7 @@ class IndexedDBAdapter {
       }
     
     } catch (error) {
+      console.error(error)
       this.errors.push(error)
     }
   }
@@ -16551,6 +16575,7 @@ class IndexedDBAdapter {
         resolve(rv)
       }
       request.onerror = (event) => {
+        console.error(event.target)
         idba.errors.push(event.target)
         reject()
       }
@@ -16573,6 +16598,7 @@ class IndexedDBAdapter {
       try {
         const transaction = db.transaction([data.objectStoreName], 'readwrite')
         transaction.onerror = (event) => {
+          console.error(event.target)
           idba.errors.push(event.target)
           reject()
         }
@@ -16587,6 +16613,7 @@ class IndexedDBAdapter {
             }
           }
           requestPut.onerror = () => {
+            console.error(event.target)
             idba.errors.push(event.target)
             reject()
           }
@@ -16596,6 +16623,7 @@ class IndexedDBAdapter {
         }
       } catch (error) {
         if (error) {
+          console.error(event.target)
           idba.errors.push(error)
           return
         }
@@ -16630,15 +16658,18 @@ class IndexedDBAdapter {
           }
 
           requestOpenCursor.onerror = (event) => {
+            console.error(event.target)
             idba.errors.push(event.target)
             reject()
           }
         } catch (error) {
+          console.error(error)
           idba.errors.push(error)
           reject()
         }
       }
       request.onerror = (event) => {
+        console.error(event.target)
         reject(event.target)
       }
     })
@@ -16673,6 +16704,7 @@ class IndexedDBAdapter {
             if (cursor) {
               const requestDelete = cursor.delete()
               requestDelete.onerror = (event) => {
+                console.error(event.target)
                 idba.errors.push(event.target)
                 reject()
               }
@@ -16685,12 +16717,14 @@ class IndexedDBAdapter {
             }
           }
         } catch (error) {
+          console.error(error)
           idba.errors.push(error)
           reject()
         }
       }
 
       request.onerror = (event) => {
+        console.error(event.target)
         idba.errors.push(event.target)
         reject()
       }
@@ -16892,12 +16926,8 @@ class RemoteDBAdapter {
       let url = this.dbDriver.storageMap.post.url(data)
       let content = this.dbDriver.storageMap.post.serialize(data)
 
-      // console.info('remoteAdapter create1', url, content)
-      // console.info('remoteAdapter create2', this.dbDriver.requestsParams)
-
       let result = await axios__WEBPACK_IMPORTED_MODULE_0___default.a.post(url, content, this.dbDriver.requestsParams)
 
-      // console.info('remoteAdapter create result', result)
       let updated = this.dbDriver.storageMap.post.checkResult(result)
       
       return updated
@@ -16918,7 +16948,6 @@ class RemoteDBAdapter {
   async update(data) {
     try {
       let url = this.dbDriver.storageMap.put.url(data)
-      // console.info('remoteAdapter data', data)
       let skipSerialize = !data.constructor.name.match(/WordItem/)
 
       let content
@@ -16927,8 +16956,6 @@ class RemoteDBAdapter {
       } else {
         content = this.dbDriver.storageMap.put.serialize(data)
       }
-      // console.info('remoteAdapter update1', url, content)
-      // console.info('remoteAdapter update2', this.dbDriver.requestsParams)
 
       let result = await axios__WEBPACK_IMPORTED_MODULE_0___default.a.put(url, content, this.dbDriver.requestsParams)
       let updated = this.dbDriver.storageMap.put.checkResult(result)
@@ -16992,21 +17019,16 @@ class RemoteDBAdapter {
   async query(data) {
     try {
       let url = this.dbDriver.storageMap.get.url(data)
-      // console.info('****remote query', url)
       let result = await axios__WEBPACK_IMPORTED_MODULE_0___default.a.get(url, this.dbDriver.requestsParams)
-      // console.info('*****result', result)
       let final = this.dbDriver.storageMap.get.checkResult(result)
-      // console.info('*****final', final)
       return final
     } catch (error) {
-      // console.error(error)
       let errorFinal = this.dbDriver.storageMap.get.checkErrorResult(error)
       if (!errorFinal && error) {
         if (error) {
           this.errors.push(error)
         }
       }
-      // console.info('*****errorFinal', errorFinal)
       return errorFinal      
     }
   }
@@ -17375,6 +17397,8 @@ class WordItemIndexedDbDriver {
         },
         createdDT: WordItemIndexedDbDriver.currentDate
       }
+      // console.info('****_serializeContext worditem', worditem)
+      // console.info('****_serializeContext resultItem', resultItem)
       result.push(resultItem)
     }
     return result
@@ -17487,18 +17511,14 @@ static get currentDate () {
   comparePartly (changeItem, sourceItem) {
     let part = 'context'
     changeItem.important = sourceItem.important
-    // console.info('***************comparePartly 1', changeItem)
     if (!sourceItem[part] && changeItem[part]) {
-      // console.info('***************comparePartly 2', changeItem)
       return changeItem
     }
     if (sourceItem[part]) {
       if (sourceItem.constructor.name.match(/WordItem/)) {
         changeItem = this.mergeContextDataWithWordItem(changeItem, sourceItem)
-        // console.info('***************comparePartly 3', changeItem)
       } else {
         changeItem = this.mergeContextDataWithObject(changeItem, sourceItem)
-        // console.info('***************comparePartly 4', changeItem)
       }
       
       return changeItem
@@ -17697,16 +17717,13 @@ class WordItemRemoteDbDriver {
    */
   _serializeContext (wordItem) {
     let result = []
-    // console.info('**********_serializeContext1', wordItem)
-    // console.info('**********_serializeContext2', wordItem.context)
     for (let tq of wordItem.context) {
       result.push(this._serializeContextItem(tq, wordItem))
     }
     return result
   }
 
-  _serializeContextItem (tq, wordItem) {
-    // console.info('**********_serializeContextItem', tq)
+  _serializeContextItem (tq, wordItem) {    
     return {
       target: {
         source: tq.source,
@@ -17803,20 +17820,16 @@ class WordItemRemoteDbDriver {
     let part = 'context'
     changeItem.important = sourceItem.important
 
-    // console.info('*****comparePartly changeItem1', changeItem)
     if (!sourceItem[part] && changeItem[part]) {
-      // console.info('*****comparePartly changeItem2', changeItem)
       return changeItem
     }
 
     if (sourceItem[part] && !changeItem[part]) {
       changeItem[part] = sourceItem[part]
-      // console.info('*****comparePartly changeItem2', changeItem)
       return changeItem
     }
     if (sourceItem[part] && changeItem[part]) {
       changeItem = this.mergeContextData(changeItem, sourceItem)
-      // console.info('*****comparePartly changeItem3', changeItem)
       return changeItem
     }
   }
@@ -17824,11 +17837,14 @@ class WordItemRemoteDbDriver {
   mergeContextData (changeItem, sourceItem) {
     let pushContext = []
     for (let contextItem of sourceItem.context) {
-      let hasCheck = changeItem.context.some(tqRemote => alpheios_data_models__WEBPACK_IMPORTED_MODULE_1__["TextQuoteSelector"].readObject(tqRemote).isEqual(contextItem))
+      let hasCheck = changeItem.context.some(tqRemote => {
+        return alpheios_data_models__WEBPACK_IMPORTED_MODULE_1__["TextQuoteSelector"].readObject(tqRemote).isEqual(contextItem)
+      })
       if (!hasCheck) {
         pushContext.push(this._serializeContextItem(contextItem, changeItem))
       }
     }
+
     changeItem.context.push(...pushContext)
     return changeItem
   }

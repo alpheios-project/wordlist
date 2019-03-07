@@ -141,16 +141,13 @@ export default class WordItemRemoteDbDriver {
    */
   _serializeContext (wordItem) {
     let result = []
-    // console.info('**********_serializeContext1', wordItem)
-    // console.info('**********_serializeContext2', wordItem.context)
     for (let tq of wordItem.context) {
       result.push(this._serializeContextItem(tq, wordItem))
     }
     return result
   }
 
-  _serializeContextItem (tq, wordItem) {
-    // console.info('**********_serializeContextItem', tq)
+  _serializeContextItem (tq, wordItem) {    
     return {
       target: {
         source: tq.source,
@@ -247,20 +244,16 @@ export default class WordItemRemoteDbDriver {
     let part = 'context'
     changeItem.important = sourceItem.important
 
-    // console.info('*****comparePartly changeItem1', changeItem)
     if (!sourceItem[part] && changeItem[part]) {
-      // console.info('*****comparePartly changeItem2', changeItem)
       return changeItem
     }
 
     if (sourceItem[part] && !changeItem[part]) {
       changeItem[part] = sourceItem[part]
-      // console.info('*****comparePartly changeItem2', changeItem)
       return changeItem
     }
     if (sourceItem[part] && changeItem[part]) {
       changeItem = this.mergeContextData(changeItem, sourceItem)
-      // console.info('*****comparePartly changeItem3', changeItem)
       return changeItem
     }
   }
@@ -269,16 +262,12 @@ export default class WordItemRemoteDbDriver {
     let pushContext = []
     for (let contextItem of sourceItem.context) {
       let hasCheck = changeItem.context.some(tqRemote => {
-        // console.info('******inside tqRemote', tqRemote)
-        // console.info('******inside contextItem', contextItem)
         return TextQuoteSelector.readObject(tqRemote).isEqual(contextItem)
       })
-      // onsole.info('****contextItem', hasCheck, contextItem)
       if (!hasCheck) {
         pushContext.push(this._serializeContextItem(contextItem, changeItem))
       }
     }
-    // console.info('****changeItem.context', changeItem.context)
 
     changeItem.context.push(...pushContext)
     return changeItem

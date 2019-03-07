@@ -33,6 +33,7 @@ export default class IndexedDBAdapter {
       }
       return updated > 0
     } catch (error) {
+      console.error(error)
       if (error) {
         this.errors.push(error)
       }
@@ -96,23 +97,35 @@ export default class IndexedDBAdapter {
    */
   async update (data, params) {
     try {
+      // console.info('start updating params', params.segment)
       let segments = params && params.segment ? [params.segment] : []
+      // console.info('2 inside indexeddb adapter', params, segments)
       let result
       // if we weren't asked to update a specific segment, update them all
       if (segments.length === 0)  {
         segments = this.dbDriver.segments
       }
+      // console.info('3 inside indexeddb final segments', segments)
       for (let segment of segments) {
+        // console.info('*****************update segment', segment, '*************')
         let query = this.dbDriver.updateSegmentQuery(segment, data)
         if (query.dataItems && query.dataItems.length > 0) {
-          // console.info('****update IndexedDB', segment, query.dataItems[0].target)
+/*
+          if (segment === 'context') {
+            query.dataItems.forEach(dataItem => {
+              console.info('******dataItem', dataItem.target)
+            })
+          }
+*/          
           result = await this._set(query)
+          // console.info('end updating params')
         } else {
           result = true
         }
       }
       return result
     } catch (error) {
+      console.error(error)
       if (error) {
         this.errors.push(error)
       }
@@ -148,6 +161,7 @@ export default class IndexedDBAdapter {
 
       return items
     } catch (error) {
+      console.error(error)
       if (error) {
         this.errors.push(error)
       }
@@ -255,6 +269,7 @@ export default class IndexedDBAdapter {
       }
     
     } catch (error) {
+      console.error(error)
       this.errors.push(error)
     }
   }
@@ -277,6 +292,7 @@ export default class IndexedDBAdapter {
         resolve(rv)
       }
       request.onerror = (event) => {
+        console.error(event.target)
         idba.errors.push(event.target)
         reject()
       }
@@ -299,6 +315,7 @@ export default class IndexedDBAdapter {
       try {
         const transaction = db.transaction([data.objectStoreName], 'readwrite')
         transaction.onerror = (event) => {
+          console.error(event.target)
           idba.errors.push(event.target)
           reject()
         }
@@ -313,6 +330,7 @@ export default class IndexedDBAdapter {
             }
           }
           requestPut.onerror = () => {
+            console.error(event.target)
             idba.errors.push(event.target)
             reject()
           }
@@ -322,6 +340,7 @@ export default class IndexedDBAdapter {
         }
       } catch (error) {
         if (error) {
+          console.error(event.target)
           idba.errors.push(error)
           return
         }
@@ -356,15 +375,18 @@ export default class IndexedDBAdapter {
           }
 
           requestOpenCursor.onerror = (event) => {
+            console.error(event.target)
             idba.errors.push(event.target)
             reject()
           }
         } catch (error) {
+          console.error(error)
           idba.errors.push(error)
           reject()
         }
       }
       request.onerror = (event) => {
+        console.error(event.target)
         reject(event.target)
       }
     })
@@ -399,6 +421,7 @@ export default class IndexedDBAdapter {
             if (cursor) {
               const requestDelete = cursor.delete()
               requestDelete.onerror = (event) => {
+                console.error(event.target)
                 idba.errors.push(event.target)
                 reject()
               }
@@ -411,12 +434,14 @@ export default class IndexedDBAdapter {
             }
           }
         } catch (error) {
+          console.error(error)
           idba.errors.push(error)
           reject()
         }
       }
 
       request.onerror = (event) => {
+        console.error(event.target)
         idba.errors.push(event.target)
         reject()
       }

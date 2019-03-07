@@ -29,12 +29,8 @@ export default class RemoteDBAdapter {
       let url = this.dbDriver.storageMap.post.url(data)
       let content = this.dbDriver.storageMap.post.serialize(data)
 
-      // console.info('remoteAdapter create1', url, content)
-      // console.info('remoteAdapter create2', this.dbDriver.requestsParams)
-
       let result = await axios.post(url, content, this.dbDriver.requestsParams)
 
-      // console.info('remoteAdapter create result', result)
       let updated = this.dbDriver.storageMap.post.checkResult(result)
       
       return updated
@@ -55,7 +51,6 @@ export default class RemoteDBAdapter {
   async update(data) {
     try {
       let url = this.dbDriver.storageMap.put.url(data)
-      // console.info('remoteAdapter data', data)
       let skipSerialize = !data.constructor.name.match(/WordItem/)
 
       let content
@@ -64,8 +59,6 @@ export default class RemoteDBAdapter {
       } else {
         content = this.dbDriver.storageMap.put.serialize(data)
       }
-      // console.info('remoteAdapter update1', url, content)
-      // console.info('remoteAdapter update2', this.dbDriver.requestsParams)
 
       let result = await axios.put(url, content, this.dbDriver.requestsParams)
       let updated = this.dbDriver.storageMap.put.checkResult(result)
@@ -129,21 +122,16 @@ export default class RemoteDBAdapter {
   async query(data) {
     try {
       let url = this.dbDriver.storageMap.get.url(data)
-      // console.info('****remote query', url)
       let result = await axios.get(url, this.dbDriver.requestsParams)
-      // console.info('*****result', result)
       let final = this.dbDriver.storageMap.get.checkResult(result)
-      // console.info('*****final', final)
       return final
     } catch (error) {
-      // console.error(error)
       let errorFinal = this.dbDriver.storageMap.get.checkErrorResult(error)
       if (!errorFinal && error) {
         if (error) {
           this.errors.push(error)
         }
       }
-      // console.info('*****errorFinal', errorFinal)
       return errorFinal      
     }
   }

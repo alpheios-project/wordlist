@@ -25,7 +25,9 @@ describe('merge-context-workflow.test.js', () => {
   }
 
   beforeAll( () => {
-    window.indexedDB = IndexedDB
+    window.indexedDB = Inde
+    
+    xedDB
     window.IDBKeyRange = IDBKeyRange
   })
 

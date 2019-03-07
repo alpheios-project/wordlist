@@ -85,6 +85,7 @@ export default class UserDataManager {
       return
     }
     try {
+      console.info('*****************create', data)
       this.blocked = true
       let finalConstrName = this.defineConstructorName(data.dataObj.constructor.name)
 
@@ -149,17 +150,15 @@ export default class UserDataManager {
 
   async compareAndSaveAdapter (adapter, newDataObj) {
     try {
-      // console.info('*****compareAndSaveAdapter start')
       let currentItems = await adapter.query({ wordItem: newDataObj })
-      // console.info('*****compareAndSaveAdapter', currentItems)
       let finalNewDataObj = newDataObj
 
       if (currentItems.length > 0) {
         finalNewDataObj = adapter.dbDriver.comparePartly(currentItems[0], newDataObj)
-        // console.info('*****compareAndSaveAdapter finalNewDataObj', finalNewDataObj)
-        // console.info('*****compareAndSaveAdapter adapter', adapter.constructor.name)
+        // console.info('*****************compareAndSaveAdapter update', finalNewDataObj)
         return await adapter.update(finalNewDataObj)
       } else {
+        // console.info('*****************compareAndSaveAdapter create', finalNewDataObj)
         return await adapter.create(finalNewDataObj)
       }
     } catch (error) {
@@ -169,57 +168,36 @@ export default class UserDataManager {
   }
 
   async compareAndSaveBothAdapter (localAdapter, remoteAdapter, newDataObj) {
-    // console.info('*****compareAndSaveBothAdapter start')
     let currentLocal = await localAdapter.query({ wordItem: newDataObj })
     let currentRemote = await remoteAdapter.query({ wordItem: newDataObj })
 
-    // console.info('*****compareAndSaveBothAdapter currentLocal', currentLocal)
-    // console.info('*****compareAndSaveBothAdapter currentRemote', currentRemote)
-
     let finalNewDataObj = newDataObj
     let createdLocal, createdRemote
-
+    
     if (currentLocal.length > 0 && currentRemote.length === 0) {
-      
       finalNewDataObj = localAdapter.dbDriver.comparePartly(currentLocal[0], newDataObj)
       createdRemote = await remoteAdapter.create(finalNewDataObj)
       createdLocal = await localAdapter.update(finalNewDataObj)
 
     } else if (currentLocal.length === 0 && currentRemote.length > 0) {
-      // console.info('*****compareAndSaveBothAdapter adapterN1 1', currentRemote[0].context)
-      // console.info('*****compareAndSaveBothAdapter adapterN1 1', currentRemote[0].context[0].target)
-      // console.info('*****compareAndSaveBothAdapter adapterN1 2', newDataObj.context)
-
+      // console.info('*****compareAndSaveBothAdapter2')
       finalNewDataObj = remoteAdapter.dbDriver.comparePartly(currentRemote[0], newDataObj)
-
-      // console.info('*****compareAndSaveBothAdapter adapterN1 3-1', finalNewDataObj)
-      // console.info('*****compareAndSaveBothAdapter adapterN1 3-2', finalNewDataObj.context[0].target)
-
       createdRemote = await remoteAdapter.update(finalNewDataObj)
-
-      // console.info('*****compareAndSaveBothAdapter adapterN1 4 createdRemote', createdRemote)
 
       let finalNewWordItem = localAdapter.dbDriver.createFromRemoteData(finalNewDataObj)
 
       createdLocal = await localAdapter.create(finalNewWordItem)
-      // console.info('*****compareAndSaveBothAdapter adapterN1 4 createdLocal', createdLocal)
-
     } else if (currentLocal.length > 0 && currentRemote.length > 0) {
-      // console.info('*****compareAndSaveBothAdapter adapter1', currentLocal[0].context)
-      // console.info('*****compareAndSaveBothAdapter adapter1', currentRemote[0].context)
-
+      // console.info('*****compareAndSaveBothAdapter3')
       let mergedObject = localAdapter.dbDriver.comparePartly(currentLocal[0], currentRemote[0])
-      // console.info('*****compareAndSaveBothAdapter adapter2', mergedObject.context)
-      
       finalNewDataObj = localAdapter.dbDriver.comparePartly(mergedObject, newDataObj)
-      // console.info('*****compareAndSaveBothAdapter adapter3', finalNewDataObj.context)
-
       createdRemote = await remoteAdapter.update(finalNewDataObj)
       createdLocal = await localAdapter.update(finalNewDataObj)
 
     } else {
-      createdLocal = await localAdapter.create(newDataObj)
-      createdRemote = await remoteAdapter.create(newDataObj)
+      // console.info('*****compareAndSaveBothAdapter4')
+      createdLocal = await localAdapter.create(finalNewDataObj)
+      createdRemote = await remoteAdapter.create(finalNewDataObj)
     }
     return [createdLocal, createdRemote]
   }
@@ -237,6 +215,7 @@ export default class UserDataManager {
    * @return {Boolean} true if updated successful, false if not
    */
   async update(data, params = {}) {
+    console.info('******update method', data)
     this.create(data, params)
   }
 
@@ -359,6 +338,7 @@ export default class UserDataManager {
    * @return {WordItem[]} 
    */
   async query (data, type = 'merged') {
+    console.info('*****************query', data)
     let remoteAdapter =  this._remoteStorageAdapter(data.dataType)
     let localAdapter = this._localStorageAdapter(data.dataType) 
 
@@ -392,11 +372,8 @@ export default class UserDataManager {
    * @return {WordItem[]} - new wordItems that were created after merging
    */
   async mergeLocalRemote (localAdapter, remoteAdapter, localDataItems, remoteDataItems) {
-    // console.info('********mergeLocalRemote1', localDataItems[0].context)
     let notInLocalWI = await this.createAbsentLocalItems(localAdapter, remoteAdapter, localDataItems, remoteDataItems)
-    // console.info('********mergeLocalRemote2', localDataItems[0].context)
     this.createAbsentRemoteItems(localAdapter, remoteAdapter, localDataItems, remoteDataItems)
-    // console.info('********mergeLocalRemote3', localDataItems[0].context)
     return notInLocalWI
   }
 
@@ -416,7 +393,6 @@ export default class UserDataManager {
     
     let notInRemote = []
     
-    // console.info('********createAbsentRemoteItems', localDataItems[0].context)
     for (let localItem of localDataItems) {
       let checkID = localDBDriver.makeIDCompareWithRemote(localItem)
       if (!remoteCheckAray.includes(checkID)) {
@@ -425,7 +401,6 @@ export default class UserDataManager {
       } else {
         let remoteItem = remoteDBDriver.getByStorageID(remoteDataItems, checkID)
 
-        // console.info('*****query remoteItem, localItem', remoteItem, localItem)
         let updateRemote = remoteDBDriver.comparePartly(remoteItem, localItem)
         if (updateRemote) {
           await remoteAdapter.update(updateRemote, true) 
@@ -458,12 +433,8 @@ export default class UserDataManager {
         finalLocal.push(dataItemForLocal)
       } else {
         let localItem = localDBDriver.getByStorageID(localDataItems, checkID)
-        // console.info('*****createAbsentLocalItems before localItem', localItem)
-        // console.info('*****createAbsentLocalItems remoteItem', remoteItem)
         let updateLocal = localDBDriver.comparePartly(localItem, remoteItem)
         
-        // console.info('*****createAbsentLocalItems after localItem', localItem)
-        // console.info('*****createAbsentLocalItems updateLocal', updateLocal)
         if (updateLocal) {
           await this.update({ dataObj: updateLocal }, { onlyLocal: true })
           finalLocal.push(updateLocal)
@@ -490,7 +461,7 @@ export default class UserDataManager {
    */
   printErrors (adapter) {
     if (adapter.errors && adapter.errors.length > 0) {
-      adapter.errors.forEach(error => console.error(`Print error - ${error.message}`))
+      adapter.errors.forEach(error => console.error(`Print error - ${error}`))
     }
   }
 }

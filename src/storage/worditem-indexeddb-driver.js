@@ -312,7 +312,6 @@ export default class WordItemIndexedDbDriver {
     let index = 0
     let wordItemId = this._makeStorageID(worditem)
     for (let tq of worditem.context) {
-      // console.info('*****tq', tq)
       index++
       let resultItem = {
         ID: wordItemId + '-' + index,
@@ -334,7 +333,8 @@ export default class WordItemIndexedDbDriver {
         },
         createdDT: WordItemIndexedDbDriver.currentDate
       }
-      // console.info('*****resultItem', resultItem)
+      // console.info('****_serializeContext worditem', worditem)
+      // console.info('****_serializeContext resultItem', resultItem)
       result.push(resultItem)
     }
     return result
@@ -447,18 +447,14 @@ static get currentDate () {
   comparePartly (changeItem, sourceItem) {
     let part = 'context'
     changeItem.important = sourceItem.important
-    // console.info('***************comparePartly 1', changeItem)
     if (!sourceItem[part] && changeItem[part]) {
-      // console.info('***************comparePartly 2', changeItem)
       return changeItem
     }
     if (sourceItem[part]) {
       if (sourceItem.constructor.name.match(/WordItem/)) {
         changeItem = this.mergeContextDataWithWordItem(changeItem, sourceItem)
-        // console.info('***************comparePartly 3', changeItem)
       } else {
         changeItem = this.mergeContextDataWithObject(changeItem, sourceItem)
-        // console.info('***************comparePartly 4', changeItem)
       }
       
       return changeItem
@@ -484,8 +480,6 @@ static get currentDate () {
     let pushContext = changeItem.context
     for (let contextItem of sourceItem.context) {
       let hasCheck = changeItem.context.some(tqChange => {       
-        // console.info('********inside tqChange', tqChange)
-        // console.info('********inside contextItem', contextItem)
         return tqChange.isEqual(TextQuoteSelector.readObject(contextItem)) 
       })
       if (!hasCheck) {

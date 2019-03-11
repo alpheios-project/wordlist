@@ -16214,7 +16214,6 @@ class IndexedDBAdapter {
       }
       return updated > 0
     } catch (error) {
-      console.error(error)
       if (error) {
         this.errors.push(error)
       }
@@ -16239,7 +16238,6 @@ class IndexedDBAdapter {
       }
       return deletedResult
     } catch (error) {
-      console.error(error)
       if (error) {
         this.errors.push(error)
       }
@@ -16261,7 +16259,6 @@ class IndexedDBAdapter {
       }
       return true
     } catch (error) {
-      console.error(error)
       if (error) {
         this.errors.push(error)
       }
@@ -16296,8 +16293,6 @@ class IndexedDBAdapter {
       }
       return result
     } catch (error) {
-
-      console.error(error)
       if (error) {
         this.errors.push(error)
       }
@@ -16333,7 +16328,6 @@ class IndexedDBAdapter {
 
       return items
     } catch (error) {
-      console.error(error)
       if (error) {
         this.errors.push(error)
       }
@@ -16441,7 +16435,6 @@ class IndexedDBAdapter {
       }
     
     } catch (error) {
-      console.error(error)
       this.errors.push(error)
     }
   }
@@ -16464,7 +16457,6 @@ class IndexedDBAdapter {
         resolve(rv)
       }
       request.onerror = (event) => {
-        console.error(event.target)
         idba.errors.push(event.target)
         reject()
       }
@@ -16487,7 +16479,6 @@ class IndexedDBAdapter {
       try {
         const transaction = db.transaction([data.objectStoreName], 'readwrite')
         transaction.onerror = (event) => {
-          console.error(event.target)
           idba.errors.push(event.target)
           reject()
         }
@@ -16502,7 +16493,6 @@ class IndexedDBAdapter {
             }
           }
           requestPut.onerror = () => {
-            console.error(event.target)
             idba.errors.push(event.target)
             reject()
           }
@@ -16512,7 +16502,6 @@ class IndexedDBAdapter {
         }
       } catch (error) {
         if (error) {
-          console.error(event.target)
           idba.errors.push(error)
           return
         }
@@ -16547,18 +16536,15 @@ class IndexedDBAdapter {
           }
 
           requestOpenCursor.onerror = (event) => {
-            console.error(event.target)
             idba.errors.push(event.target)
             reject()
           }
         } catch (error) {
-          console.error(error)
           idba.errors.push(error)
           reject()
         }
       }
       request.onerror = (event) => {
-        console.error(event.target)
         reject(event.target)
       }
     })
@@ -16593,7 +16579,6 @@ class IndexedDBAdapter {
             if (cursor) {
               const requestDelete = cursor.delete()
               requestDelete.onerror = (event) => {
-                console.error(event.target)
                 idba.errors.push(event.target)
                 reject()
               }
@@ -16606,14 +16591,12 @@ class IndexedDBAdapter {
             }
           }
         } catch (error) {
-          console.error(error)
           idba.errors.push(error)
           reject()
         }
       }
 
       request.onerror = (event) => {
-        console.error(event.target)
         idba.errors.push(event.target)
         reject()
       }

@@ -94,17 +94,11 @@ describe('new-merge-worditem.test.js', () => {
     currentItem.homonym = currentItem.homonym || newItem.homonym
 
     let pushContext = currentItem.context
-    // console.info('************currentItem.context', currentItem.context)
-    // console.info('************newItem.context', newItem.context)
     for (let contextItem of newItem.context) {
       let hasCheck = currentItem.context.some(tqChange => {       
         return TextQuoteSelector.readObject(tqChange).isEqual(contextItem) 
       })
       if (!hasCheck) {
-        // console.info('*****contextTemp contextItem', contextItem)
-        let contextTemp = remoteDbDriver._serializeContextItem(contextItem, currentItem)
-        
-        // console.info('*****contextTemp contextTemp', contextTemp)
         pushContext.push(remoteDbDriver._serializeContextItem(contextItem, currentItem))
       }
     }
@@ -120,7 +114,6 @@ describe('new-merge-worditem.test.js', () => {
         await remoteAdapter.create(wordItem)
       } else {
         let resultWordItem = mergeRemoteContext(currentItems[0], wordItem, remoteAdapter.dbDriver)
-        // console.info('******resultWordItem', resultWordItem)
         await remoteAdapter.update(resultWordItem)
       }
     }
@@ -137,7 +130,7 @@ describe('new-merge-worditem.test.js', () => {
         }
       }
     }
-    console.info('*****updateLocal', wordItem)
+
     currentItems = await localAdapter.query({ wordItem })
     if (currentItems.length === 0) {
       await localAdapter.update(wordItem, { segment: 'common' })  
@@ -145,7 +138,7 @@ describe('new-merge-worditem.test.js', () => {
     await localAdapter.update(wordItem, { segment })
   }
 
-  it('1 test creation', async () => {
+  it.skip('1 test creation', async () => {
     // onTextQuoteSelectorReceived
     let dbDriverRemote = new WordItemRemoteDbDriver('alpheiosMockUser')
     let remoteAdapter = new RemoteDBAdapter(dbDriverRemote)
@@ -237,7 +230,7 @@ describe('new-merge-worditem.test.js', () => {
     await getWordItemStep2(testWordItem2)
     await updateLocal(localAdapter, testWordItem2, 'shortHomonym')
     await timeout(5000)
-    
+
     currentItems = await localAdapter.query({ wordItem: testWordItem2 })
     console.info('*****final local2-1', currentItems)
     // console.info('*****final local2-2', currentItems[0].context)
@@ -247,4 +240,104 @@ describe('new-merge-worditem.test.js', () => {
     // return final
   }, 50000)
   
+
+  it.skip('2 test creation', async () => {
+    let dbDriverRemote = new WordItemRemoteDbDriver('alpheiosMockUser')
+    let remoteAdapter = new RemoteDBAdapter(dbDriverRemote)
+
+    let dbDriverLocal = new WordItemIndexedDbDriver('alpheiosMockUser')
+    let localAdapter = new IndexedDBAdapter(dbDriverLocal)
+
+    let udm = new UserDataManager('alpheiosMockUser')
+    // await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }})
+    // await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'grc' }})
+
+    let testWordItem = await getWordItemStep1('beautum', 'lat')
+    await udm.update({ dataObj: testWordItem })
+
+    await getWordItemStep2(testWordItem)
+    await udm.update({ dataObj: testWordItem })
+
+    let testWordItem2 = await getWordItemStep1('beautum', 'lat', {
+      source: 'source4',
+      prefix: 'prefix4',
+      suffix: 'suffix4'
+    })
+
+    await getWordItemStep2(testWordItem2)
+    await getWordItemStep3(testWordItem2)
+
+    await timeout(10000)
+
+    await udm.update({ dataObj: testWordItem2 })
+
+    let currentItems
+
+    currentItems = await remoteAdapter.query({ wordItem: testWordItem })
+    console.info('*****final remote1-1', currentItems)
+    /*
+    console.info('*****final remote2-1', currentItems[0].context)
+    currentItems[0].context.forEach(contextItem => {
+      console.info('*****final remote3-1', contextItem.target.selector)
+    })
+    */
+
+    currentItems = await localAdapter.query({ wordItem: testWordItem })
+    console.info('*****final local2-1', currentItems)
+
+    /*
+    console.info('*****final local2-2', currentItems[0].context)
+    */
+    currentItems[0].context.forEach(contextItem => {
+      console.info('*****final local3-1', contextItem)
+    })
+
+    console.info('*****final local2-2', currentItems[0].homonym.lexemes[0].meaning)    
+  }, 50000)
+
+  it('3 test creation', async () => {
+    let udm = new UserDataManager('alpheiosMockUser')
+
+    await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }})
+
+    let testWordItem = await getWordItemStep1('mare', 'lat')
+    await getWordItemStep2(testWordItem)
+
+    let testWordItem2 = await getWordItemStep1('δύο', 'grc')
+    await getWordItemStep2(testWordItem2)
+
+    await udm.update({ dataObj: testWordItem })
+    await udm.update({ dataObj: testWordItem2 })
+
+    let testWordItem3 = await getWordItemStep1('mare', 'lat', {
+      source: 'source3',
+      prefix: 'prefix3',
+      suffix: 'suffix3'
+    })
+    await udm.update({ dataObj: testWordItem3 })
+    // await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }})
+
+    let dbDriverLocal = new WordItemIndexedDbDriver('alpheiosMockUser')
+    let localAdapter = new IndexedDBAdapter(dbDriverLocal)
+    /*
+    let currentItems = await localAdapter.query({ wordItem: testWordItem })
+    console.info('*****currentItems', currentItems[0].context[0])
+    */
+    
+    /*
+    let resultItems = await udm.query({ dataType: 'WordItem', params: { languageCode: 'lat' }})
+    console.info('********resultItems1', resultItems)
+    console.info('********resultItems2', resultItems[0].context)
+    */
+
+    let resultItems = await udm.query({ dataType: 'WordItem', params: { wordItem: testWordItem3 }}, 'full')
+    console.info('********resultItems1', resultItems)
+    console.info('********resultItems2', resultItems[0].context)
+
+    await udm.delete({ dataObj: testWordItem3 })
+
+    resultItems = await udm.query({ dataType: 'WordItem', params: { wordItem: testWordItem3 }})
+    console.info('********resultItems1', resultItems)
+    // console.info('********resultItems2', resultItems[0].context)
+  }, 50000)
 })

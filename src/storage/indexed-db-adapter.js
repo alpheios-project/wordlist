@@ -1,3 +1,5 @@
+import { WordItem } from 'alpheios-data-models'
+
 /**
  * An interface to IndexedDB Storage
  */
@@ -11,6 +13,31 @@ export default class IndexedDBAdapter {
     this.available = this._initIndexedDBNamespaces()
     this.dbDriver = dbDriver
     this.errors = []
+  }
+
+  async checkAndUpdate (wordItem, segment, currentRemoteItems) {  
+    if (segment === 'context' || !segment)  {
+      if (currentRemoteItems.length > 0) {
+        wordItem.context = []
+        for(let contextItem of currentRemoteItems[0].context) {
+          wordItem.context.push(WordItem.readContext([contextItem])[0])
+        }
+      }
+    }
+
+    let currentLocalItems = await this.query({ wordItem })
+
+    if (currentLocalItems.length === 0) {
+      await this.update(wordItem, { segment: 'common' })  
+    }
+
+    if (!segment) {
+      segment = this.dbDriver.segmentsSync
+    }
+
+    let result = await this.update(wordItem, { segment })
+
+    return result
   }
 
   /**
@@ -97,34 +124,25 @@ export default class IndexedDBAdapter {
    */
   async update (data, params) {
     try {
-      // console.info('start updating params', params.segment)
-      let segments = params && params.segment ? [params.segment] : []
-      // console.info('2 inside indexeddb adapter', params, segments)
+      let segments = params && params.segment ? (Array.isArray(params.segment) ? params.segment : [params.segment]) : []
+
       let result
-      // if we weren't asked to update a specific segment, update them all
       if (segments.length === 0)  {
         segments = this.dbDriver.segments
       }
-      // console.info('3 inside indexeddb final segments', segments)
+
       for (let segment of segments) {
-        // console.info('*****************update segment', segment, '*************')
         let query = this.dbDriver.updateSegmentQuery(segment, data)
+
         if (query.dataItems && query.dataItems.length > 0) {
-/*
-          if (segment === 'context') {
-            query.dataItems.forEach(dataItem => {
-              console.info('******dataItem', dataItem.target)
-            })
-          }
-*/          
           result = await this._set(query)
-          // console.info('end updating params')
         } else {
           result = true
         }
       }
       return result
     } catch (error) {
+
       console.error(error)
       if (error) {
         this.errors.push(error)
@@ -193,7 +211,7 @@ export default class IndexedDBAdapter {
             // Make a request to clear all the data out of the object store
             let objectStoreRequest = objectStore.clear()
             objectStoreRequest.onsuccess = function(event) {
-              console.info(`store ${store} cleared`)
+              console.warn(`store ${store} cleared`)
               objectStoresRemaining = objectStoresRemaining - 1
               if (objectStoresRemaining === 0) {
                 resolve(true)

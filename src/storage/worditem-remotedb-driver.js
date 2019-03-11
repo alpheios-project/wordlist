@@ -49,6 +49,27 @@ export default class WordItemRemoteDbDriver {
     }
   }
 
+  get segmentsForUpdate () {
+    return ['common', 'context', 'shortHomonym']
+  }
+
+  mergeRemoteContext (currentItem, newItem) {
+    currentItem.important = currentItem.important || newItem.important
+    currentItem.homonym = currentItem.homonym || this._serializeHomonym(newItem)
+
+    let pushContext = currentItem.context
+    for (let contextItem of newItem.context) {
+      let hasCheck = currentItem.context.some(tqCurrent => {
+        return TextQuoteSelector.readObject(tqCurrent).isEqual(contextItem) 
+      })
+      if (!hasCheck) {
+        pushContext.push(this._serializeContextItem(contextItem, currentItem))
+      }
+    }
+    currentItem.context = pushContext
+    return currentItem
+  }
+
    /**
    * Defines url for creating item in remote storage
    * @param {WordItem} wordItem
@@ -234,46 +255,5 @@ export default class WordItemRemoteDbDriver {
    */
   getCheckArray (dataItems) {
     return dataItems.map(item => this._makeStorageID(item))
-  }
-
-  isTheSame (remoteItem, localItem) {
-    return this._makeStorageID(remoteItem) === this._makeStorageID(localItem)
-  }
-
-  comparePartly (changeItem, sourceItem) {
-    let part = 'context'
-    changeItem.important = sourceItem.important
-
-    if (!sourceItem[part] && changeItem[part]) {
-      return changeItem
-    }
-
-    if (sourceItem[part] && !changeItem[part]) {
-      changeItem[part] = sourceItem[part]
-      return changeItem
-    }
-    if (sourceItem[part] && changeItem[part]) {
-      changeItem = this.mergeContextData(changeItem, sourceItem)
-      return changeItem
-    }
-  }
-
-  mergeContextData (changeItem, sourceItem) {
-    let pushContext = []
-    for (let contextItem of sourceItem.context) {
-      let hasCheck = changeItem.context.some(tqRemote => {
-        return TextQuoteSelector.readObject(tqRemote).isEqual(contextItem)
-      })
-      if (!hasCheck) {
-        pushContext.push(this._serializeContextItem(contextItem, changeItem))
-      }
-    }
-
-    changeItem.context.push(...pushContext)
-    return changeItem
-  }
-
-  getByStorageID (dataItems, ID) {
-    return dataItems.find(item => this._makeStorageID(item) === ID)
   }
 }

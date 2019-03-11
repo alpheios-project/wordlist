@@ -61,7 +61,9 @@ export default class RemoteDBAdapter {
 
   /**
    * Updates an item in remote storage
-   * @param {WordItem} data
+   * we could receive here data in two formats - wordItem (if updated from selected wordItem) and object (if updated from already serialized when merged)
+   * so if it is already an object - we skip serialization
+   * @param {WordItem/Object} data
    * @return {Boolean} - successful/failed result
    */
   async update(data) {

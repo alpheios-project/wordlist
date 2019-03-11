@@ -15416,6 +15416,11 @@ __webpack_require__.r(__webpack_exports__);
 
 class UserDataManager {
 
+  /**
+   * Creates with userID argument, subscribe to WordItem and WorList events, inits blocked property and request queue
+   * @param {String} userID - userID that would be used for access to remote storage
+   * @param {String} events - events object of the WordlistController, passed in UIController
+   */
   constructor (userID, events) {
     this.userID = userID
     if (events) {
@@ -15427,16 +15432,68 @@ class UserDataManager {
     this.requestsQueue = []
   }
 
+  /**
+   * Initializes IndexedDBAdapter with appropriate local dbDriver (WordItemIndexedDbDriver) 
+   * @param {String} dataType - data type for choosing a proper dbDriver (WordItem)
+   * @return {IndexedDBAdapter}
+   */
   _localStorageAdapter(dataType) {
     let dbDriver = new UserDataManager.LOCAL_DRIVER_CLASSES[dataType](this.userID)
     return new _storage_indexed_db_adapter_js__WEBPACK_IMPORTED_MODULE_2__["default"](dbDriver)
   }
 
+  /**
+   * Initializes RemoteDBAdapter with appropriate remote dbDriver (WordItemRemoteDbDriver) 
+   * @param {String} dataType - data type for choosing a proper dbDriver (WordItem)
+   * @return {RemoteDBAdapter}
+   */
   _remoteStorageAdapter(dataType) {
     let dbDriver = new UserDataManager.REMOTE_DRIVER_CLASSES[dataType](this.userID)
     return new _storage_remote_db_adapter_js__WEBPACK_IMPORTED_MODULE_3__["default"](dbDriver)
   }
 
+  /**
+   * Checks availability of remote and local adapter according to params.source value
+   * @param {String} dataType - data type for choosing a proper dbDriver (WordItem)
+   * @return {RemoteDBAdapter}
+   */
+  checkAdapters (localAdapter, remoteAdapter, params) {
+    let localCheck = false
+    let remoteCheck = false
+
+    if (params.source === 'remote') {
+      localCheck = true
+      remoteCheck = remoteAdapter.available
+    } else if (params.source === 'local') {
+      localCheck = localAdapter.available
+      remoteCheck = true
+    } else {
+      localCheck = localAdapter.available
+      remoteCheck = remoteAdapter.available
+      if (!localAdapter.available) {
+        this.printErrorAdapterUnvailable(localAdapter)
+      }
+      if (!remoteAdapter.available) {
+        this.printErrorAdapterUnvailable(remoteAdapter)
+      }
+    }
+
+    return localCheck && remoteCheck
+  }
+
+  printErrorAdapterUnvailable(adapter) {
+    console.error(`Adapter is not available - ${adapter.constructor.name}`)
+  }
+
+  /**
+   * Promise-based method - updates object in local/remote storage
+   * uses blocking workflow: 
+   * @param {Object} data
+   * @param {WordItem} data.dataObj - object for saving to local/remote storage
+   * @param {WordItem} data.params - could have segment property to define exact segment for updating
+   * @param {Object} [params={}] - additional parameters for updating, now it is only params.source = [local, remote, both]
+   * @return {Boolean} true if updated successful, false if not
+   */
   async update(data, params = {}) {
     if (this.blocked) {
       this.requestsQueue.push({
@@ -15446,7 +15503,6 @@ class UserDataManager {
       return
     }
     try {
-      this.blocked = true
       params.source = params.source||'both'
       let finalConstrName = this.defineConstructorName(data.dataObj.constructor.name)
 
@@ -15456,26 +15512,38 @@ class UserDataManager {
       let result = false
       let segment = data.params && data.params.segment ? data.params.segment : localAdapter.dbDriver.segments
 
-      if (params.source === 'local') {
-        result = await localAdapter.update(data.dataObj, data.params)
-      } else if (params.source === 'remote') {
-        result = await remoteAdapter.update(data.dataObj, data.params)  
-      } else {
-        let currentRemoteItems = await remoteAdapter.checkAndUpdate(data.dataObj, segment)
-        result = await localAdapter.checkAndUpdate(data.dataObj, segment, currentRemoteItems)
+      if (this.checkAdapters(localAdapter, remoteAdapter, params)) {
+        this.blocked = true
+        if (params.source === 'local') {
+          result = await localAdapter.update(data.dataObj, data.params)
+        } else if (params.source === 'remote') {
+          result = await remoteAdapter.update(data.dataObj, data.params)  
+        } else {
+          let currentRemoteItems = await remoteAdapter.checkAndUpdate(data.dataObj, segment)
+          result = await localAdapter.checkAndUpdate(data.dataObj, segment, currentRemoteItems)
+        }
+
+        this.printErrors(remoteAdapter)
+        this.printErrors(localAdapter)
+
+        this.blocked = false
+        this.checkRequestQueue()
       }
-
-      this.printErrors(remoteAdapter)
-      this.printErrors(localAdapter)
-
-      this.blocked = false
-      this.checkRequestQueue()
       return result
     } catch (error) {
       console.error('Some errors happen on updating data in IndexedDB or RemoteDBAdapter', error.message)
     }
   }
 
+  /**
+   * Promise-based method - deletes single object in local/remote storage
+   * uses blocking workflow: 
+   * @param {Object} data
+   * @param {WordItem} data.dataObj - object for saving to local/remote storage
+   * @param {WordItem} data.params - could have segment property to define exact segment for updating
+   * @param {Object} [params={}] - additional parameters for updating, now it is only params.source = [local, remote, both]
+   * @return {Boolean} true if deleted successful, false if not
+   */
   async delete(data, params = {}) {
     if (this.blocked) {
       this.requestsQueue.push({
@@ -15491,28 +15559,43 @@ class UserDataManager {
       let localAdapter = this._localStorageAdapter(finalConstrName)
       let remoteAdapter = this._remoteStorageAdapter(finalConstrName)
     
-      let remoteResult = true
-      let localResult = true
+      let remoteResult = false
+      let localResult = false
       
-      if (params.source !== 'local') {
-        remoteResult = await remoteAdapter.deleteOne(data.dataObj)
+      if (this.checkAdapters(localAdapter, remoteAdapter, params)) {
+        this.blocked = true
+
+        remoteResult = true
+        localResult = true
+
+        if (params.source !== 'local') {
+          remoteResult = await remoteAdapter.deleteOne(data.dataObj)
+        }
+        if (params.source !== 'remote') {
+          localResult = await localAdapter.deleteOne(data.dataObj)
+        }
+
+        this.printErrors(remoteAdapter)
+        this.printErrors(localAdapter)
+
+        this.blocked = false
+        this.checkRequestQueue()
       }
-      if (params.source !== 'remote') {
-        localResult = await localAdapter.deleteOne(data.dataObj)
-      }
-
-      this.printErrors(remoteAdapter)
-      this.printErrors(localAdapter)
-
-      this.blocked = false
-      this.checkRequestQueue()
-
       return remoteResult && localResult
     } catch (error) {
       console.error('Some errors happen on deleting item from IndexedDB or RemoteDBAdapter', error.message)
     }
   }
 
+  /**
+   * Promise-based method - deletes all objects from the wordlist by languageCode in local/remote storage
+   * uses blocking workflow: 
+   * @param {Object} data
+   * @param {String} data.languageCode - languageCode of Wordlist to be deleted
+   * @param {WordItem} data.params - could have segment property to define exact segment for updating
+   * @param {Object} [params={ source: both }] - additional parameters for updating, now it is only params.source = [local, remote, both]
+   * @return {Boolean} true if deleted successful, false if not
+   */
   async deleteMany(data, params = {}) {
     if (this.blocked) {
       this.requestsQueue.push({
@@ -15522,27 +15605,33 @@ class UserDataManager {
       return
     }
     try {
-      this.blocked = true
+      
       let remoteAdapter =  this._remoteStorageAdapter(data.dataType)
       let localAdapter = this._localStorageAdapter(data.dataType)
 
-      let deletedLocal = true
-      let deletedRemote = true
+      let deletedLocal = false
+      let deletedRemote = false
       
-      if (params.source !== 'local') {
-        deletedRemote = await remoteAdapter.deleteMany(data.params)
+      if (this.checkAdapters(localAdapter, remoteAdapter, params)) {
+        deletedLocal = true
+        deletedRemote = true
+
+        this.blocked = true
+        if (params.source !== 'local') {
+          deletedRemote = await remoteAdapter.deleteMany(data.params)
+        }
+        if (params.source !== 'remote') {
+          deletedLocal = await localAdapter.deleteMany(data.params)
+        }      
+
+        this.printErrors(remoteAdapter)
+        this.printErrors(localAdapter)
+
+        console.warn('Result of deleted many from IndexedDB', deletedLocal)
+
+        this.blocked = false
+        this.checkRequestQueue()
       }
-      if (params.source !== 'remote') {
-        deletedLocal = await localAdapter.deleteMany(data.params)
-      }      
-
-      this.printErrors(remoteAdapter)
-      this.printErrors(localAdapter)
-
-      console.warn('Result of deleted many from IndexedDB', deletedLocal)
-
-      this.blocked = false
-      this.checkRequestQueue()
 
       return deletedLocal && deletedRemote
     } catch (error) {
@@ -15550,6 +15639,17 @@ class UserDataManager {
     }
   }
 
+  /**
+   * Promise-based method - queries all objects from the wordlist by languageCode , only for only one wordItem
+   * or one wordItem from local/remote storage 
+   * @param {Object} data
+   * @param {String} data.languageCode - for quering all wordItems from wordList by languageCode
+   * @param {WordItem} data.wordItem - for quering one wordItem
+   * @param {Object} [params={ source: both, type: short }] - additional parameters for updating, now there are the following:
+   *                  params.source = [local, remote, both]
+   *                  params.type = [short, full] - short - short data for homonym, full - homonym with definitions data
+   * @return {WordItem[]} 
+   */
   async query (data, params = {}) {
     try {
       params.type = params.type||'short'
@@ -15595,12 +15695,18 @@ class UserDataManager {
     }
   }
 
+  /**
+   * Method prints errors from the errors property of the given adapter
+   */
   printErrors (adapter) {
     if (adapter.errors && adapter.errors.length > 0) {
       adapter.errors.forEach(error => console.error(`Print error - ${error}`))
     }
   }
 
+  /**
+   * Method checks request queue, and if it is not empty executes the first in the queue
+   */
   checkRequestQueue () {
     if (this.requestsQueue.length > 0) {
       let curRequest = this.requestsQueue.shift()
@@ -15608,6 +15714,11 @@ class UserDataManager {
     }
   }
 
+  /**
+   * Checks and formats Class name (if neccessary) to a normal state (after uglifying pugins)
+   * @param {String} sourceConstrName recieved class name
+   * @return {String} formatted class name
+   */
   defineConstructorName (sourceConstrName) {
     let firstLetter = sourceConstrName.substr(0,1)
     let finalConstrName
@@ -16686,7 +16797,7 @@ class RemoteDBAdapter {
     if (currentItems.length === 0) {
       await this.create(wordItem)
     } else if (segmentsForUpdate.includes(segment)) {
-      let resultWordItem = this.dbDriver.mergeRemoteContext(currentItems[0], wordItem)
+      let resultWordItem = this.dbDriver.mergeLocalRemote(currentItems[0], wordItem)
 
       await this.update(resultWordItem)
     }
@@ -16922,6 +17033,10 @@ class WordItemIndexedDbDriver {
     return 3
   }
 
+  /**
+   * db segments that we are updating from remote data
+   * @return {String[]} - array with segments name
+   */
   get segmentsSync() {
     return Object.keys(this.storageMap).filter(key => this.storageMap[key].type === 'segment' && this.storageMap[key].sync)
   }
@@ -17358,14 +17473,48 @@ class WordItemRemoteDbDriver {
     }
   }
 
+  /**
+   * db segments that would be merged
+   * @return {String[]} - array with segments name
+   */
   get segmentsForUpdate () {
     return ['common', 'context', 'shortHomonym']
   }
 
-  mergeRemoteContext (currentItem, newItem) {
-    currentItem.important = currentItem.important || newItem.important
-    currentItem.homonym = currentItem.homonym || this._serializeHomonym(newItem)
+  /**
+   * merge current item with new item - common, shortHomonym and context parts
+   * @return {WordItem}
+   */
+  mergeLocalRemote (currentItem, newItem) {
+    currentItem = this.mergeCommonPart(currentItem, newItem)
+    currentItem = this.mergeHommonymPart(currentItem, newItem)
+    currentItem = this.mergeContextPart(currentItem, newItem)
+    return currentItem
+  }
 
+  /**
+   * merge common part to current item from new item
+   * @return {WordItem}
+   */
+  mergeCommonPart  (currentItem, newItem) {
+    currentItem.important = currentItem.important || newItem.important
+    return currentItem
+  }
+
+  /**
+   * merge short hommonym part to current item from new item
+   * @return {WordItem}
+   */
+  mergeHommonymPart  (currentItem, newItem) {
+    currentItem.homonym = currentItem.homonym || this._serializeHomonym(newItem)
+    return currentItem
+  }
+
+  /**
+   * merge context part to current item from new item
+   * @return {WordItem}
+   */
+  mergeContextPart  (currentItem, newItem) {
     let pushContext = currentItem.context
     for (let contextItem of newItem.context) {
       let hasCheck = currentItem.context.some(tqCurrent => {
@@ -17477,6 +17626,12 @@ class WordItemRemoteDbDriver {
     return result
   }
 
+  
+  /**
+   * Defines json object from a single textQuoteSelector to save to remote storage
+   * @param {WordItem} wordItem
+   * @return {Object[]}
+   */
   _serializeContextItem (tq, wordItem) {    
     return {
       target: {

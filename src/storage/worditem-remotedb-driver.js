@@ -49,14 +49,48 @@ export default class WordItemRemoteDbDriver {
     }
   }
 
+  /**
+   * db segments that would be merged
+   * @return {String[]} - array with segments name
+   */
   get segmentsForUpdate () {
     return ['common', 'context', 'shortHomonym']
   }
 
-  mergeRemoteContext (currentItem, newItem) {
-    currentItem.important = currentItem.important || newItem.important
-    currentItem.homonym = currentItem.homonym || this._serializeHomonym(newItem)
+  /**
+   * merge current item with new item - common, shortHomonym and context parts
+   * @return {WordItem}
+   */
+  mergeLocalRemote (currentItem, newItem) {
+    currentItem = this.mergeCommonPart(currentItem, newItem)
+    currentItem = this.mergeHommonymPart(currentItem, newItem)
+    currentItem = this.mergeContextPart(currentItem, newItem)
+    return currentItem
+  }
 
+  /**
+   * merge common part to current item from new item
+   * @return {WordItem}
+   */
+  mergeCommonPart  (currentItem, newItem) {
+    currentItem.important = currentItem.important || newItem.important
+    return currentItem
+  }
+
+  /**
+   * merge short hommonym part to current item from new item
+   * @return {WordItem}
+   */
+  mergeHommonymPart  (currentItem, newItem) {
+    currentItem.homonym = currentItem.homonym || this._serializeHomonym(newItem)
+    return currentItem
+  }
+
+  /**
+   * merge context part to current item from new item
+   * @return {WordItem}
+   */
+  mergeContextPart  (currentItem, newItem) {
     let pushContext = currentItem.context
     for (let contextItem of newItem.context) {
       let hasCheck = currentItem.context.some(tqCurrent => {
@@ -168,6 +202,12 @@ export default class WordItemRemoteDbDriver {
     return result
   }
 
+  
+  /**
+   * Defines json object from a single textQuoteSelector to save to remote storage
+   * @param {WordItem} wordItem
+   * @return {Object[]}
+   */
   _serializeContextItem (tq, wordItem) {    
     return {
       target: {

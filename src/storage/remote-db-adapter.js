@@ -26,7 +26,7 @@ export default class RemoteDBAdapter {
     if (currentItems.length === 0) {
       await this.create(wordItem)
     } else if (segmentsForUpdate.includes(segment)) {
-      let resultWordItem = this.dbDriver.mergeRemoteContext(currentItems[0], wordItem)
+      let resultWordItem = this.dbDriver.mergeLocalRemote(currentItems[0], wordItem)
 
       await this.update(resultWordItem)
     }

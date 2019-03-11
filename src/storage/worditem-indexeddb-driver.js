@@ -79,6 +79,10 @@ export default class WordItemIndexedDbDriver {
     return 3
   }
 
+  /**
+   * db segments that we are updating from remote data
+   * @return {String[]} - array with segments name
+   */
   get segmentsSync() {
     return Object.keys(this.storageMap).filter(key => this.storageMap[key].type === 'segment' && this.storageMap[key].sync)
   }

@@ -22,7 +22,7 @@ export default class WordlistController {
    */
   async initLists (dataManager) {
     for (let languageCode of this.availableLangs) {
-      let wordItems = await dataManager.query({dataType: 'WordItem', params: {languageCode: languageCode}})
+      let wordItems = await dataManager.query({dataType: 'WordItem', params: {languageCode: languageCode}}, { syncDelete: true })
       if (wordItems.length > 0) {
         this.wordLists[languageCode] = new WordList(languageCode,wordItems)
         WordlistController.evt.WORDLIST_UPDATED.pub(this.wordLists)

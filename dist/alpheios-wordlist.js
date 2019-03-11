@@ -15645,15 +15645,17 @@ class UserDataManager {
    * @param {Object} data
    * @param {String} data.languageCode - for quering all wordItems from wordList by languageCode
    * @param {WordItem} data.wordItem - for quering one wordItem
-   * @param {Object} [params={ source: both, type: short }] - additional parameters for updating, now there are the following:
+   * @param {Object} [params={ source: both, type: short, syncDelete: false }] - additional parameters for updating, now there are the following:
    *                  params.source = [local, remote, both]
    *                  params.type = [short, full] - short - short data for homonym, full - homonym with definitions data
+   * 
    * @return {WordItem[]} 
    */
   async query (data, params = {}) {
     try {
       params.type = params.type||'short'
       params.source = params.source||'both'
+      params.syncDelete = params.syncDelete||false
 
       let remoteAdapter =  this._remoteStorageAdapter(data.dataType)
       let localAdapter = this._localStorageAdapter(data.dataType)
@@ -15683,7 +15685,9 @@ class UserDataManager {
             finalItems.push(wordItem)
             localAdapter.checkAndUpdate(wordItem, null, [remoteItem])
           }
-
+        }
+        if (params.syncDelete && data.params.languageCode) {
+          this.deleteAbsentInRemote(localAdapter, remoteItems, data.params.languageCode)
         }
       }
 
@@ -15692,6 +15696,17 @@ class UserDataManager {
       return finalItems
     } catch (error) {
       console.error('Some errors happen on quiring data from IndexedDB or RemoteDBAdapter', error.message)
+    }
+  }
+
+  async deleteAbsentInRemote (localAdapter, remoteItems, languageCode) {
+    let localItems = await localAdapter.query({ languageCode })
+    for (let localItem of localItems) {
+      let checkID  = localAdapter.dbDriver.makeIDCompareWithRemote(localItem)
+      if (!remoteItems.find(remoteItem => remoteItem === checkID)) {
+        console.warn('Need to remove', checkID)
+        this.delete({ dataObj: localItem})
+      }
     }
   }
 
@@ -15781,7 +15796,7 @@ class WordlistController {
    */
   async initLists (dataManager) {
     for (let languageCode of this.availableLangs) {
-      let wordItems = await dataManager.query({dataType: 'WordItem', params: {languageCode: languageCode}})
+      let wordItems = await dataManager.query({dataType: 'WordItem', params: {languageCode: languageCode}}, { syncDelete: true })
       if (wordItems.length > 0) {
         this.wordLists[languageCode] = new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["WordList"](languageCode,wordItems)
         WordlistController.evt.WORDLIST_UPDATED.pub(this.wordLists)
@@ -16832,7 +16847,9 @@ class RemoteDBAdapter {
 
   /**
    * Updates an item in remote storage
-   * @param {WordItem} data
+   * we could receive here data in two formats - wordItem (if updated from selected wordItem) and object (if updated from already serialized when merged)
+   * so if it is already an object - we skip serialization
+   * @param {WordItem/Object} data
    * @return {Boolean} - successful/failed result
    */
   async update(data) {

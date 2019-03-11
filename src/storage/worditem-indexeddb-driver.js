@@ -15,6 +15,7 @@ export default class WordItemIndexedDbDriver {
       _loadFirst: 'common',
       common: {
         type: 'segment',
+        sync: true,
         objectStoreData: {
           name: 'WordListsCommon',
           structure: IndexedDBObjectStoresStructure.WordListsCommon
@@ -26,6 +27,7 @@ export default class WordItemIndexedDbDriver {
       },
       context: {
         type: 'segment',
+        sync: true,
         objectStoreData: {
           name: 'WordListsContext',
           structure: IndexedDBObjectStoresStructure.WordListsContext
@@ -37,6 +39,7 @@ export default class WordItemIndexedDbDriver {
       },
       shortHomonym: {
         type: 'segment',
+        sync: true,
         objectStoreData: {
           name: 'WordListsHomonym',
           structure: IndexedDBObjectStoresStructure.WordListsHomonym
@@ -74,6 +77,14 @@ export default class WordItemIndexedDbDriver {
    */
   get dbVersion () {
     return 3
+  }
+
+  /**
+   * db segments that we are updating from remote data
+   * @return {String[]} - array with segments name
+   */
+  get segmentsSync() {
+    return Object.keys(this.storageMap).filter(key => this.storageMap[key].type === 'segment' && this.storageMap[key].sync)
   }
 
   /**
@@ -325,16 +336,14 @@ export default class WordItemIndexedDbDriver {
           selector: {
             type: 'TextQuoteSelector',
             exact: tq.text,
-            prefix: tq.prefix,
-            suffix: tq.suffix,
+            prefix: tq.prefix && tq.prefix.length > 0 ? tq.prefix : ' ',
+            suffix: tq.suffix && tq.suffix.length > 0 ? tq.suffix : ' ',
             contextHTML: tq.contextHTML,
             languageCode: tq.languageCode
           }
         },
         createdDT: WordItemIndexedDbDriver.currentDate
       }
-      // console.info('****_serializeContext worditem', worditem)
-      // console.info('****_serializeContext resultItem', resultItem)
       result.push(resultItem)
     }
     return result
@@ -438,57 +447,6 @@ static get currentDate () {
       this.loadSegment('shortHomonym', [ remoteDataItem ], wordItem)
     }
     return wordItem
-  }
-
-  getByStorageID (dataItems, ID) {
-    return dataItems.find(item => this.makeIDCompareWithRemote(item) === ID)
-  }
-
-  comparePartly (changeItem, sourceItem) {
-    let part = 'context'
-    changeItem.important = sourceItem.important
-    if (!sourceItem[part] && changeItem[part]) {
-      return changeItem
-    }
-    if (sourceItem[part]) {
-      if (sourceItem.constructor.name.match(/WordItem/)) {
-        changeItem = this.mergeContextDataWithWordItem(changeItem, sourceItem)
-      } else {
-        changeItem = this.mergeContextDataWithObject(changeItem, sourceItem)
-      }
-      
-      return changeItem
-    }
-  }
-
-  mergeContextDataWithWordItem (changeItem, sourceItem) {
-    let pushContext = changeItem.context
-    for (let contextItem of sourceItem.context) {
-      let hasCheck = changeItem.context.some(tqChange => {       
-        return tqChange.isEqual(contextItem) 
-      })
-      if (!hasCheck) {
-        pushContext.push(contextItem)
-      }
-    }
-
-    changeItem.context = pushContext
-    return changeItem
-  }
-
-  mergeContextDataWithObject (changeItem, sourceItem) {
-    let pushContext = changeItem.context
-    for (let contextItem of sourceItem.context) {
-      let hasCheck = changeItem.context.some(tqChange => {       
-        return tqChange.isEqual(TextQuoteSelector.readObject(contextItem)) 
-      })
-      if (!hasCheck) {
-        let addContextItem = WordItem.readContext([contextItem])
-        pushContext.push(addContextItem[0])
-      }
-    }
-    changeItem.context = pushContext
-    return changeItem
   }
 
 }

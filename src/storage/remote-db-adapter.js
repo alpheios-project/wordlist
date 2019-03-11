@@ -19,6 +19,22 @@ export default class RemoteDBAdapter {
     return Boolean(this.dbDriver.userID) && Boolean(this.dbDriver.requestsParams.headers)
   }
 
+  async checkAndUpdate (wordItem, segment) {
+    let currentItems = await this.query({ wordItem })
+    let segmentsForUpdate = this.dbDriver.segmentsForUpdate
+
+    if (currentItems.length === 0) {
+      await this.create(wordItem)
+    } else if (segmentsForUpdate.includes(segment)) {
+      let resultWordItem = this.dbDriver.mergeLocalRemote(currentItems[0], wordItem)
+
+      await this.update(resultWordItem)
+    }
+
+    currentItems = await this.query({ wordItem })
+    return currentItems
+  }
+
   /**
    * Creates an item in remote storage
    * @param {WordItem} data

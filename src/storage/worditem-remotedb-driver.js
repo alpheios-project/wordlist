@@ -49,6 +49,61 @@ export default class WordItemRemoteDbDriver {
     }
   }
 
+  /**
+   * db segments that would be merged
+   * @return {String[]} - array with segments name
+   */
+  get segmentsForUpdate () {
+    return ['common', 'context', 'shortHomonym']
+  }
+
+  /**
+   * merge current item with new item - common, shortHomonym and context parts
+   * @return {WordItem}
+   */
+  mergeLocalRemote (currentItem, newItem) {
+    currentItem = this.mergeCommonPart(currentItem, newItem)
+    currentItem = this.mergeHommonymPart(currentItem, newItem)
+    currentItem = this.mergeContextPart(currentItem, newItem)
+    return currentItem
+  }
+
+  /**
+   * merge common part to current item from new item
+   * @return {WordItem}
+   */
+  mergeCommonPart  (currentItem, newItem) {
+    currentItem.important = currentItem.important || newItem.important
+    return currentItem
+  }
+
+  /**
+   * merge short hommonym part to current item from new item
+   * @return {WordItem}
+   */
+  mergeHommonymPart  (currentItem, newItem) {
+    currentItem.homonym = currentItem.homonym || this._serializeHomonym(newItem)
+    return currentItem
+  }
+
+  /**
+   * merge context part to current item from new item
+   * @return {WordItem}
+   */
+  mergeContextPart  (currentItem, newItem) {
+    let pushContext = currentItem.context
+    for (let contextItem of newItem.context) {
+      let hasCheck = currentItem.context.some(tqCurrent => {
+        return TextQuoteSelector.readObject(tqCurrent).isEqual(contextItem) 
+      })
+      if (!hasCheck) {
+        pushContext.push(this._serializeContextItem(contextItem, currentItem))
+      }
+    }
+    currentItem.context = pushContext
+    return currentItem
+  }
+
    /**
    * Defines url for creating item in remote storage
    * @param {WordItem} wordItem
@@ -147,6 +202,12 @@ export default class WordItemRemoteDbDriver {
     return result
   }
 
+  
+  /**
+   * Defines json object from a single textQuoteSelector to save to remote storage
+   * @param {WordItem} wordItem
+   * @return {Object[]}
+   */
   _serializeContextItem (tq, wordItem) {    
     return {
       target: {
@@ -234,46 +295,5 @@ export default class WordItemRemoteDbDriver {
    */
   getCheckArray (dataItems) {
     return dataItems.map(item => this._makeStorageID(item))
-  }
-
-  isTheSame (remoteItem, localItem) {
-    return this._makeStorageID(remoteItem) === this._makeStorageID(localItem)
-  }
-
-  comparePartly (changeItem, sourceItem) {
-    let part = 'context'
-    changeItem.important = sourceItem.important
-
-    if (!sourceItem[part] && changeItem[part]) {
-      return changeItem
-    }
-
-    if (sourceItem[part] && !changeItem[part]) {
-      changeItem[part] = sourceItem[part]
-      return changeItem
-    }
-    if (sourceItem[part] && changeItem[part]) {
-      changeItem = this.mergeContextData(changeItem, sourceItem)
-      return changeItem
-    }
-  }
-
-  mergeContextData (changeItem, sourceItem) {
-    let pushContext = []
-    for (let contextItem of sourceItem.context) {
-      let hasCheck = changeItem.context.some(tqRemote => {
-        return TextQuoteSelector.readObject(tqRemote).isEqual(contextItem)
-      })
-      if (!hasCheck) {
-        pushContext.push(this._serializeContextItem(contextItem, changeItem))
-      }
-    }
-
-    changeItem.context.push(...pushContext)
-    return changeItem
-  }
-
-  getByStorageID (dataItems, ID) {
-    return dataItems.find(item => this._makeStorageID(item) === ID)
   }
 }

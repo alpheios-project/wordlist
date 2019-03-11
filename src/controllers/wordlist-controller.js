@@ -107,7 +107,6 @@ export default class WordlistController {
     // create the item in the word list if it doesn't exist
     let wordItem = this.getWordListItem(data.language, data.targetWord, true)
     wordItem.homonym = data
-    console.info('******onHomonymReady', data)    
     WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'shortHomonym'}})
     // emit a wordlist updated event too in case the wordlist was updated
     WordlistController.evt.WORDLIST_UPDATED.pub(this.wordLists)
@@ -119,7 +118,6 @@ export default class WordlistController {
   * Emits a WORDITEM_UPDATED event
   */
   onDefinitionsReady (data) {
-    console.info('******onDefinitionsReady', data) 
     let wordItem = this.getWordListItem(data.homonym.language,data.homonym.targetWord)
     if (wordItem) {
       wordItem.homonym = data.homonym
@@ -152,7 +150,6 @@ export default class WordlistController {
   * Emits a WORDITEM_UPDATED and WORDLIST_UPDATED events
   */
   onTextQuoteSelectorReceived (data) {
-    console.info('******onTextQuoteSelectorReceived', data) 
     // when receiving this event, it's possible this is the first time we are seeing the word so
     // create the item in the word list if it doesn't exist
     let wordItem = this.getWordListItem(data.languageCode, data.normalizedText, true)
@@ -204,9 +201,9 @@ export default class WordlistController {
   * @param {String} targetWord the word of the item
   * Emits a WORDITEM_SELECTED event for the selected item
   */
-  selectWordItem (languageCode, targetWord) {
-    let wordItem = this.getWordListItem(languageCode, targetWord,false)
-    WordlistController.evt.WORDITEM_SELECTED.pub(wordItem.homonym)
+  async selectWordItem (languageCode, targetWord) {
+    let wordItem = this.getWordListItem(languageCode, targetWord, false)
+    WordlistController.evt.WORDITEM_SELECTED.pub(wordItem)
   }
 
   /**

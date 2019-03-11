@@ -25,14 +25,13 @@ export default class IndexedDBAdapter {
       }
     }
 
-    let currentLocalItems = await this.query({ wordItem })
-
-    if (currentLocalItems.length === 0) {
-      await this.update(wordItem, { segment: 'common' })  
-    }
-
     if (!segment) {
       segment = this.dbDriver.segmentsSync
+    }
+    
+    let currentLocalItems = await this.query({ wordItem })
+    if (currentLocalItems.length === 0 && segment && segment !== 'common') {
+      await this.update(wordItem, { segment: 'common' })  
     }
 
     let result = await this.update(wordItem, { segment })

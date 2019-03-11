@@ -237,6 +237,8 @@ export default class UserDataManager {
    * @param {Object} [params={ source: both, type: short, syncDelete: false }] - additional parameters for updating, now there are the following:
    *                  params.source = [local, remote, both]
    *                  params.type = [short, full] - short - short data for homonym, full - homonym with definitions data
+   *                  params.syncDelete = [true, false] - if true (and params.source = both, and languageCode is defined in params), 
+   *                                      than localItems would be compared with remoteItems, items that are existed only in local would be removed
    * 
    * @return {WordItem[]} 
    */

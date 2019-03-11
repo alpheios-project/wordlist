@@ -15703,8 +15703,8 @@ class UserDataManager {
     let localItems = await localAdapter.query({ languageCode })
     for (let localItem of localItems) {
       let checkID  = localAdapter.dbDriver.makeIDCompareWithRemote(localItem)
-      if (!remoteItems.find(remoteItem => remoteItem === checkID)) {
-        console.warn('Need to remove', checkID)
+      if (!remoteItems.find(remoteItem => remoteItem.ID === checkID)) {
+        console.warn('Need to delete from local', checkID)
         this.delete({ dataObj: localItem})
       }
     }

@@ -16,7 +16,7 @@ import IndexedDB from 'fake-indexeddb'
 import IDBKeyRange from 'fake-indexeddb/lib/FDBKeyRange'
 
 describe('user-data-manager.test.js', () => {
-  // console.error = function () {}
+  console.error = function () {}
   console.log = function () {}
   console.warn = function () {}
 
@@ -735,4 +735,49 @@ describe('user-data-manager.test.js', () => {
     await udm.deleteMany({ dataType: 'WordItem', params: { languageCode: 'lat' }})
   }, 50000)
   
+  
+  it('20 UserDataManager - query with syncDelete parameter will delete items from local that are absent in remote', async () => {
+    let udm = new UserDataManager('alpheiosMockUser')
+    await remoteAdapter.deleteMany({ languageCode: 'lat' })
+    await localAdapter.deleteMany({ languageCode: 'lat' })
+
+    let testWordItem = await getWordItemStep1('male', 'lat')
+    let testWordItem1 = await getWordItemStep1('cepit', 'lat')
+
+    // create both items in local and remote
+    await udm.update({ dataObj: testWordItem })
+    await udm.update({ dataObj: testWordItem1 })
+
+    let resultQuery
+
+    // check that both items are present in local and remote
+    resultQuery = await localAdapter.query({ languageCode: 'lat' })
+    expect(resultQuery.length).toEqual(2)
+
+    resultQuery = await remoteAdapter.query({ languageCode: 'lat' })
+    expect(resultQuery.length).toEqual(2)
+
+    // delete one wordItem only from remote
+    await remoteAdapter.deleteOne(testWordItem)
+
+    // check that only one item is present in remote and two are present in local
+    resultQuery = await localAdapter.query({ languageCode: 'lat' })
+    expect(resultQuery.length).toEqual(2)
+
+    resultQuery = await remoteAdapter.query({ languageCode: 'lat' })
+    expect(resultQuery.length).toEqual(1)
+
+    // query with syncDelete parameter
+    resultQuery = await udm.query({ dataType: 'WordItem', params: { languageCode: 'lat' } }, { syncDelete: true })
+
+    await timeout(5000)
+
+    // check that only one item  is present in local and remote
+
+    resultQuery = await remoteAdapter.query({ languageCode: 'lat' })
+    expect(resultQuery.length).toEqual(1)
+
+    resultQuery = await localAdapter.query({ languageCode: 'lat' })
+    expect(resultQuery.length).toEqual(1)
+  }, 50000)
 })

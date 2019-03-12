@@ -2,7 +2,7 @@ import axios from 'axios'
 
 export default class RemoteDBAdapter {
   /**
-   * 
+   *
    * @param {WordItemRemoteDbDriver} dbDriver
    */
   constructor (dbDriver) {
@@ -16,7 +16,7 @@ export default class RemoteDBAdapter {
    * @return {Boolean} - true - adapter could be used, false - couldn't
    */
   _checkRemoteDBAvailability () {
-    return Boolean(this.dbDriver.userID) && Boolean(this.dbDriver.requestsParams.headers)
+    return Boolean(this.dbDriver.accessToken) && Boolean(this.dbDriver.requestsParams.headers)
   }
 
   async checkAndUpdate (wordItem, segment) {
@@ -48,7 +48,7 @@ export default class RemoteDBAdapter {
       let result = await axios.post(url, content, this.dbDriver.requestsParams)
 
       let updated = this.dbDriver.storageMap.post.checkResult(result)
-      
+
       return updated
     } catch (error) {
       console.error(error)
@@ -150,7 +150,7 @@ export default class RemoteDBAdapter {
           this.errors.push(error)
         }
       }
-      return errorFinal      
+      return errorFinal
     }
   }
 }

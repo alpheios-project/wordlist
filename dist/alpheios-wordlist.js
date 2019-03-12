@@ -15418,11 +15418,11 @@ class UserDataManager {
 
   /**
    * Creates with userID argument, subscribe to WordItem and WorList events, inits blocked property and request queue
-   * @param {String} userID - userID that would be used for access to remote storage
+   * @param {AuthModule} auth - auth data module
    * @param {String} events - events object of the WordlistController, passed in UIController
    */
-  constructor (userID, events) {
-    this.userID = userID
+  constructor (auth, events) {
+    this.auth = auth
     if (events) {
       events.WORDITEM_UPDATED.sub(this.update.bind(this))
       events.WORDITEM_DELETED.sub(this.delete.bind(this))
@@ -15433,22 +15433,22 @@ class UserDataManager {
   }
 
   /**
-   * Initializes IndexedDBAdapter with appropriate local dbDriver (WordItemIndexedDbDriver) 
+   * Initializes IndexedDBAdapter with appropriate local dbDriver (WordItemIndexedDbDriver)
    * @param {String} dataType - data type for choosing a proper dbDriver (WordItem)
    * @return {IndexedDBAdapter}
    */
   _localStorageAdapter(dataType) {
-    let dbDriver = new UserDataManager.LOCAL_DRIVER_CLASSES[dataType](this.userID)
+    let dbDriver = new UserDataManager.LOCAL_DRIVER_CLASSES[dataType](this.auth.userName)
     return new _storage_indexed_db_adapter_js__WEBPACK_IMPORTED_MODULE_2__["default"](dbDriver)
   }
 
   /**
-   * Initializes RemoteDBAdapter with appropriate remote dbDriver (WordItemRemoteDbDriver) 
+   * Initializes RemoteDBAdapter with appropriate remote dbDriver (WordItemRemoteDbDriver)
    * @param {String} dataType - data type for choosing a proper dbDriver (WordItem)
    * @return {RemoteDBAdapter}
    */
   _remoteStorageAdapter(dataType) {
-    let dbDriver = new UserDataManager.REMOTE_DRIVER_CLASSES[dataType](this.userID)
+    let dbDriver = new UserDataManager.REMOTE_DRIVER_CLASSES[dataType](this.auth)
     return new _storage_remote_db_adapter_js__WEBPACK_IMPORTED_MODULE_3__["default"](dbDriver)
   }
 
@@ -15487,7 +15487,7 @@ class UserDataManager {
 
   /**
    * Promise-based method - updates object in local/remote storage
-   * uses blocking workflow: 
+   * uses blocking workflow:
    * @param {Object} data
    * @param {WordItem} data.dataObj - object for saving to local/remote storage
    * @param {WordItem} data.params - could have segment property to define exact segment for updating
@@ -15508,7 +15508,7 @@ class UserDataManager {
 
       let localAdapter = this._localStorageAdapter(finalConstrName)
       let remoteAdapter = this._remoteStorageAdapter(finalConstrName)
-      
+
       let result = false
       let segment = data.params && data.params.segment ? data.params.segment : localAdapter.dbDriver.segments
 
@@ -15517,7 +15517,7 @@ class UserDataManager {
         if (params.source === 'local') {
           result = await localAdapter.update(data.dataObj, data.params)
         } else if (params.source === 'remote') {
-          result = await remoteAdapter.update(data.dataObj, data.params)  
+          result = await remoteAdapter.update(data.dataObj, data.params)
         } else {
           let currentRemoteItems = await remoteAdapter.checkAndUpdate(data.dataObj, segment)
           result = await localAdapter.checkAndUpdate(data.dataObj, segment, currentRemoteItems)
@@ -15537,7 +15537,7 @@ class UserDataManager {
 
   /**
    * Promise-based method - deletes single object in local/remote storage
-   * uses blocking workflow: 
+   * uses blocking workflow:
    * @param {Object} data
    * @param {WordItem} data.dataObj - object for saving to local/remote storage
    * @param {WordItem} data.params - could have segment property to define exact segment for updating
@@ -15555,13 +15555,13 @@ class UserDataManager {
     try {
       this.blocked = true
       let finalConstrName = this.defineConstructorName(data.dataObj.constructor.name)
-      
+
       let localAdapter = this._localStorageAdapter(finalConstrName)
       let remoteAdapter = this._remoteStorageAdapter(finalConstrName)
-    
+
       let remoteResult = false
       let localResult = false
-      
+
       if (this.checkAdapters(localAdapter, remoteAdapter, params)) {
         this.blocked = true
 
@@ -15589,7 +15589,7 @@ class UserDataManager {
 
   /**
    * Promise-based method - deletes all objects from the wordlist by languageCode in local/remote storage
-   * uses blocking workflow: 
+   * uses blocking workflow:
    * @param {Object} data
    * @param {String} data.languageCode - languageCode of Wordlist to be deleted
    * @param {WordItem} data.params - could have segment property to define exact segment for updating
@@ -15605,13 +15605,13 @@ class UserDataManager {
       return
     }
     try {
-      
+
       let remoteAdapter =  this._remoteStorageAdapter(data.dataType)
       let localAdapter = this._localStorageAdapter(data.dataType)
 
       let deletedLocal = false
       let deletedRemote = false
-      
+
       if (this.checkAdapters(localAdapter, remoteAdapter, params)) {
         deletedLocal = true
         deletedRemote = true
@@ -15622,7 +15622,7 @@ class UserDataManager {
         }
         if (params.source !== 'remote') {
           deletedLocal = await localAdapter.deleteMany(data.params)
-        }      
+        }
 
         this.printErrors(remoteAdapter)
         this.printErrors(localAdapter)
@@ -15641,17 +15641,17 @@ class UserDataManager {
 
   /**
    * Promise-based method - queries all objects from the wordlist by languageCode , only for only one wordItem
-   * or one wordItem from local/remote storage 
+   * or one wordItem from local/remote storage
    * @param {Object} data
    * @param {String} data.languageCode - for quering all wordItems from wordList by languageCode
    * @param {WordItem} data.wordItem - for quering one wordItem
    * @param {Object} [params={ source: both, type: short, syncDelete: false }] - additional parameters for updating, now there are the following:
    *                  params.source = [local, remote, both]
    *                  params.type = [short, full] - short - short data for homonym, full - homonym with definitions data
-   *                  params.syncDelete = [true, false] - if true (and params.source = both, and languageCode is defined in params), 
+   *                  params.syncDelete = [true, false] - if true (and params.source = both, and languageCode is defined in params),
    *                                      than localItems would be compared with remoteItems, items that are existed only in local would be removed
-   * 
-   * @return {WordItem[]} 
+   *
+   * @return {WordItem[]}
    */
   async query (data, params = {}) {
     try {
@@ -15758,7 +15758,7 @@ UserDataManager.LOCAL_DRIVER_CLASSES = {
 UserDataManager.REMOTE_DRIVER_CLASSES = {
   WordItem: _storage_worditem_remotedb_driver_js__WEBPACK_IMPORTED_MODULE_1__["default"]
 }
-  
+
 
 /***/ }),
 
@@ -16057,7 +16057,7 @@ WordlistController.evt = {
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;return _c('svg',{attrs:{"viewBox":"0 0 459 459"}},[_c('path',{attrs:{"d":"M178.5 140.25v-102L0 216.75l178.5 178.5V290.7c127.5 0 216.75 40.8 280.5 130.05-25.5-127.5-102-255-280.5-280.5z"}})])};var toString = function () {return "C:\\_Alpheios\\wordlist\\src\\icons\\back.svg"};module.exports = { render: render, toString: toString };
+var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;return _c('svg',{attrs:{"viewBox":"0 0 459 459"}},[_c('path',{attrs:{"d":"M178.5 140.25v-102L0 216.75l178.5 178.5V290.7c127.5 0 216.75 40.8 280.5 130.05-25.5-127.5-102-255-280.5-280.5z"}})])};var toString = function () {return "/home/balmas/workspace/wordlist/src/icons/back.svg"};module.exports = { render: render, toString: toString };
 
 /***/ }),
 
@@ -16068,7 +16068,7 @@ var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._sel
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;return _c('svg',{attrs:{"viewBox":"0 0 447.6 757.4"}},[_c('path',{attrs:{"d":"M-128.4 305.8c74.8 53.3 146.8 110.5 215.7 171.3 0 0 348.4-399.4 557.1-477.1l27 53S277.2 418 150.5 757.4l-374.3-378.7 95.4-72.9z"}})])};var toString = function () {return "C:\\_Alpheios\\wordlist\\src\\icons\\check.svg"};module.exports = { render: render, toString: toString };
+var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;return _c('svg',{attrs:{"viewBox":"0 0 447.6 757.4"}},[_c('path',{attrs:{"d":"M-128.4 305.8c74.8 53.3 146.8 110.5 215.7 171.3 0 0 348.4-399.4 557.1-477.1l27 53S277.2 418 150.5 757.4l-374.3-378.7 95.4-72.9z"}})])};var toString = function () {return "/home/balmas/workspace/wordlist/src/icons/check.svg"};module.exports = { render: render, toString: toString };
 
 /***/ }),
 
@@ -16079,7 +16079,7 @@ var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._sel
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;return _c('svg',{attrs:{"viewBox":"0 0 900.5 900.5"}},[_c('path',{attrs:{"d":"M176.42 880.5c0 11.046 8.954 20 20 20h507.67c11.046 0 20-8.954 20-20V232.49H176.42V880.5zm386.33-537.73h75V778.8h-75V342.77zm-150 0h75V778.8h-75V342.77zm-150 0h75V778.8h-75V342.77zM618.82 91.911V20c0-11.046-8.954-20-20-20H301.67c-11.046 0-20 8.954-20 20v96.911h-139.8c-11.046 0-20 8.954-20 20v50.576c0 11.045 8.954 20 20 20h616.75c11.046 0 20-8.955 20-20v-50.576c0-11.046-8.954-20-20-20h-139.8V91.912zm-75 20.889H356.67V75.001h187.15v37.801z"}})])};var toString = function () {return "C:\\_Alpheios\\wordlist\\src\\icons\\delete.svg"};module.exports = { render: render, toString: toString };
+var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;return _c('svg',{attrs:{"viewBox":"0 0 900.5 900.5"}},[_c('path',{attrs:{"d":"M176.42 880.5c0 11.046 8.954 20 20 20h507.67c11.046 0 20-8.954 20-20V232.49H176.42V880.5zm386.33-537.73h75V778.8h-75V342.77zm-150 0h75V778.8h-75V342.77zm-150 0h75V778.8h-75V342.77zM618.82 91.911V20c0-11.046-8.954-20-20-20H301.67c-11.046 0-20 8.954-20 20v96.911h-139.8c-11.046 0-20 8.954-20 20v50.576c0 11.045 8.954 20 20 20h616.75c11.046 0 20-8.955 20-20v-50.576c0-11.046-8.954-20-20-20h-139.8V91.912zm-75 20.889H356.67V75.001h187.15v37.801z"}})])};var toString = function () {return "/home/balmas/workspace/wordlist/src/icons/delete.svg"};module.exports = { render: render, toString: toString };
 
 /***/ }),
 
@@ -16090,7 +16090,7 @@ var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._sel
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;return _c('svg',{attrs:{"viewBox":"0 0 442 442"}},[_c('path',{attrs:{"d":"M171 336H70c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.523 0 10-4.477 10-10s-4.477-10-10-10zM322 336H221c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.522 0 10-4.477 10-10s-4.478-10-10-10zM322 86H70c-5.523 0-10 4.477-10 10s4.477 10 10 10h252c5.522 0 10-4.477 10-10s-4.478-10-10-10zM322 136H221c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.522 0 10-4.477 10-10s-4.478-10-10-10zM322 186H221c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.522 0 10-4.477 10-10s-4.478-10-10-10zM322 236H221c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.522 0 10-4.477 10-10s-4.478-10-10-10zM322 286H221c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.522 0 10-4.477 10-10s-4.478-10-10-10zM171 286H70c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.523 0 10-4.477 10-10s-4.477-10-10-10zM171 136H70c-5.523 0-10 4.477-10 10v101c0 5.523 4.477 10 10 10h101c5.523 0 10-4.477 10-10V146c0-5.523-4.477-10-10-10zm-10 101H80v-81h81v81z"}}),_c('path',{attrs:{"d":"M422 76h-30V46c0-11.028-8.972-20-20-20H20C8.972 26 0 34.972 0 46v320c0 27.57 22.43 50 50 50h342c27.57 0 50-22.43 50-50V96c0-11.028-8.972-20-20-20zm0 290c0 16.542-13.458 30-30 30H50c-16.542 0-30-13.458-30-30V46h352v305c0 13.785 11.215 25 25 25 5.522 0 10-4.477 10-10s-4.478-10-10-10c-2.757 0-5-2.243-5-5V96h30v270z"}})])};var toString = function () {return "C:\\_Alpheios\\wordlist\\src\\icons\\text-quote.svg"};module.exports = { render: render, toString: toString };
+var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;return _c('svg',{attrs:{"viewBox":"0 0 442 442"}},[_c('path',{attrs:{"d":"M171 336H70c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.523 0 10-4.477 10-10s-4.477-10-10-10zM322 336H221c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.522 0 10-4.477 10-10s-4.478-10-10-10zM322 86H70c-5.523 0-10 4.477-10 10s4.477 10 10 10h252c5.522 0 10-4.477 10-10s-4.478-10-10-10zM322 136H221c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.522 0 10-4.477 10-10s-4.478-10-10-10zM322 186H221c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.522 0 10-4.477 10-10s-4.478-10-10-10zM322 236H221c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.522 0 10-4.477 10-10s-4.478-10-10-10zM322 286H221c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.522 0 10-4.477 10-10s-4.478-10-10-10zM171 286H70c-5.523 0-10 4.477-10 10s4.477 10 10 10h101c5.523 0 10-4.477 10-10s-4.477-10-10-10zM171 136H70c-5.523 0-10 4.477-10 10v101c0 5.523 4.477 10 10 10h101c5.523 0 10-4.477 10-10V146c0-5.523-4.477-10-10-10zm-10 101H80v-81h81v81z"}}),_c('path',{attrs:{"d":"M422 76h-30V46c0-11.028-8.972-20-20-20H20C8.972 26 0 34.972 0 46v320c0 27.57 22.43 50 50 50h342c27.57 0 50-22.43 50-50V96c0-11.028-8.972-20-20-20zm0 290c0 16.542-13.458 30-30 30H50c-16.542 0-30-13.458-30-30V46h352v305c0 13.785 11.215 25 25 25 5.522 0 10-4.477 10-10s-4.478-10-10-10c-2.757 0-5-2.243-5-5V96h30v270z"}})])};var toString = function () {return "/home/balmas/workspace/wordlist/src/icons/text-quote.svg"};module.exports = { render: render, toString: toString };
 
 /***/ }),
 
@@ -16772,7 +16772,7 @@ __webpack_require__.r(__webpack_exports__);
 
 class RemoteDBAdapter {
   /**
-   * 
+   *
    * @param {WordItemRemoteDbDriver} dbDriver
    */
   constructor (dbDriver) {
@@ -16786,7 +16786,7 @@ class RemoteDBAdapter {
    * @return {Boolean} - true - adapter could be used, false - couldn't
    */
   _checkRemoteDBAvailability () {
-    return Boolean(this.dbDriver.userID) && Boolean(this.dbDriver.requestsParams.headers)
+    return Boolean(this.dbDriver.accessToken) && Boolean(this.dbDriver.requestsParams.headers)
   }
 
   async checkAndUpdate (wordItem, segment) {
@@ -16818,7 +16818,7 @@ class RemoteDBAdapter {
       let result = await axios__WEBPACK_IMPORTED_MODULE_0___default.a.post(url, content, this.dbDriver.requestsParams)
 
       let updated = this.dbDriver.storageMap.post.checkResult(result)
-      
+
       return updated
     } catch (error) {
       console.error(error)
@@ -16920,7 +16920,7 @@ class RemoteDBAdapter {
           this.errors.push(error)
         }
       }
-      return errorFinal      
+      return errorFinal
     }
   }
 }
@@ -16932,10 +16932,10 @@ class RemoteDBAdapter {
 /*!***************************************!*\
   !*** ./storage/remote-db-config.json ***!
   \***************************************/
-/*! exports provided: baseUrl, testUserID, default */
+/*! exports provided: baseUrl, testAccessToken, testUserID, default */
 /***/ (function(module) {
 
-module.exports = {"baseUrl":"https://w2tfh159s2.execute-api.us-east-2.amazonaws.com/prod","testUserID":"alpheiosMockUser"};
+module.exports = {"baseUrl":"https://w2tfh159s2.execute-api.us-east-2.amazonaws.com/prod","testAccessToken":"alpheiosMockUserIdlP0DWnmNxe","testUserID":"testUserID"};
 
 /***/ }),
 
@@ -17082,11 +17082,11 @@ class WordItemIndexedDbDriver {
   _objectStoreData (segment) {
     return this.storageMap[segment].objectStoreData
   }
-  
+
   /**
    * Prepares query data for creating IndexedDB Request
-   * @param {String} segment 
-   * @param {Object} indexData - index data for condition 
+   * @param {String} segment
+   * @param {Object} indexData - index data for condition
    * @param {String} indexData.name - index name
    * @param {String} indexData.value - index value
    * @param {String} indexData.type - index type (in our queries it is ussually only)
@@ -17101,7 +17101,7 @@ class WordItemIndexedDbDriver {
 
   /**
    * Prepares indexData for formatQuery when we select by ID from objectStore
-   * @param {WordItem} wordItem 
+   * @param {WordItem} wordItem
    * @param {String} [type=only] - type of index
    * @return {Object} - { indexName, value , type}
    */
@@ -17115,7 +17115,7 @@ class WordItemIndexedDbDriver {
 
   /**
    * Prepares indexData for formatQuery when we select by wordItemID from objectStore (for example context)
-   * @param {WordItem} wordItem 
+   * @param {WordItem} wordItem
    * @param {String} [type=only] - type of index
    * @return {Object} - { indexName, value , type}
    */
@@ -17129,7 +17129,7 @@ class WordItemIndexedDbDriver {
 
   /**
    * Prepares indexData for formatQuery when we select by listID from objectStore (for example all values for languageCode)
-   * @param {String} languageCode 
+   * @param {String} languageCode
    * @param {String} [type=only] - type of index
    * @return {Object} - { indexName, value , type}
    */
@@ -17143,7 +17143,7 @@ class WordItemIndexedDbDriver {
 
   /**
    * Loads a segment that is defined as first
-   * @param {Object} jsonObj 
+   * @param {Object} jsonObj
    * @return {WordItem}
    */
   loadFirst (jsonObj) {
@@ -17393,7 +17393,7 @@ static get currentDate () {
    */
   createFromRemoteData (remoteDataItem) {
     let wordItem = this.loadFirst(remoteDataItem)
-    
+
     if (remoteDataItem.context) {
       this.loadSegment('context', remoteDataItem.context, wordItem)
     }
@@ -17429,24 +17429,23 @@ var _storage_remote_db_config_json__WEBPACK_IMPORTED_MODULE_0___namespace = /*#_
 class WordItemRemoteDbDriver {
   /**
    * Defines proper headers and uploads config for access to remote storage, defines storageMap
-   * @param {String} userID
+   * @param {Object} auth object with accessToken and userID
    */
-  constructor (userID) {
+  constructor (auth) {
     this.config = _storage_remote_db_config_json__WEBPACK_IMPORTED_MODULE_0__
-    this.userID = userID || this.config.testUserID
-    
-    let testAuthID = 'alpheiosMockUserIdlP0DWnmNxe'
+    this.accessToken = auth.accessToken  || this.config.testAccessToken
+    this.userID = auth.userID || this.config.testUserID
 
     this.requestsParams = {
       baseURL: this.config.baseUrl,
       headers: {
         common: {
-          Authorization: 'bearer ' + testAuthID,
+          Authorization: 'bearer ' + this.accessToken,
           'Content-Type': 'application/json'
         }
       }
     }
-    
+
     this.storageMap = {
       post: {
         url: this._constructPostURL.bind(this),
@@ -17519,7 +17518,7 @@ class WordItemRemoteDbDriver {
     let pushContext = currentItem.context
     for (let contextItem of newItem.context) {
       let hasCheck = currentItem.context.some(tqCurrent => {
-        return alpheios_data_models__WEBPACK_IMPORTED_MODULE_1__["TextQuoteSelector"].readObject(tqCurrent).isEqual(contextItem) 
+        return alpheios_data_models__WEBPACK_IMPORTED_MODULE_1__["TextQuoteSelector"].readObject(tqCurrent).isEqual(contextItem)
       })
       if (!hasCheck) {
         pushContext.push(this._serializeContextItem(contextItem, currentItem))
@@ -17627,13 +17626,13 @@ class WordItemRemoteDbDriver {
     return result
   }
 
-  
+
   /**
    * Defines json object from a single textQuoteSelector to save to remote storage
    * @param {WordItem} wordItem
    * @return {Object[]}
    */
-  _serializeContextItem (tq, wordItem) {    
+  _serializeContextItem (tq, wordItem) {
     return {
       target: {
         source: tq.source,
@@ -17652,7 +17651,7 @@ class WordItemRemoteDbDriver {
   }
 
   /**
-   * Checks status of response (post) from remote storage 
+   * Checks status of response (post) from remote storage
    * @param {WordItem} wordItem
    * @return {Boolean}
    */
@@ -17661,7 +17660,7 @@ class WordItemRemoteDbDriver {
   }
 
   /**
-   * Checks status of response (put) from remote storage 
+   * Checks status of response (put) from remote storage
    * @param {WordItem} wordItem
    * @return {Boolean}
    */
@@ -17670,7 +17669,7 @@ class WordItemRemoteDbDriver {
   }
 
   /**
-   * Checks status of response (get) from remote storage 
+   * Checks status of response (get) from remote storage
    * @param {WordItem} wordItem
    * @return {Object/Object[]}
    */
@@ -17686,7 +17685,7 @@ class WordItemRemoteDbDriver {
   }
 
   /**
-   * Checks status of response error (get) from remote storage 
+   * Checks status of response error (get) from remote storage
    * If error message consists of 'Item not found.' - it is not an error. Return empty error instead of error.
    * @param {Error} error
    * @return {[]/Boolean}
@@ -17700,7 +17699,7 @@ class WordItemRemoteDbDriver {
   }
 
   /**
-   * Defines date 
+   * Defines date
    */
   static get currentDate () {
     let dt = new Date()

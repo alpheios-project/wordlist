@@ -4,24 +4,23 @@ import { TextQuoteSelector } from 'alpheios-data-models'
 export default class WordItemRemoteDbDriver {
   /**
    * Defines proper headers and uploads config for access to remote storage, defines storageMap
-   * @param {String} userID
+   * @param {Object} auth object with accessToken and userID
    */
-  constructor (userID) {
+  constructor (auth) {
     this.config = RemoteConfig
-    this.userID = userID || this.config.testUserID
-    
-    let testAuthID = 'alpheiosMockUserIdlP0DWnmNxe'
+    this.accessToken = auth.accessToken  || this.config.testAccessToken
+    this.userID = auth.userID || this.config.testUserID
 
     this.requestsParams = {
       baseURL: this.config.baseUrl,
       headers: {
         common: {
-          Authorization: 'bearer ' + testAuthID,
+          Authorization: 'bearer ' + this.accessToken,
           'Content-Type': 'application/json'
         }
       }
     }
-    
+
     this.storageMap = {
       post: {
         url: this._constructPostURL.bind(this),
@@ -94,7 +93,7 @@ export default class WordItemRemoteDbDriver {
     let pushContext = currentItem.context
     for (let contextItem of newItem.context) {
       let hasCheck = currentItem.context.some(tqCurrent => {
-        return TextQuoteSelector.readObject(tqCurrent).isEqual(contextItem) 
+        return TextQuoteSelector.readObject(tqCurrent).isEqual(contextItem)
       })
       if (!hasCheck) {
         pushContext.push(this._serializeContextItem(contextItem, currentItem))
@@ -202,13 +201,13 @@ export default class WordItemRemoteDbDriver {
     return result
   }
 
-  
+
   /**
    * Defines json object from a single textQuoteSelector to save to remote storage
    * @param {WordItem} wordItem
    * @return {Object[]}
    */
-  _serializeContextItem (tq, wordItem) {    
+  _serializeContextItem (tq, wordItem) {
     return {
       target: {
         source: tq.source,
@@ -227,7 +226,7 @@ export default class WordItemRemoteDbDriver {
   }
 
   /**
-   * Checks status of response (post) from remote storage 
+   * Checks status of response (post) from remote storage
    * @param {WordItem} wordItem
    * @return {Boolean}
    */
@@ -236,7 +235,7 @@ export default class WordItemRemoteDbDriver {
   }
 
   /**
-   * Checks status of response (put) from remote storage 
+   * Checks status of response (put) from remote storage
    * @param {WordItem} wordItem
    * @return {Boolean}
    */
@@ -245,7 +244,7 @@ export default class WordItemRemoteDbDriver {
   }
 
   /**
-   * Checks status of response (get) from remote storage 
+   * Checks status of response (get) from remote storage
    * @param {WordItem} wordItem
    * @return {Object/Object[]}
    */
@@ -261,7 +260,7 @@ export default class WordItemRemoteDbDriver {
   }
 
   /**
-   * Checks status of response error (get) from remote storage 
+   * Checks status of response error (get) from remote storage
    * If error message consists of 'Item not found.' - it is not an error. Return empty error instead of error.
    * @param {Error} error
    * @return {[]/Boolean}
@@ -275,7 +274,7 @@ export default class WordItemRemoteDbDriver {
   }
 
   /**
-   * Defines date 
+   * Defines date
    */
   static get currentDate () {
     let dt = new Date()

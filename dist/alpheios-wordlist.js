@@ -16173,7 +16173,7 @@ class IndexedDBAdapter {
 
   async checkAndUpdate (wordItem, segment, currentRemoteItems) {  
     if (segment === 'context' || !segment)  {
-      if (currentRemoteItems.length > 0) {
+      if (currentRemoteItems.length > 0 && currentRemoteItems[0].context && Array.isArray(currentRemoteItems[0].context)) {
         wordItem.context = []
         for(let contextItem of currentRemoteItems[0].context) {
           wordItem.context.push(alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["WordItem"].readContext([contextItem])[0])

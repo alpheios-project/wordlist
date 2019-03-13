@@ -16959,10 +16959,10 @@ class RemoteDBAdapter {
 /*!***************************************!*\
   !*** ./storage/remote-db-config.json ***!
   \***************************************/
-/*! exports provided: baseUrl, testAccessToken, testUserId, default */
+/*! exports provided: baseUrl, default */
 /***/ (function(module) {
 
-module.exports = {"baseUrl":"https://w2tfh159s2.execute-api.us-east-2.amazonaws.com/prod","testAccessToken":"alpheiosMockUserIdlP0DWnmNxe","testUserId":"testUserID"};
+module.exports = {"baseUrl":"https://w2tfh159s2.execute-api.us-east-2.amazonaws.com/prod"};
 
 /***/ }),
 
@@ -17549,7 +17549,7 @@ class WordItemRemoteDbDriver {
    * @return {WordItem}
    */
   mergeContextPart  (currentItem, newItem) {
-    let pushContext = currentItem.context
+    let pushContext = currentItem.context || []
     for (let contextItem of newItem.context) {
       let hasCheck = currentItem.context.some(tqCurrent => {
         return alpheios_data_models__WEBPACK_IMPORTED_MODULE_1__["TextQuoteSelector"].readObject(tqCurrent).isEqual(contextItem)

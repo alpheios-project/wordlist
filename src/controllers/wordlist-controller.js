@@ -21,13 +21,17 @@ export default class WordlistController {
    * Emits a WORDLIST_UPDATED event when the wordlists are available
    */
   async initLists (dataManager) {
-    for (let languageCode of this.availableLangs) {
-      let wordItems = await dataManager.query({dataType: 'WordItem', params: {languageCode: languageCode}}, { syncDelete: true })
-      if (wordItems.length > 0) {
-        this.wordLists[languageCode] = new WordList(languageCode,wordItems)
-        WordlistController.evt.WORDLIST_UPDATED.pub(this.wordLists)
+    this.wordLists = {} // clear out any existing lists
+    if (dataManager) {
+      for (let languageCode of this.availableLangs) {
+        let wordItems = await dataManager.query({dataType: 'WordItem', params: {languageCode: languageCode}}, { syncDelete: true })
+        if (wordItems.length > 0) {
+          this.wordLists[languageCode] = new WordList(languageCode,wordItems)
+          WordlistController.evt.WORDLIST_UPDATED.pub(this.wordLists)
+        }
       }
     }
+    return this.wordLists
   }
 
   /**

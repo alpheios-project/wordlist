@@ -6,8 +6,8 @@ import RemoteDBAdapter from '@/storage/remote-db-adapter.js'
 export default class UserDataManager {
 
   /**
-   * Creates with userID argument, subscribe to WordItem and WorList events, inits blocked property and request queue
-   * @param {AuthModule} auth - auth data module
+   * Creates with auth argument, subscribe to WordItem and WorList events, inits blocked property and request queue
+   * @param {AuthModule} auth - auth object with userId and accessToken properties
    * @param {String} events - events object of the WordlistController, passed in UIController
    */
   constructor (auth, events) {
@@ -27,7 +27,7 @@ export default class UserDataManager {
    * @return {IndexedDBAdapter}
    */
   _localStorageAdapter(dataType) {
-    let dbDriver = new UserDataManager.LOCAL_DRIVER_CLASSES[dataType](this.auth.userName)
+    let dbDriver = new UserDataManager.LOCAL_DRIVER_CLASSES[dataType](this.auth.userId)
     return new IndexedDBAdapter(dbDriver)
   }
 
@@ -120,7 +120,7 @@ export default class UserDataManager {
       }
       return result
     } catch (error) {
-      console.error('Some errors happen on updating data in IndexedDB or RemoteDBAdapter', error.message)
+      console.error('Some errors happen on updating data in IndexedDB or RemoteDBAdapter', error)
     }
   }
 

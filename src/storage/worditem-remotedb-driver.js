@@ -4,12 +4,12 @@ import { TextQuoteSelector } from 'alpheios-data-models'
 export default class WordItemRemoteDbDriver {
   /**
    * Defines proper headers and uploads config for access to remote storage, defines storageMap
-   * @param {Object} auth object with accessToken and userID
+   * @param {Object} auth object with accessToken and userId
    */
   constructor (auth) {
     this.config = RemoteConfig
-    this.accessToken = auth.accessToken  || this.config.testAccessToken
-    this.userID = auth.userID || this.config.testUserID
+    this.accessToken = auth.accessToken
+    this.userId = auth.userId
 
     this.requestsParams = {
       baseURL: this.config.baseUrl,
@@ -54,6 +54,13 @@ export default class WordItemRemoteDbDriver {
    */
   get segmentsForUpdate () {
     return ['common', 'context', 'shortHomonym']
+  }
+
+ /**
+   * db segments that require merging upon update
+   */
+  get segmentsForMerge () {
+    return ['context']
   }
 
   /**
@@ -153,8 +160,8 @@ export default class WordItemRemoteDbDriver {
   _serialize (wordItem) {
     let result = {
       ID: this._makeStorageID(wordItem),
-      listID: this.userID + '-' + wordItem.languageCode,
-      userID: this.userID,
+      listID: this.userId + '-' + wordItem.languageCode,
+      userID: this.userId,
       languageCode: wordItem.languageCode,
       targetWord: wordItem.targetWord,
       important: wordItem.important,

@@ -15417,8 +15417,8 @@ __webpack_require__.r(__webpack_exports__);
 class UserDataManager {
 
   /**
-   * Creates with userID argument, subscribe to WordItem and WorList events, inits blocked property and request queue
-   * @param {AuthModule} auth - auth data module
+   * Creates with auth argument, subscribe to WordItem and WorList events, inits blocked property and request queue
+   * @param {AuthModule} auth - auth object with userId and accessToken properties
    * @param {String} events - events object of the WordlistController, passed in UIController
    */
   constructor (auth, events) {
@@ -15438,7 +15438,7 @@ class UserDataManager {
    * @return {IndexedDBAdapter}
    */
   _localStorageAdapter(dataType) {
-    let dbDriver = new UserDataManager.LOCAL_DRIVER_CLASSES[dataType](this.auth.userName)
+    let dbDriver = new UserDataManager.LOCAL_DRIVER_CLASSES[dataType](this.auth.userId)
     return new _storage_indexed_db_adapter_js__WEBPACK_IMPORTED_MODULE_2__["default"](dbDriver)
   }
 
@@ -15531,7 +15531,7 @@ class UserDataManager {
       }
       return result
     } catch (error) {
-      console.error('Some errors happen on updating data in IndexedDB or RemoteDBAdapter', error.message)
+      console.error('Some errors happen on updating data in IndexedDB or RemoteDBAdapter', error)
     }
   }
 
@@ -15797,13 +15797,17 @@ class WordlistController {
    * Emits a WORDLIST_UPDATED event when the wordlists are available
    */
   async initLists (dataManager) {
-    for (let languageCode of this.availableLangs) {
-      let wordItems = await dataManager.query({dataType: 'WordItem', params: {languageCode: languageCode}}, { syncDelete: true })
-      if (wordItems.length > 0) {
-        this.wordLists[languageCode] = new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["WordList"](languageCode,wordItems)
-        WordlistController.evt.WORDLIST_UPDATED.pub(this.wordLists)
+    this.wordLists = {} // clear out any existing lists
+    if (dataManager) {
+      for (let languageCode of this.availableLangs) {
+        let wordItems = await dataManager.query({dataType: 'WordItem', params: {languageCode: languageCode}}, { syncDelete: true })
+        if (wordItems.length > 0) {
+          this.wordLists[languageCode] = new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["WordList"](languageCode,wordItems)
+          WordlistController.evt.WORDLIST_UPDATED.pub(this.wordLists)
+        }
       }
     }
+    return this.wordLists
   }
 
   /**
@@ -16786,23 +16790,46 @@ class RemoteDBAdapter {
    * @return {Boolean} - true - adapter could be used, false - couldn't
    */
   _checkRemoteDBAvailability () {
-    return Boolean(this.dbDriver.accessToken) && Boolean(this.dbDriver.requestsParams.headers)
+    return Boolean(this.dbDriver.accessToken) && Boolean(this.dbDriver.userId) && Boolean(this.dbDriver.requestsParams.headers)
   }
 
-  async checkAndUpdate (wordItem, segment) {
-    let currentItems = await this.query({ wordItem })
+  async checkAndUpdate (wordItem, segments) {
     let segmentsForUpdate = this.dbDriver.segmentsForUpdate
-
-    if (currentItems.length === 0) {
-      await this.create(wordItem)
-    } else if (segmentsForUpdate.includes(segment)) {
-      let resultWordItem = this.dbDriver.mergeLocalRemote(currentItems[0], wordItem)
-
-      await this.update(resultWordItem)
+    let segmentsForMerge = this.dbDriver.segmentsForMerge
+    if (! Array.isArray(segments)) {
+      segments = [segments]
     }
-
-    currentItems = await this.query({ wordItem })
-    return currentItems
+    let update = false
+    let merge = false
+    for (let segment of segments) {
+      if (segmentsForUpdate.includes(segment)) {
+        update = true
+      }
+      if (segmentsForMerge.includes(segment)) {
+        merge = true
+      }
+    }
+    if (update) {
+      let updateWordItem
+      // if we are updating a segment which requires merging, then we
+      // first query the remote item so that we have the values that need to be merged
+      let currentItems = []
+      if (merge) {
+        currentItems = await this.query({ wordItem })
+      }
+      if (! currentItems || currentItems.length === 0) {
+        // if there isn't anything that needs to be merged then
+        // we just replace the old wiht the new
+        updateWordItem = wordItem
+      } else {
+        // otherwise we need to create a merged item for update
+        updateWordItem = this.dbDriver.mergeLocalRemote(currentItems[0], wordItem)
+      }
+      await this.update(updateWordItem)
+      return [updateWordItem]
+    } else {
+      return []
+    }
   }
 
   /**
@@ -16932,10 +16959,10 @@ class RemoteDBAdapter {
 /*!***************************************!*\
   !*** ./storage/remote-db-config.json ***!
   \***************************************/
-/*! exports provided: baseUrl, testAccessToken, testUserID, default */
+/*! exports provided: baseUrl, testAccessToken, testUserId, default */
 /***/ (function(module) {
 
-module.exports = {"baseUrl":"https://w2tfh159s2.execute-api.us-east-2.amazonaws.com/prod","testAccessToken":"alpheiosMockUserIdlP0DWnmNxe","testUserID":"testUserID"};
+module.exports = {"baseUrl":"https://w2tfh159s2.execute-api.us-east-2.amazonaws.com/prod","testAccessToken":"alpheiosMockUserIdlP0DWnmNxe","testUserId":"testUserID"};
 
 /***/ }),
 
@@ -17429,12 +17456,12 @@ var _storage_remote_db_config_json__WEBPACK_IMPORTED_MODULE_0___namespace = /*#_
 class WordItemRemoteDbDriver {
   /**
    * Defines proper headers and uploads config for access to remote storage, defines storageMap
-   * @param {Object} auth object with accessToken and userID
+   * @param {Object} auth object with accessToken and userId
    */
   constructor (auth) {
     this.config = _storage_remote_db_config_json__WEBPACK_IMPORTED_MODULE_0__
-    this.accessToken = auth.accessToken  || this.config.testAccessToken
-    this.userID = auth.userID || this.config.testUserID
+    this.accessToken = auth.accessToken
+    this.userId = auth.userId
 
     this.requestsParams = {
       baseURL: this.config.baseUrl,
@@ -17479,6 +17506,13 @@ class WordItemRemoteDbDriver {
    */
   get segmentsForUpdate () {
     return ['common', 'context', 'shortHomonym']
+  }
+
+ /**
+   * db segments that require merging upon update
+   */
+  get segmentsForMerge () {
+    return ['context']
   }
 
   /**
@@ -17578,8 +17612,8 @@ class WordItemRemoteDbDriver {
   _serialize (wordItem) {
     let result = {
       ID: this._makeStorageID(wordItem),
-      listID: this.userID + '-' + wordItem.languageCode,
-      userID: this.userID,
+      listID: this.userId + '-' + wordItem.languageCode,
+      userID: this.userId,
       languageCode: wordItem.languageCode,
       targetWord: wordItem.targetWord,
       important: wordItem.important,

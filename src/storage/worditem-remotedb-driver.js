@@ -97,7 +97,7 @@ export default class WordItemRemoteDbDriver {
    * @return {WordItem}
    */
   mergeContextPart  (currentItem, newItem) {
-    let pushContext = currentItem.context
+    let pushContext = currentItem.context || []
     for (let contextItem of newItem.context) {
       let hasCheck = currentItem.context.some(tqCurrent => {
         return TextQuoteSelector.readObject(tqCurrent).isEqual(contextItem)

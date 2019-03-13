@@ -176,6 +176,8 @@ export default class WordItemRemoteDbDriver {
 
     if (context && context.length > 0) {
       result.context = context
+    } else {
+      result.context = []
     }
     return result
   }

@@ -134,7 +134,7 @@ describe('worditem-remotedb-driver.test.js', () => {
     expect(resJsonObj.createdDT).toBeDefined()
 
     expect(resJsonObj.homonym).not.toBeDefined()
-    expect(resJsonObj.context).not.toBeDefined()
+    expect(resJsonObj.context).toEqual([])
 
     expect(dbDriverRemote._serializeHomonym).toHaveBeenCalled()
     expect(dbDriverRemote._serializeContext).toHaveBeenCalled()

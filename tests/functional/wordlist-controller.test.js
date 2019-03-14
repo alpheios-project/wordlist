@@ -269,6 +269,11 @@ describe('wordlist-controller.test.js', () => {
     expect(WordlistController.evt.WORDITEM_UPDATED.pub).toHaveBeenCalledWith({dataObj:item2,params:{segment:'common'}})
     expect(WordlistController.evt.WORDITEM_UPDATED.pub).toHaveBeenCalledTimes(2)
   })
+  it('21 WordlistController - getWordListItemCount returns number of items in all lists', async () => {
+    let wc = new WordlistController([mockLClat,mockLCgrc],mockEvents)
+    await wc.initLists(mockDataManager)
+    expect(wc.getWordListItemCount()).toEqual(2)
+  })
   it.skip('21 WordlistController - selectWordItem emits event',() => {})
 
 })

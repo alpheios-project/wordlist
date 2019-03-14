@@ -34,6 +34,16 @@ export default class WordlistController {
     return this.wordLists
   }
 
+  getWordListItemCount() {
+    let count = 0
+    for (let languageCode of this.availableLangs) {
+      if (this.wordLists[languageCode]) {
+        count = count + this.wordLists[languageCode].size
+      }
+    }
+    return count
+  }
+
   /**
    * Get the wordlist for a specific language code
    * @param {String} languageCode the language for the list

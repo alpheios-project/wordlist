@@ -215,7 +215,7 @@ describe('wordlist-controller.test.js', () => {
     latList.addWordItem(mockWILatin)
     jest.spyOn(WordlistController.evt.WORDITEM_UPDATED,'pub')
     jest.spyOn(WordlistController.evt.WORDLIST_UPDATED,'pub')
-    wc.onTextQuoteSelectorReceived({languageCode: mockLClat, normalizedText: testTarget})
+    wc.onTextQuoteSelectorReceived(new TextQuoteSelector( mockLClat, testTarget) )
     let item = wc.getWordListItem(mockLClat,testTarget)
     expect(item.context).toBeDefined()
     expect(item.context.length).toEqual(1)
@@ -229,7 +229,7 @@ describe('wordlist-controller.test.js', () => {
     let testTarget = 'mare'
     jest.spyOn(WordlistController.evt.WORDITEM_UPDATED,'pub')
     jest.spyOn(WordlistController.evt.WORDLIST_UPDATED,'pub')
-    wc.onTextQuoteSelectorReceived({languageCode: mockLClat, normalizedText: testTarget})
+    wc.onTextQuoteSelectorReceived(new TextQuoteSelector( mockLClat, testTarget) )
     let item = wc.getWordListItem(mockLClat,testTarget)
     expect(item.context).toBeDefined()
     expect(item.context.length).toEqual(1)
@@ -283,20 +283,24 @@ describe('wordlist-controller.test.js', () => {
     let selector3 =  new TextQuoteSelector(mockLClat,'veni','fooPrefix')
     jest.spyOn(WordlistController.evt.WORDLIST_UPDATED,'pub')
     wc.onTextQuoteSelectorReceived(selector1)
+    wc.onDefinitionsReady({homonym:{language: mockLClat, targetWord: 'mare'}})
+    wc.onDefinitionsReady({homonym:{language: mockLClat, targetWord: 'veni'}})
     wc.onTextQuoteSelectorReceived(selector2)
     wc.onTextQuoteSelectorReceived(selector3)
     expect(wc.getWordListItemCount()).toEqual(2)
     // we have a word list with two items in it
     // now init the list with the DataManager
-    await wc.initLists(mockDataManager)
+    let result = await wc.initLists(mockDataManager)
     // should have 2 latin and 1 greek
     expect(wc.getWordList(mockLClat).size).toEqual(2)
     expect(wc.getWordList(mockLCgrc).size).toEqual(1)
     // latin mare should have 2 contexts
     expect(wc.getWordListItem(mockLClat,'mare').context.length).toEqual(2)
     // wordlists were updated a total of 6 times: 3 to the cached latin list,
-    // 2 to init the remote latin and greek lists, and 1 to merge the cached and remote  latin lists
-    expect(WordlistController.evt.WORDLIST_UPDATED.pub).toHaveBeenCalledTimes(6)
+    // 2 to init the remote latin and greek lists, and 3 to replay the cached list
+    expect(WordlistController.evt.WORDLIST_UPDATED.pub).toHaveBeenCalledTimes(9)
+    expect(result[mockLClat]).toEqual(wc.getWordList(mockLClat))
+    expect(result[mockLCgrc]).toEqual(wc.getWordList(mockLCgrc))
 
   })
   it('23 WordlistController - init list clears existing when no data manager', async () => {
@@ -304,7 +308,7 @@ describe('wordlist-controller.test.js', () => {
     let selector1 =  new TextQuoteSelector(mockLClat,'mare','fooPrefix')
     wc.onTextQuoteSelectorReceived(selector1)
     expect(wc.getWordListItemCount()).toEqual(1)
-    await wc.initLists()
+    let result = await wc.initLists()
     expect(wc.getWordListItemCount()).toEqual(0)
   })
   it.skip('21 WordlistController - selectWordItem emits event',() => {})

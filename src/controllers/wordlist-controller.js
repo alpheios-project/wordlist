@@ -27,6 +27,7 @@ export default class WordlistController {
     } else {
       for (let languageCode of this.availableLangs) {
         let cachedList = this.wordLists[languageCode]
+        delete this.wordLists[languageCode]
         let wordItems = await dataManager.query({dataType: 'WordItem', params: {languageCode: languageCode}}, { syncDelete: true })
         if (wordItems.length > 0) {
           this.wordLists[languageCode] = new WordList(languageCode,wordItems)
@@ -34,19 +35,19 @@ export default class WordlistController {
         }
         if (cachedList) {
           for (let cachedItem of cachedList.values) {
-            let newWordItem = this.getWordListItem(cachedItem.languageCode, cachedItem.targetWord, true)
-            if (!newWordItem.homonym) {
-              newWordItem.homonym = cachedItem.homonym
-              WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: newWordItem, params: {segment: 'homonym'}})
+            try {
+              // replay the word selection events for the cached list
+              let cachedTqs = cachedItem.context.map(c => new TextQuoteSelector(c.languageCode,c.normalizedText,c.prefix,c.suffix,c.source))
+              for (let tq of cachedTqs) {
+                this.onTextQuoteSelectorReceived(tq)
+              }
+              if (cachedItem.homonym) {
+                this.onHomonymReady(cachedItem.homonym)
+              }
+            } catch (e) {
+              console.error("Error replaying cached wordlist item",e)
             }
-            let cachedTqs = cachedItem.context.map(c => new TextQuoteSelector(c.languageCode,c.normalizedText,c.prefix,c.suffix,c.source))
-            let newTqs = newWordItem.context.map(c => new TextQuoteSelector(c.languageCode,c.normalizedText,c.prefix,c.suffix,c.source))
-            let allContexts = [...newTqs, ...cachedTqs]
-            newWordItem.context = []
-            newWordItem.addContext(allContexts)
-            WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: newWordItem, params: {segment: 'context'}})
           }
-          WordlistController.evt.WORDLIST_UPDATED.pub(this.wordLists)
         }
       }
     }
@@ -187,6 +188,9 @@ export default class WordlistController {
     // create the item in the word list if it doesn't exist
     let wordItem = this.getWordListItem(data.languageCode, data.normalizedText, true)
     if (wordItem) {
+      if (! data.isEqual) {
+        throw new Error("!!!")
+      }
       wordItem.addContext([data])
       WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'context'}})
       // emit a wordlist updated event too in case the wordlist was updated

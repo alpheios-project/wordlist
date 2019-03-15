@@ -15830,13 +15830,16 @@ class WordlistController {
         if (cachedList) {
           for (let cachedItem of cachedList.values) {
             let newWordItem = this.getWordListItem(cachedItem.languageCode, cachedItem.targetWord, true)
-            newWordItem.homonym = cachedItem.homonym
-            let newTqs = newWordItem.context.map(c => new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["TextQuoteSelector"](c.languageCode,c.normalizedText,c.prefix,c.suffix,c.source))
+            if (!newWordItem.homonym) {
+              newWordItem.homonym = cachedItem.homonym
+              WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: newWordItem, params: {segment: 'homonym'}})
+            }
             let cachedTqs = cachedItem.context.map(c => new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["TextQuoteSelector"](c.languageCode,c.normalizedText,c.prefix,c.suffix,c.source))
+            let newTqs = newWordItem.context.map(c => new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["TextQuoteSelector"](c.languageCode,c.normalizedText,c.prefix,c.suffix,c.source))
+            let allContexts = [...newTqs, ...cachedTqs]
             newWordItem.context = []
-            newWordItem.addContext(newTqs)
-            newWordItem.addContext(cachedTqs)
-            WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: newWordItem, params: {segment: ['context','homonym']}})
+            newWordItem.addContext(allContexts)
+            WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: newWordItem, params: {segment: 'context'}})
           }
           WordlistController.evt.WORDLIST_UPDATED.pub(this.wordLists)
         }

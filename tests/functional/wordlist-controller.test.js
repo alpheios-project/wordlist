@@ -281,7 +281,6 @@ describe('wordlist-controller.test.js', () => {
     let selector1 =  new TextQuoteSelector(mockLClat,'mare')
     let selector2 =  new TextQuoteSelector(mockLClat,'mare','fooPrefix')
     let selector3 =  new TextQuoteSelector(mockLClat,'veni','fooPrefix')
-    jest.spyOn(WordlistController.evt.WORDITEM_UPDATED,'pub')
     jest.spyOn(WordlistController.evt.WORDLIST_UPDATED,'pub')
     wc.onTextQuoteSelectorReceived(selector1)
     wc.onTextQuoteSelectorReceived(selector2)

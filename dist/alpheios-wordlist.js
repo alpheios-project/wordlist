@@ -15983,9 +15983,6 @@ class WordlistController {
     // create the item in the word list if it doesn't exist
     let wordItem = this.getWordListItem(data.languageCode, data.normalizedText, true)
     if (wordItem) {
-      if (! data.isEqual) {
-        throw new Error("!!!")
-      }
       wordItem.addContext([data])
       WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'context'}})
       // emit a wordlist updated event too in case the wordlist was updated

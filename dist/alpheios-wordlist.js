@@ -3454,7 +3454,7 @@ function normalizeComponent (
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global, setImmediate) {/*!
- * Vue.js v2.6.8
+ * Vue.js v2.6.9
  * (c) 2014-2019 Evan You
  * Released under the MIT License.
  */
@@ -5315,10 +5315,11 @@ function normalizeComponent (
     var res;
     try {
       res = args ? handler.apply(context, args) : handler.call(context);
-      if (res && !res._isVue && isPromise(res)) {
+      if (res && !res._isVue && isPromise(res) && !res._handled) {
+        res.catch(function (e) { return handleError(e, vm, info + " (Promise/async)"); });
         // issue #9511
-        // reassign to res to avoid catch triggering multiple times when nested calls
-        res = res.catch(function (e) { return handleError(e, vm, info + " (Promise/async)"); });
+        // avoid catch triggering multiple times when nested calls
+        res._handled = true;
       }
     } catch (e) {
       handleError(e, vm, info);
@@ -6002,6 +6003,7 @@ function normalizeComponent (
   ) {
     var res;
     var isStable = slots ? !!slots.$stable : true;
+    var hasNormalSlots = Object.keys(normalSlots).length > 0;
     var key = slots && slots.$key;
     if (!slots) {
       res = {};
@@ -6013,7 +6015,8 @@ function normalizeComponent (
       prevSlots &&
       prevSlots !== emptyObject &&
       key === prevSlots.$key &&
-      Object.keys(normalSlots).length === 0
+      !hasNormalSlots &&
+      !prevSlots.$hasNormal
     ) {
       // fast path 2: stable scoped slots w/ no normal slots to proxy,
       // only need to normalize once
@@ -6039,6 +6042,7 @@ function normalizeComponent (
     }
     def(res, '$stable', isStable);
     def(res, '$key', key);
+    def(res, '$hasNormal', hasNormalSlots);
     return res
   }
 
@@ -6048,8 +6052,10 @@ function normalizeComponent (
       res = res && typeof res === 'object' && !Array.isArray(res)
         ? [res] // single vnode
         : normalizeChildren(res);
-      return res && res.length === 0
-        ? undefined
+      return res && (
+        res.length === 0 ||
+        (res.length === 1 && res[0].isComment) // #9658
+      ) ? undefined
         : res
     };
     // this is a slot using the new v-slot syntax without scope. although it is
@@ -6229,12 +6235,13 @@ function normalizeComponent (
               : data.attrs || (data.attrs = {});
           }
           var camelizedKey = camelize(key);
-          if (!(key in hash) && !(camelizedKey in hash)) {
+          var hyphenatedKey = hyphenate(key);
+          if (!(camelizedKey in hash) && !(hyphenatedKey in hash)) {
             hash[key] = value[key];
 
             if (isSync) {
               var on = data.on || (data.on = {});
-              on[("update:" + camelizedKey)] = function ($event) {
+              on[("update:" + key)] = function ($event) {
                 value[key] = $event;
               };
             }
@@ -7069,7 +7076,7 @@ function normalizeComponent (
     }
 
     var owner = currentRenderingInstance;
-    if (isDef(factory.owners) && factory.owners.indexOf(owner) === -1) {
+    if (owner && isDef(factory.owners) && factory.owners.indexOf(owner) === -1) {
       // already pending
       factory.owners.push(owner);
     }
@@ -7078,7 +7085,7 @@ function normalizeComponent (
       return factory.loadingComp
     }
 
-    if (!isDef(factory.owners)) {
+    if (owner && !isDef(factory.owners)) {
       var owners = factory.owners = [owner];
       var sync = true
 
@@ -7693,10 +7700,15 @@ function normalizeComponent (
   // timestamp can either be hi-res (relative to page load) or low-res
   // (relative to UNIX epoch), so in order to compare time we have to use the
   // same timestamp type when saving the flush timestamp.
-  if (inBrowser && getNow() > document.createEvent('Event').timeStamp) {
-    // if the low-res timestamp which is bigger than the event timestamp
-    // (which is evaluated AFTER) it means the event is using a hi-res timestamp,
-    // and we need to use the hi-res version for event listeners as well.
+  if (
+    inBrowser &&
+    window.performance &&
+    typeof performance.now === 'function' &&
+    document.createEvent('Event').timeStamp <= performance.now()
+  ) {
+    // if the event timestamp is bigger than the hi-res timestamp
+    // (which is evaluated AFTER) it means the event is using a lo-res timestamp,
+    // and we need to use the lo-res version for event listeners as well.
     getNow = function () { return performance.now(); };
   }
 
@@ -8862,7 +8874,7 @@ function normalizeComponent (
     value: FunctionalRenderContext
   });
 
-  Vue.version = '2.6.8';
+  Vue.version = '2.6.9';
 
   /*  */
 
@@ -10954,8 +10966,10 @@ function normalizeComponent (
           e.target === e.currentTarget ||
           // event is fired after handler attachment
           e.timeStamp >= attachedTimestamp ||
-          // #9462 bail for iOS 9 bug: event.timeStamp is 0 after history.pushState
-          e.timeStamp === 0 ||
+          // bail for environments that have buggy event.timeStamp implementations
+          // #9462 iOS 9 bug: event.timeStamp is 0 after history.pushState
+          // #9681 QtWebEngine event.timeStamp is negative value
+          e.timeStamp <= 0 ||
           // #9448 bail if event is fired in another document in a multi-page
           // electron/nw.js app, since event.timeStamp will be using a different
           // starting reference
@@ -11573,8 +11587,8 @@ function normalizeComponent (
     var context = activeInstance;
     var transitionNode = activeInstance.$vnode;
     while (transitionNode && transitionNode.parent) {
-      transitionNode = transitionNode.parent;
       context = transitionNode.context;
+      transitionNode = transitionNode.parent;
     }
 
     var isAppear = !context._isMounted || !vnode.isRootInsert;
@@ -13281,7 +13295,7 @@ function normalizeComponent (
           text = preserveWhitespace ? ' ' : '';
         }
         if (text) {
-          if (whitespaceOption === 'condense') {
+          if (!inPre && whitespaceOption === 'condense') {
             // condense consecutive whitespaces into single space
             text = text.replace(whitespaceRE$1, ' ');
           }
@@ -15648,14 +15662,14 @@ class UserDataManager {
    * Promise-based method - queries all objects from the wordlist by languageCode , only for only one wordItem
    * or one wordItem from local/remote storage
    * @param {Object} data
-   * @param {String} data.languageCode - for quering all wordItems from wordList by languageCode
-   * @param {WordItem} data.wordItem - for quering one wordItem
+   *                 data.languageCode - for quering all wordItems from wordList by languageCode
+   *                 data.wordItem - for quering one wordItem
+   *                 data.params - type specific query parameters
    * @param {Object} [params={ source: both, type: short, syncDelete: false }] - additional parameters for updating, now there are the following:
    *                  params.source = [local, remote, both]
    *                  params.type = [short, full] - short - short data for homonym, full - homonym with definitions data
    *                  params.syncDelete = [true, false] - if true (and params.source = both, and languageCode is defined in params),
    *                                      than localItems would be compared with remoteItems, items that are existed only in local would be removed
-   *
    * @return {WordItem[]}
    */
   async query (data, params = {}) {
@@ -15802,12 +15816,28 @@ class WordlistController {
    * Emits a WORDLIST_UPDATED event when the wordlists are available
    */
   async initLists (dataManager) {
-    this.wordLists = {} // clear out any existing lists
-    if (dataManager) {
+    if (! dataManager) {
+      // if we don't have a data manager we don't need to preserve any existing data, just clear it out
+      this.wordLists = {} // clear out any existing lists
+    } else {
       for (let languageCode of this.availableLangs) {
+        let cachedList = this.wordLists[languageCode]
         let wordItems = await dataManager.query({dataType: 'WordItem', params: {languageCode: languageCode}}, { syncDelete: true })
         if (wordItems.length > 0) {
           this.wordLists[languageCode] = new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["WordList"](languageCode,wordItems)
+          WordlistController.evt.WORDLIST_UPDATED.pub(this.wordLists)
+        }
+        if (cachedList) {
+          for (let cachedItem of cachedList.values) {
+            let newWordItem = this.getWordListItem(cachedItem.languageCode, cachedItem.targetWord, true)
+            newWordItem.homonym = cachedItem.homonym
+            let newTqs = newWordItem.context.map(c => new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["TextQuoteSelector"](c.languageCode,c.normalizedText,c.prefix,c.suffix,c.source))
+            let cachedTqs = cachedItem.context.map(c => new alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["TextQuoteSelector"](c.languageCode,c.normalizedText,c.prefix,c.suffix,c.source))
+            newWordItem.context = []
+            newWordItem.addContext(newTqs)
+            newWordItem.addContext(cachedTqs)
+            WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: newWordItem, params: {segment: ['context','homonym']}})
+          }
           WordlistController.evt.WORDLIST_UPDATED.pub(this.wordLists)
         }
       }

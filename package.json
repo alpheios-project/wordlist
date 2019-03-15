@@ -6,6 +6,7 @@
   "scripts": {
     "test": "eslint --fix src/**/*.js && AUTH_TOKEN=alpheiosMockUserIdlP0DWnmNxe jest --coverage && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js",
     "test-b": "eslint --fix src/**/*.js && AUTH_TOKEN=alpheiosMockUserIdlP0DWnmNxe jest tests/functional/user-data-manager.test.js --coverage && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage",
+    "test-c": "eslint --fix src/**/*.js && jest tests/functional/wordlist-controller.test.js --coverage && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage",
     "build": "eslint --fix src/**/*.js && node --experimental-modules ./node_modules/alpheios-node-build/dist/build.mjs all all vue",
     "build-prod": "eslint --fix src/**/*.js && node --experimental-modules ./node_modules/alpheios-node-build/dist/build.mjs all production vue",
     "build-dev": "eslint --fix src/**/*.js && node --experimental-modules ./node_modules/alpheios-node-build/dist/build.mjs all development vue",
@@ -69,7 +70,7 @@
     "terser": "3.14.1",
     "uikit": "^3.0.3",
     "uuid": "^3.3.2",
-    "vue": "^2.6.8",
+    "vue": "^2.6.9",
     "whatwg-fetch": "^2.0.4",
     "wrap-range-text": "*"
   },

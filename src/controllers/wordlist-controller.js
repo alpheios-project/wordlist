@@ -1,4 +1,4 @@
-import { PsEvent, WordList, WordItem } from 'alpheios-data-models'
+import { PsEvent, WordList, WordItem, TextQuoteSelector } from 'alpheios-data-models'
 
 export default class WordlistController {
   /**
@@ -21,12 +21,28 @@ export default class WordlistController {
    * Emits a WORDLIST_UPDATED event when the wordlists are available
    */
   async initLists (dataManager) {
-    this.wordLists = {} // clear out any existing lists
-    if (dataManager) {
+    if (! dataManager) {
+      // if we don't have a data manager we don't need to preserve any existing data, just clear it out
+      this.wordLists = {} // clear out any existing lists
+    } else {
       for (let languageCode of this.availableLangs) {
+        let cachedList = this.wordLists[languageCode]
         let wordItems = await dataManager.query({dataType: 'WordItem', params: {languageCode: languageCode}}, { syncDelete: true })
         if (wordItems.length > 0) {
           this.wordLists[languageCode] = new WordList(languageCode,wordItems)
+          WordlistController.evt.WORDLIST_UPDATED.pub(this.wordLists)
+        }
+        if (cachedList) {
+          for (let cachedItem of cachedList.values) {
+            let newWordItem = this.getWordListItem(cachedItem.languageCode, cachedItem.targetWord, true)
+            newWordItem.homonym = cachedItem.homonym
+            let newTqs = newWordItem.context.map(c => new TextQuoteSelector(c.languageCode,c.normalizedText,c.prefix,c.suffix,c.source))
+            let cachedTqs = cachedItem.context.map(c => new TextQuoteSelector(c.languageCode,c.normalizedText,c.prefix,c.suffix,c.source))
+            newWordItem.context = []
+            newWordItem.addContext(newTqs)
+            newWordItem.addContext(cachedTqs)
+            WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: newWordItem, params: {segment: ['context','homonym']}})
+          }
           WordlistController.evt.WORDLIST_UPDATED.pub(this.wordLists)
         }
       }

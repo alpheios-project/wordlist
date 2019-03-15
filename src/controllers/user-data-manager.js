@@ -232,14 +232,14 @@ export default class UserDataManager {
    * Promise-based method - queries all objects from the wordlist by languageCode , only for only one wordItem
    * or one wordItem from local/remote storage
    * @param {Object} data
-   * @param {String} data.languageCode - for quering all wordItems from wordList by languageCode
-   * @param {WordItem} data.wordItem - for quering one wordItem
+   *                 data.languageCode - for quering all wordItems from wordList by languageCode
+   *                 data.wordItem - for quering one wordItem
+   *                 data.params - type specific query parameters
    * @param {Object} [params={ source: both, type: short, syncDelete: false }] - additional parameters for updating, now there are the following:
    *                  params.source = [local, remote, both]
    *                  params.type = [short, full] - short - short data for homonym, full - homonym with definitions data
    *                  params.syncDelete = [true, false] - if true (and params.source = both, and languageCode is defined in params),
    *                                      than localItems would be compared with remoteItems, items that are existed only in local would be removed
-   *
    * @return {WordItem[]}
    */
   async query (data, params = {}) {

@@ -17513,7 +17513,7 @@ class WordItemRemoteDbDriver {
     this.userId = auth.userId
 
     this.requestsParams = {
-      baseURL: this.config.baseUrl,
+      baseURL: auth.endpoints.wordlist,
       headers: {
         common: {
           Authorization: 'bearer ' + this.accessToken,
@@ -17617,7 +17617,7 @@ class WordItemRemoteDbDriver {
    * @return {String}
    */
   _constructPostURL (wordItem) {
-    return `/words/${this._makeStorageID(wordItem)}`
+    return `/${this._makeStorageID(wordItem)}`
   }
 
    /**
@@ -17627,10 +17627,10 @@ class WordItemRemoteDbDriver {
    */
   _constructGetURL (data) {
     if (data.wordItem) {
-      return `/words/${this._makeStorageID(data.wordItem)}`
+      return `/${this._makeStorageID(data.wordItem)}`
     }
     if (data.languageCode) {
-      return `/words?languageCode=${data.languageCode}`
+      return `/?languageCode=${data.languageCode}`
     }
     return
   }
@@ -17641,7 +17641,7 @@ class WordItemRemoteDbDriver {
    * @return {String}
    */
   _constructDeleteManyURL (data) {
-    return `/words?languageCode=${data.languageCode}`
+    return `/?languageCode=${data.languageCode}`
   }
 
   /**

@@ -1,13 +1,11 @@
-import RemoteConfig from '@/storage/remote-db-config.json'
 import { TextQuoteSelector } from 'alpheios-data-models'
 
 export default class WordItemRemoteDbDriver {
   /**
-   * Defines proper headers and uploads config for access to remote storage, defines storageMap
+   * Defines proper headers for access to remote storage, defines storageMap
    * @param {Object} auth object with accessToken and userId
    */
   constructor (auth) {
-    this.config = RemoteConfig
     this.accessToken = auth.accessToken
     this.userId = auth.userId
 

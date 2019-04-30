@@ -35,6 +35,7 @@ export default class UserDataManager {
     for (let unsub of this.subscriptions) {
       unsub()
     }
+    this.subscriptions = []
   }
 
   /**

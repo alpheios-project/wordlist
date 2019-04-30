@@ -802,6 +802,6 @@ describe('user-data-manager.test.js', () => {
       WORDLIST_DELETED: mockEvent})
     expect(udm.subscriptions.length).toEqual(3)
     udm.clear()
-    expect(mockUnsub).toHaveBeenCalledTimes(3)
+    expect(udm.subscriptions.length).toEqual(0)
   })
 })

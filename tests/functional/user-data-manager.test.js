@@ -27,10 +27,10 @@ describe('user-data-manager.test.js', () => {
     window.indexedDB = IndexedDB
     window.IDBKeyRange = IDBKeyRange
     auth  = {
-      accessToken: process.env.AUTH_TOKEN,
+      accessToken: 'alpheiosMockUserIdlP0DWnmNxe', //process.env.AUTH_TOKEN,
       userId: 'alpheiosMockUser',
       endpoints: {
-        wordlist: process.env.ENDPOINT
+        wordlist: 'https://w2tfh159s2.execute-api.us-east-2.amazonaws.com/prod/words'// process.env.ENDPOINT
       }
     }
 

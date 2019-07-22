@@ -32,7 +32,9 @@ describe('wordlist-controller.test.js', () => {
       TEXT_QUOTE_SELECTOR_RECEIVED: {sub: jest.fn()},
       HOMONYM_READY: {sub: jest.fn()},
       DEFS_READY: {sub: jest.fn()},
-      LEMMA_TRANSL_READY: { sub: jest.fn()}
+      LEMMA_TRANSL_READY: { sub: jest.fn()},
+      MORPH_DATA_NOTAVAILABLE: { sub: jest.fn()},
+      LEXICAL_QUERY_COMPLETE: { sub: jest.fn()}
     }
 
     mockDataManager = {

@@ -1,4 +1,4 @@
-import { PsEvent, WordList, WordItem, TextQuoteSelector } from 'alpheios-data-models'
+import { PsEvent, WordList, WordItem, TextQuoteSelector, LanguageModelFactory as LMF } from 'alpheios-data-models'
 
 export default class WordlistController {
   /**
@@ -13,6 +13,8 @@ export default class WordlistController {
     events.HOMONYM_READY.sub(this.onHomonymReady.bind(this))
     events.DEFS_READY.sub(this.onDefinitionsReady.bind(this))
     events.LEMMA_TRANSL_READY.sub(this.onLemmaTranslationsReady.bind(this))
+    events.MORPH_DATA_NOTAVAILABLE.sub(this.removeWordItemWithoutHomonym.bind(this))
+    events.LEXICAL_QUERY_COMPLETE.sub(this.clearWordlistFromForDelete.bind(this))
   }
 
   /**
@@ -37,6 +39,7 @@ export default class WordlistController {
           for (let cachedItem of cachedList.values) {
             try {
               // replay the word selection events for the cached list
+              if (cachedItem.forDelete) { continue }
               let cachedTqs = cachedItem.context.map(c => new TextQuoteSelector(c.languageCode,c.normalizedText,c.prefix,c.suffix,c.source))
               for (let tq of cachedTqs) {
                 this.onTextQuoteSelectorReceived(tq)
@@ -105,9 +108,39 @@ export default class WordlistController {
         WordlistController.evt.WORDITEM_DELETED.pub({dataObj: deleted})
         if (wordList.isEmpty) {
           this.removeWordList(languageCode)
+          WordlistController.evt.WORDLIST_UPDATED.pub(null)
+        } else {
+          WordlistController.evt.WORDLIST_UPDATED.pub(wordList)
         }
       } else {
         console.error('Trying to delete an absent element')
+      }
+    }
+  }
+
+  removeWordItemWithoutHomonym (data) {
+    let languageCode = data.languageId ? LMF.getLanguageCodeFromId(data.languageId) : null
+    if (languageCode) {
+      let wordList = this.getWordList(languageCode, false)
+      if (wordList) {
+        let wordItem = wordList.getWordItem(data.targetWord)
+        if (wordItem) {
+          wordItem.forDelete = true
+        }
+      }
+    }
+  }
+
+  clearWordlistFromForDelete (data) {
+    let languageCode = data.homonym.language
+    let targetWord = data.homonym.targetWord
+    if (languageCode) {
+      let wordList = this.getWordList(languageCode, false)
+      if (wordList) {
+        let wordItem = wordList.getWordItem(targetWord)
+        if (wordItem && wordItem.forDelete) { 
+          this.removeWordListItem(languageCode, targetWord)
+        }
       }
     }
   }
@@ -119,7 +152,7 @@ export default class WordlistController {
    * @param {Boolean} create true to create the item if it doesn't exist
    * @return {WordItem} the retrieved or created WordItem
    */
-  getWordListItem (languageCode, targetWord, create=false) {
+  getWordListItem (languageCode, targetWord, create = false) {
     let wordList = this.getWordList(languageCode, create)
     let wordItem
     if (wordList) {
@@ -152,7 +185,7 @@ export default class WordlistController {
   * Emits a WORDITEM_UPDATED event
   */
   onDefinitionsReady (data) {
-    let wordItem = this.getWordListItem(data.homonym.language,data.homonym.targetWord)
+    let wordItem = this.getWordListItem(data.homonym.language, data.homonym.targetWord, false)
     if (wordItem) {
       wordItem.homonym = data.homonym
       WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'fullHomonym'}})
@@ -169,7 +202,7 @@ export default class WordlistController {
   * Emits a WORDITEM_UPDATED event
   */
   onLemmaTranslationsReady (data) {
-    let wordItem = this.getWordListItem(data.language, data.targetWord)
+    let wordItem = this.getWordListItem(data.language, data.targetWord, false)
     if (wordItem) {
       wordItem.homonym = data
       WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'fullHomonym'}})
@@ -186,7 +219,7 @@ export default class WordlistController {
   onTextQuoteSelectorReceived (data) {
     // when receiving this event, it's possible this is the first time we are seeing the word so
     // create the item in the word list if it doesn't exist
-    let wordItem = this.getWordListItem(data.languageCode, data.normalizedText, true)
+    let wordItem = this.getWordListItem(data.languageCode, data.normalizedText, true, false)
     if (wordItem) {
       wordItem.addContext([data])
       WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'context'}})

@@ -2326,8 +2326,8 @@ class WordlistController {
     events.HOMONYM_READY.sub(this.onHomonymReady.bind(this))
     events.DEFS_READY.sub(this.onDefinitionsReady.bind(this))
     events.LEMMA_TRANSL_READY.sub(this.onLemmaTranslationsReady.bind(this))
-    events.MORPH_DATA_NOTAVAILABLE.sub(this.removeWordItemWithoutHomonym.bind(this))
-    events.LEXICAL_QUERY_COMPLETE.sub(this.clearWordlistFromForDelete.bind(this))
+    events.MORPH_DATA_NOTAVAILABLE.sub(this.markWordItemWithoutMorph.bind(this))
+    events.LEXICAL_QUERY_COMPLETE.sub(this.removeIfWorditemForDelete.bind(this))
   }
 
   /**
@@ -2431,7 +2431,7 @@ class WordlistController {
     }
   }
 
-  removeWordItemWithoutHomonym (data) {
+  markWordItemWithoutMorph (data) {
     let languageCode = data.languageId ? alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["LanguageModelFactory"].getLanguageCodeFromId(data.languageId) : null
     if (languageCode) {
       let wordList = this.getWordList(languageCode, false)
@@ -2444,7 +2444,7 @@ class WordlistController {
     }
   }
 
-  clearWordlistFromForDelete (data) {
+  removeIfWorditemForDelete (data) {
     let languageCode = data.homonym.language
     let targetWord = data.homonym.targetWord
     if (languageCode) {

@@ -1961,7 +1961,7 @@ class UserDataManager {
   clear() {
     if (this.blocked) {
       // TODO we should wait on the request queue completion
-      console.error("Destroying User Data Manager with requests pending")
+      console.warn("Destroying Alpheios user data manager with requests pending. Words may not all be deleted.")
     }
     for (let unsub of this.subscriptions) {
       unsub()
@@ -2019,7 +2019,7 @@ class UserDataManager {
   }
 
   printErrorAdapterUnvailable(adapter) {
-    console.error(`Adapter is not available - ${adapter.constructor.name}`)
+    console.error(`Alpheios user data adapter is not available - ${adapter.constructor.name}`)
   }
 
   /**
@@ -2068,7 +2068,7 @@ class UserDataManager {
       }
       return result
     } catch (error) {
-      console.error('Some errors happen on updating data in IndexedDB or RemoteDBAdapter', error)
+      console.error('Unexpected error updating Alpheios user data.', error)
     }
   }
 
@@ -2120,7 +2120,7 @@ class UserDataManager {
       }
       return remoteResult && localResult
     } catch (error) {
-      console.error('Some errors happen on deleting item from IndexedDB or RemoteDBAdapter', error.message)
+      console.error('Unexpected error deleting Alpheios user data.', error.message)
     }
   }
 
@@ -2164,15 +2164,13 @@ class UserDataManager {
         this.printErrors(remoteAdapter)
         this.printErrors(localAdapter)
 
-        console.warn('Result of deleted many from IndexedDB', deletedLocal)
-
         this.blocked = false
         this.checkRequestQueue()
       }
 
       return deletedLocal && deletedRemote
     } catch (error) {
-      console.error('Some errors happen on deleting data from IndexedDB or RemoteDBAdapter', error.message)
+      console.error('Unexpected error deleting Alpheios user data.', error.message)
     }
   }
 
@@ -2234,7 +2232,7 @@ class UserDataManager {
       this.printErrors(localAdapter)
       return finalItems
     } catch (error) {
-      console.error('Some errors happen on quiring data from IndexedDB or RemoteDBAdapter', error.message)
+      console.error('Unexpected error querying Alpheios user data.', error.message)
     }
   }
 
@@ -2243,7 +2241,6 @@ class UserDataManager {
     for (let localItem of localItems) {
       let checkID  = localAdapter.dbDriver.makeIDCompareWithRemote(localItem)
       if (!remoteItems.find(remoteItem => remoteItem.ID === checkID)) {
-        console.warn('Need to delete from local', checkID)
         this.delete({ dataObj: localItem})
       }
     }
@@ -2254,7 +2251,7 @@ class UserDataManager {
    */
   printErrors (adapter) {
     if (adapter.errors && adapter.errors.length > 0) {
-      adapter.errors.forEach(error => console.error(`Print error - ${error}`))
+      adapter.errors.forEach(error => console.error(`Alpheios user data unexpected error - ${error}`))
     }
   }
 
@@ -2358,7 +2355,7 @@ class WordlistController {
                 this.onHomonymReady(cachedItem.homonym)
               }
             } catch (e) {
-              console.error("Error replaying cached wordlist item",e)
+              console.error("Unexpected error replaying cached Alpheios wordlist item",e)
             }
           }
         }
@@ -2420,7 +2417,7 @@ class WordlistController {
           this.removeWordList(languageCode)
         }
       } else {
-        console.error('Trying to delete an absent element')
+        console.error('Unexpected error updating Alpheios user wordlist: trying to delete an absent element')
       }
     }
   }
@@ -2439,7 +2436,7 @@ class WordlistController {
       wordItem = wordList.getWordItem(targetWord, create, WordlistController.evt.WORDITEM_UPDATED)
     }
     if (!wordItem) {
-      console.error(`There are no items for these parameters ${languageCode} ${targetWord}`)
+      console.error(`Alpheios wordlist item not found: ${languageCode} ${targetWord}`)
     }
     return wordItem
   }
@@ -2452,7 +2449,7 @@ class WordlistController {
    onHomonymReady (data) {
     // when receiving this event, it's possible this is the first time we are seeing the word so
     // create the item in the word list if it doesn't exist
-    let wordItem = this.getWordListItem(data.language, data.targetWord, true)
+    let wordItem = this.getWordListItem(alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["LanguageModelFactory"].getLanguageCodeFromId(data.languageID), data.targetWord, true)
     wordItem.homonym = data
     WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'shortHomonym'}})
     // emit a wordlist updated event too in case the wordlist was updated
@@ -2465,13 +2462,13 @@ class WordlistController {
   * Emits a WORDITEM_UPDATED event
   */
   onDefinitionsReady (data) {
-    let wordItem = this.getWordListItem(data.homonym.language,data.homonym.targetWord)
+    let wordItem = this.getWordListItem(alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["LanguageModelFactory"].getLanguageCodeFromId(data.homonym.languageID),data.homonym.targetWord)
     if (wordItem) {
       wordItem.homonym = data.homonym
       WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'fullHomonym'}})
     } else {
       // TODO error handling
-      console.error("Something went wrong: request to add definitions to non-existent item")
+      console.error("Unexpected error updating Alpheios user word list: request to add definitions to non-existent item.")
     }
   }
 
@@ -2482,12 +2479,12 @@ class WordlistController {
   * Emits a WORDITEM_UPDATED event
   */
   onLemmaTranslationsReady (data) {
-    let wordItem = this.getWordListItem(data.language, data.targetWord)
+    let wordItem = this.getWordListItem(alpheios_data_models__WEBPACK_IMPORTED_MODULE_0__["LanguageModelFactory"].getLanguageCodeFromId(data.languageID), data.targetWord)
     if (wordItem) {
       wordItem.homonym = data
       WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'fullHomonym'}})
     } else {
-      console.error("Something went wrong: request to add translations to non-existent item")
+      console.error("Unexpected error updating Alpheios user word list: request to add translations to non-existent item")
     }
   }
 
@@ -2506,7 +2503,7 @@ class WordlistController {
       // emit a wordlist updated event too in case the wordlist was updated
       WordlistController.evt.WORDLIST_UPDATED.pub([this.getWordList(wordItem.languageCode)])
     } else {
-      console.error("Unable to create or retrieve worditem")
+      console.error("Unexpected error updating Alpheios user word list: unable to create or retrieve worditem")
     }
 
   }
@@ -2524,7 +2521,7 @@ class WordlistController {
       wordItem.important = important
       WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'common'}})
     } else {
-      console.error("Something went wrong: request to set important flag on non-existent item")
+      console.error("Unexpected error updating Alpheios user word list: request to set important flag on non-existent item")
     }
   }
 
@@ -2673,7 +2670,7 @@ class IndexedDBAdapter {
     this.errors = []
   }
 
-  async checkAndUpdate (wordItem, segment, currentRemoteItems) {  
+  async checkAndUpdate (wordItem, segment, currentRemoteItems) {
     if (segment === 'context' || !segment)  {
       if (currentRemoteItems.length > 0 && currentRemoteItems[0].context && Array.isArray(currentRemoteItems[0].context)) {
         wordItem.context = []
@@ -2686,10 +2683,10 @@ class IndexedDBAdapter {
     if (!segment) {
       segment = this.dbDriver.segmentsSync
     }
-    
+
     let currentLocalItems = await this.query({ wordItem })
     if (currentLocalItems.length === 0 && segment && segment !== 'common') {
-      await this.update(wordItem, { segment: 'common' })  
+      await this.update(wordItem, { segment: 'common' })
     }
 
     let result = await this.update(wordItem, { segment })
@@ -2812,7 +2809,7 @@ class IndexedDBAdapter {
     try {
       let listItemsQuery = this.dbDriver.listItemsQuery(params)
       let listItemsQueryResult = await this._getFromStore(listItemsQuery)
-      
+
       let items = []
 
       for (let itemQuery of listItemsQueryResult) {
@@ -2822,7 +2819,7 @@ class IndexedDBAdapter {
           let query = this.dbDriver.segmentSelectQuery(segment, resultObject)
           let result = await this._getFromStore(query)
 
-          if (result.length > 0) {           
+          if (result.length > 0) {
             this.dbDriver.loadSegment(segment, result, resultObject)
           }
         }
@@ -2862,7 +2859,6 @@ class IndexedDBAdapter {
             // Make a request to clear all the data out of the object store
             let objectStoreRequest = objectStore.clear()
             objectStoreRequest.onsuccess = function(event) {
-              console.warn(`store ${store} cleared`)
               objectStoresRemaining = objectStoresRemaining - 1
               if (objectStoresRemaining === 0) {
                 resolve(true)
@@ -2896,7 +2892,7 @@ class IndexedDBAdapter {
     this.IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.msIDBTransaction || {READ_WRITE: "readwrite"}; // This line should only be needed if it is needed to support the object's constants for older browsers
     this.IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange || window.msIDBKeyRange;
     if (!this.indexedDB) {
-      console.warn("Your browser doesn't support a stable version of IndexedDB. Such and such feature will not be available.");
+      console.warn("Your browser doesn't support IndexedDB. Alpheios wordlists will not be available.");
       return false
     }
     return true
@@ -2936,7 +2932,7 @@ class IndexedDBAdapter {
           }
         })
       }
-    
+
     } catch (error) {
       this.errors.push(error)
     }
@@ -3032,7 +3028,7 @@ class IndexedDBAdapter {
 
           const index = objectStore.index(data.condition.indexName)
           const keyRange = this.IDBKeyRange[data.condition.type](data.condition.value)
-          
+
           const requestOpenCursor = index.getAll(keyRange, 0)
           requestOpenCursor.onsuccess = (event) => {
             resolve(event.target.result)
@@ -3052,7 +3048,7 @@ class IndexedDBAdapter {
       }
     })
     return promiseOpenDB
-    
+
   }
 
   /**
@@ -3346,7 +3342,6 @@ class RemoteDBAdapter {
 
       return updated
     } catch (error) {
-      console.error(error)
       if (error) {
         this.errors.push(error)
       }
@@ -3377,7 +3372,6 @@ class RemoteDBAdapter {
       let updated = this.dbDriver.storageMap.put.checkResult(result)
       return updated
     } catch (error) {
-      console.error(error)
       if (error) {
         this.errors.push(error)
       }

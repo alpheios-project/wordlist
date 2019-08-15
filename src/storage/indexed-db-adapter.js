@@ -237,7 +237,7 @@ export default class IndexedDBAdapter {
     this.IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.msIDBTransaction || {READ_WRITE: "readwrite"}; // This line should only be needed if it is needed to support the object's constants for older browsers
     this.IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange || window.msIDBKeyRange;
     if (!this.indexedDB) {
-      console.warn("Your browser doesn't support IndexedDB. Alpheios wordlists will not be available.");
+      console.warn("Alpheios warn: your browser doesn't support IndexedDB. Wordlists will not be available.");
       return false
     }
     return true

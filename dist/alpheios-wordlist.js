@@ -1961,7 +1961,7 @@ class UserDataManager {
   clear() {
     if (this.blocked) {
       // TODO we should wait on the request queue completion
-      console.warn("Destroying Alpheios user data manager with requests pending. Words may not all be deleted.")
+      console.warn("Alpheios warn: destroying user data manager with requests pending. Words may not all be deleted.")
     }
     for (let unsub of this.subscriptions) {
       unsub()
@@ -2019,7 +2019,7 @@ class UserDataManager {
   }
 
   printErrorAdapterUnvailable(adapter) {
-    console.error(`Alpheios user data adapter is not available - ${adapter.constructor.name}`)
+    console.error(`Alpheios error: user data adapter is not available - ${adapter.constructor.name}`)
   }
 
   /**
@@ -2068,7 +2068,7 @@ class UserDataManager {
       }
       return result
     } catch (error) {
-      console.error('Unexpected error updating Alpheios user data.', error)
+      console.error('Alpheios error: unexpected error updating user data.', error)
     }
   }
 
@@ -2120,7 +2120,7 @@ class UserDataManager {
       }
       return remoteResult && localResult
     } catch (error) {
-      console.error('Unexpected error deleting Alpheios user data.', error.message)
+      console.error('Alpheios error: unexpected error deleting user data.', error.message)
     }
   }
 
@@ -2170,7 +2170,7 @@ class UserDataManager {
 
       return deletedLocal && deletedRemote
     } catch (error) {
-      console.error('Unexpected error deleting Alpheios user data.', error.message)
+      console.error('Alpheios error: unexpected error deleting user data.', error.message)
     }
   }
 
@@ -2232,7 +2232,7 @@ class UserDataManager {
       this.printErrors(localAdapter)
       return finalItems
     } catch (error) {
-      console.error('Unexpected error querying Alpheios user data.', error.message)
+      console.error('Alpheios error: unexpected error querying user data.', error.message)
     }
   }
 
@@ -2251,7 +2251,7 @@ class UserDataManager {
    */
   printErrors (adapter) {
     if (adapter.errors && adapter.errors.length > 0) {
-      adapter.errors.forEach(error => console.error(`Alpheios user data unexpected error - ${error}`))
+      adapter.errors.forEach(error => console.error(`Alpheios error: user data unexpected error - ${error}`))
     }
   }
 
@@ -2355,7 +2355,7 @@ class WordlistController {
                 this.onHomonymReady(cachedItem.homonym)
               }
             } catch (e) {
-              console.error("Unexpected error replaying cached Alpheios wordlist item",e)
+              console.error("Alpheios error: unexpected error replaying cached wordlist item",e)
             }
           }
         }
@@ -2417,7 +2417,7 @@ class WordlistController {
           this.removeWordList(languageCode)
         }
       } else {
-        console.error('Unexpected error updating Alpheios user wordlist: trying to delete an absent element')
+        console.error('Alpheios error: unexpected error updating user wordlist: trying to delete an absent element')
       }
     }
   }
@@ -2436,7 +2436,7 @@ class WordlistController {
       wordItem = wordList.getWordItem(targetWord, create, WordlistController.evt.WORDITEM_UPDATED)
     }
     if (!wordItem) {
-      console.error(`Alpheios wordlist item not found: ${languageCode} ${targetWord}`)
+      console.error(`Alpheios error: wordlist item not found: ${languageCode} ${targetWord}`)
     }
     return wordItem
   }
@@ -2468,7 +2468,7 @@ class WordlistController {
       WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'fullHomonym'}})
     } else {
       // TODO error handling
-      console.error("Unexpected error updating Alpheios user word list: request to add definitions to non-existent item.")
+      console.error("Alpheios error: unexpected error updating user word list: request to add definitions to non-existent item.")
     }
   }
 
@@ -2484,7 +2484,7 @@ class WordlistController {
       wordItem.homonym = data
       WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'fullHomonym'}})
     } else {
-      console.error("Unexpected error updating Alpheios user word list: request to add translations to non-existent item")
+      console.error("Alpheios error: unexpected error updating user word list: request to add translations to non-existent item")
     }
   }
 
@@ -2503,7 +2503,7 @@ class WordlistController {
       // emit a wordlist updated event too in case the wordlist was updated
       WordlistController.evt.WORDLIST_UPDATED.pub([this.getWordList(wordItem.languageCode)])
     } else {
-      console.error("Unexpected error updating Alpheios user word list: unable to create or retrieve worditem")
+      console.error("Alpheios error: unexpected error updating user word list: unable to create or retrieve worditem")
     }
 
   }
@@ -2521,7 +2521,7 @@ class WordlistController {
       wordItem.important = important
       WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'common'}})
     } else {
-      console.error("Unexpected error updating Alpheios user word list: request to set important flag on non-existent item")
+      console.error("Alpheios error: unexpected error updating user word list: request to set important flag on non-existent item")
     }
   }
 
@@ -2892,7 +2892,7 @@ class IndexedDBAdapter {
     this.IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.msIDBTransaction || {READ_WRITE: "readwrite"}; // This line should only be needed if it is needed to support the object's constants for older browsers
     this.IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange || window.msIDBKeyRange;
     if (!this.indexedDB) {
-      console.warn("Your browser doesn't support IndexedDB. Alpheios wordlists will not be available.");
+      console.warn("Alpheios warn: your browser doesn't support IndexedDB. Wordlists will not be available.");
       return false
     }
     return true

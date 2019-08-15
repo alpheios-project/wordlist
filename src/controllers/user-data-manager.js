@@ -30,7 +30,7 @@ export default class UserDataManager {
   clear() {
     if (this.blocked) {
       // TODO we should wait on the request queue completion
-      console.warn("Destroying Alpheios user data manager with requests pending. Words may not all be deleted.")
+      console.warn("Alpheios warn: destroying user data manager with requests pending. Words may not all be deleted.")
     }
     for (let unsub of this.subscriptions) {
       unsub()
@@ -88,7 +88,7 @@ export default class UserDataManager {
   }
 
   printErrorAdapterUnvailable(adapter) {
-    console.error(`Alpheios user data adapter is not available - ${adapter.constructor.name}`)
+    console.error(`Alpheios error: user data adapter is not available - ${adapter.constructor.name}`)
   }
 
   /**
@@ -137,7 +137,7 @@ export default class UserDataManager {
       }
       return result
     } catch (error) {
-      console.error('Unexpected error updating Alpheios user data.', error)
+      console.error('Alpheios error: unexpected error updating user data.', error)
     }
   }
 
@@ -189,7 +189,7 @@ export default class UserDataManager {
       }
       return remoteResult && localResult
     } catch (error) {
-      console.error('Unexpected error deleting Alpheios user data.', error.message)
+      console.error('Alpheios error: unexpected error deleting user data.', error.message)
     }
   }
 
@@ -239,7 +239,7 @@ export default class UserDataManager {
 
       return deletedLocal && deletedRemote
     } catch (error) {
-      console.error('Unexpected error deleting Alpheios user data.', error.message)
+      console.error('Alpheios error: unexpected error deleting user data.', error.message)
     }
   }
 
@@ -301,7 +301,7 @@ export default class UserDataManager {
       this.printErrors(localAdapter)
       return finalItems
     } catch (error) {
-      console.error('Unexpected error querying Alpheios user data.', error.message)
+      console.error('Alpheios error: unexpected error querying user data.', error.message)
     }
   }
 
@@ -320,7 +320,7 @@ export default class UserDataManager {
    */
   printErrors (adapter) {
     if (adapter.errors && adapter.errors.length > 0) {
-      adapter.errors.forEach(error => console.error(`Alpheios user data unexpected error - ${error}`))
+      adapter.errors.forEach(error => console.error(`Alpheios error: user data unexpected error - ${error}`))
     }
   }
 

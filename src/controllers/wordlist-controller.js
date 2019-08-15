@@ -1,4 +1,4 @@
-import { PsEvent, WordList, WordItem, TextQuoteSelector } from 'alpheios-data-models'
+import { PsEvent, WordList, WordItem, TextQuoteSelector, LanguageModelFactory } from 'alpheios-data-models'
 
 export default class WordlistController {
   /**
@@ -45,7 +45,7 @@ export default class WordlistController {
                 this.onHomonymReady(cachedItem.homonym)
               }
             } catch (e) {
-              console.error("Error replaying cached wordlist item",e)
+              console.error("Alpheios error: unexpected error replaying cached wordlist item",e)
             }
           }
         }
@@ -107,7 +107,7 @@ export default class WordlistController {
           this.removeWordList(languageCode)
         }
       } else {
-        console.error('Trying to delete an absent element')
+        console.error('Alpheios error: unexpected error updating user wordlist: trying to delete an absent element')
       }
     }
   }
@@ -126,7 +126,7 @@ export default class WordlistController {
       wordItem = wordList.getWordItem(targetWord, create, WordlistController.evt.WORDITEM_UPDATED)
     }
     if (!wordItem) {
-      console.error(`There are no items for these parameters ${languageCode} ${targetWord}`)
+      console.error(`Alpheios error: wordlist item not found: ${languageCode} ${targetWord}`)
     }
     return wordItem
   }
@@ -139,7 +139,7 @@ export default class WordlistController {
    onHomonymReady (data) {
     // when receiving this event, it's possible this is the first time we are seeing the word so
     // create the item in the word list if it doesn't exist
-    let wordItem = this.getWordListItem(data.language, data.targetWord, true)
+    let wordItem = this.getWordListItem(LanguageModelFactory.getLanguageCodeFromId(data.languageID), data.targetWord, true)
     wordItem.homonym = data
     WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'shortHomonym'}})
     // emit a wordlist updated event too in case the wordlist was updated
@@ -152,13 +152,13 @@ export default class WordlistController {
   * Emits a WORDITEM_UPDATED event
   */
   onDefinitionsReady (data) {
-    let wordItem = this.getWordListItem(data.homonym.language,data.homonym.targetWord)
+    let wordItem = this.getWordListItem(LanguageModelFactory.getLanguageCodeFromId(data.homonym.languageID),data.homonym.targetWord)
     if (wordItem) {
       wordItem.homonym = data.homonym
       WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'fullHomonym'}})
     } else {
       // TODO error handling
-      console.error("Something went wrong: request to add definitions to non-existent item")
+      console.error("Alpheios error: unexpected error updating user word list: request to add definitions to non-existent item.")
     }
   }
 
@@ -169,12 +169,12 @@ export default class WordlistController {
   * Emits a WORDITEM_UPDATED event
   */
   onLemmaTranslationsReady (data) {
-    let wordItem = this.getWordListItem(data.language, data.targetWord)
+    let wordItem = this.getWordListItem(LanguageModelFactory.getLanguageCodeFromId(data.languageID), data.targetWord)
     if (wordItem) {
       wordItem.homonym = data
       WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'fullHomonym'}})
     } else {
-      console.error("Something went wrong: request to add translations to non-existent item")
+      console.error("Alpheios error: unexpected error updating user word list: request to add translations to non-existent item")
     }
   }
 
@@ -193,7 +193,7 @@ export default class WordlistController {
       // emit a wordlist updated event too in case the wordlist was updated
       WordlistController.evt.WORDLIST_UPDATED.pub([this.getWordList(wordItem.languageCode)])
     } else {
-      console.error("Unable to create or retrieve worditem")
+      console.error("Alpheios error: unexpected error updating user word list: unable to create or retrieve worditem")
     }
 
   }
@@ -211,7 +211,7 @@ export default class WordlistController {
       wordItem.important = important
       WordlistController.evt.WORDITEM_UPDATED.pub({dataObj: wordItem, params: {segment: 'common'}})
     } else {
-      console.error("Something went wrong: request to set important flag on non-existent item")
+      console.error("Alpheios error: unexpected error updating user word list: request to set important flag on non-existent item")
     }
   }
 
